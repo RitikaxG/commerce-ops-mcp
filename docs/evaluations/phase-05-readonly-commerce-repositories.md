@@ -107,4 +107,6 @@ and 1 shipment, with all operations tables empty.
 
 `feat(db): add read-only commerce repositories`
 
-No commit or push was performed. Review status: awaiting review.
+## Exit decision
+
+Accepted and merged to `main` as commit `1ad80d2` on 2026-07-30.

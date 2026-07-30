@@ -127,8 +127,14 @@
     "packages/evidence": {
       "name": "@repo/evidence",
       "version": "0.0.0",
+      "dependencies": {
+        "@repo/db": "*",
+        "@repo/schemas": "*",
+      },
       "devDependencies": {
+        "@repo/fixtures": "*",
         "@repo/typescript-config": "*",
+        "@types/bun": "latest",
         "typescript": "5.9.2",
       },
     },
