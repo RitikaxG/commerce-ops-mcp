@@ -2,167 +2,72 @@
 
 ## Product goal
 
-Diagnose why a paid order has not reached shipment creation and create a persistent human-review escalation.
+Diagnose why a paid order has not reached shipment creation and create a persistent human-review escalation without changing commerce state.
 
 ## Current gate
 
-- Phase 0 was reviewed and accepted on 2026-07-30.
-- Phase 1 was reviewed and accepted on 2026-07-30.
-- Phase 2 was committed and accepted for Phase 3 to begin on 2026-07-30.
-- Phase 3 was accepted and merged to `main` in commit `13e4aaa` on 2026-07-30.
-- Phase 4 was accepted and merged to `main` in commit `97fcf99` on 2026-07-30.
-- Phase 5 was accepted and merged to `main` in commit `1ad80d2` on 2026-07-30.
-- Phase 6 was accepted and merged to `main` in commit `1fd7887` on 2026-07-30.
-- Phase 7 was accepted and merged to `main` in commit `d7999c7` on 2026-07-30.
-- Phase 8 was accepted and merged to `main` as
-  `8f76a0c8a750db6f006635a7f843b34de6944bec` on 2026-07-30.
-- Phase 9 persistent investigation and escalation workflows are implemented on
-  `phase/09-persistence-escalation` and awaiting review.
-- The next permitted action is Phase 9 review or revision.
-- Phase 10 and later phases remain blocked until Phase 9 is explicitly
-  accepted.
-- Use one phase prompt in one coding session and stop at its review gate.
-- Do not start Phase 10 automatically.
+- Phases 0 through 9 are accepted and merged.
+- Phase 9 was merged to `main` as `d11b589fabe9e16222953bb251e39ba79c73887a`.
+- The initial Phase 10 MCP implementation was merged to `main` as `355960c2a3441a05430de8cbf87234bb8285ff18`.
+- `phase/10-remote-mcp-completion` completes the missing direct MCP evaluation, documentation, and validation work.
+- Do not begin Phase 11 until Phase 10 has been reviewed and the explicit live direct evaluation has passed.
+- Do not add an LLM provider, model SDK, model name, or API key during Phase 10.
 
 ## Permanent safety boundary
 
-- Operational commerce state is read-only.
-- Allowed writes are limited to the operations workflow: investigations, immutable evidence snapshots, human-review escalations, idempotency records, and append-only audit events.
-- Forbidden: order, payment, inventory, fulfilment, event, or shipment mutation; raw SQL tools; unrestricted API tools; or claims that an operational fix was executed.
+- Operational commerce state is runtime read-only.
+- Allowed writes are limited to investigations, immutable evidence snapshots, human-review escalations, idempotency records, and append-only audit events in `operations`.
+- Forbidden: order, payment, inventory, fulfilment, event, shipment, or warehouse mutation.
+- Forbidden: raw SQL tools, unrestricted API/fetch tools, reservation, reassignment, hold release, fulfilment retry, or shipment creation/retry.
 - A recommendation is a proposal for human review, never evidence that an operational action occurred.
-- Observable audit activity may be stored. Hidden model chain of thought must not be stored.
+- Every investigation and escalation result states `commerceStateChanged=false`.
+- Hidden model chain of thought, credentials, SQL, raw provider payloads, and unrestricted source dumps must not be persisted or returned.
 
-## PostgreSQL approval boundary
+## Database boundary
 
-- `commerce` schema: synthetic operational order, payment, inventory, fulfilment, event, and shipment records. The runtime role has `SELECT` only.
-- `operations` schema: investigation, evidence, escalation, idempotency, and append-only audit records. The runtime role receives only the workflow permissions it requires.
-- The two-schema safety boundary is fixed by the final plan. The detailed entities, columns, statuses, invariants, permissions, and indexes in `docs/database/schema-proposal.md` were accepted on 2026-07-30 and amended by the final Phase 3 scenario contract.
-- `docs/database/client-review-summary.md` records the accepted client decisions.
-- `docs/database/schema-proposal.md` is the approved and amended source of truth for schema and database implementation.
-- Any later deviation from the accepted schema must be documented and reviewed before migration changes.
-- `DATABASE_URL` is reserved for schema-owner migration and explicit verification work.
-- `DEMO_DATABASE_URL` authenticates as `commerce_demo` for explicit non-production commerce seed/reset only.
-- `WORKFLOW_DATABASE_URL` authenticates as `commerce_workflow`; it has commerce `SELECT`, scoped operations `SELECT`/`INSERT`, and column-level investigation outcome updates only.
-- Phase 4 PostgreSQL triggers enforce terminal investigation/evidence consistency, evidence immutability, append-only audit events, escalation derivation, and polymorphic idempotency resource validity.
+- `DATABASE_URL` is schema-owner only.
+- `DEMO_DATABASE_URL` is for explicit non-production commerce seed/reset only.
+- `WORKFLOW_DATABASE_URL` is the runtime connection: commerce `SELECT`, scoped operations writes, and approved investigation outcome updates.
+- The runtime may not invoke demo or workflow cleanup helpers.
+- `bun run db:reset-workflow-demo` is owner-only, destructive to demo operations rows, and prohibited in production.
+- PostgreSQL triggers enforce terminal investigation consistency, immutable evidence, append-only audit events, escalation derivation, and idempotency-resource validity.
 
-## Phase 1 approved schema
+## Approved scenarios
 
-The following was accepted on 2026-07-30:
+The frozen matrix contains exactly nine orders:
 
-- `commerce` owns orders, order items, current payments, warehouses, inventory levels, current fulfilments, fulfilment events, and current shipments.
-- `operations` owns investigations, immutable evidence snapshots, human-review escalations, idempotency records, and append-only audit events.
-- Each order has at most one current payment, fulfilment, and shipment; absent rows remain representable as evidence.
-- Terminal investigations require exactly one immutable evidence snapshot.
-- Human-readable identifiers use PostgreSQL `text` and later Prisma `String` fields.
-- Native PostgreSQL enums represent the scoped states.
-- An investigation has at most one human-review escalation; retries reuse it and reopening a closed case is out of scope.
-- Human-review cases are allowed only for outcomes requiring human action, including missing/conflicting evidence, and not merely for `WITHIN_EXPECTED_PROCESSING_TIME`.
-- Cross-schema foreign keys are permitted because `commerce` and `operations` share one PostgreSQL database.
-- Migration, seed/reset, and workflow-runtime roles are separate; a separate reviewer interface/role is optional and must not broaden scope.
-- Evidence uses an immutable versioned JSONB snapshot with relational searchable outcome and trace fields.
-- Idempotency is unique by `(tool_name, idempotency_key)` and a reused key with a different request hash conflicts.
-- Runtime roles have `SELECT` only on `commerce`; evidence/idempotency/audit records are insert-only after creation.
+- `ORD-1042`: assigned warehouse out of stock; human review in `FULFILMENT_OPERATIONS`.
+- `ORD-1043`: fulfilment creation failed; `FULFILMENT_OPERATIONS`.
+- `ORD-1044`: within expected processing time; no escalation.
+- `ORD-1045`: shipment-label creation failed; `SHIPPING_OPERATIONS`.
+- `ORD-1046`: missing assigned-warehouse inventory; `NEEDS_MORE_INFO`, no diagnosis, `OPERATIONS_DATA_REVIEW`.
+- `ORD-1047`: shipment already exists; no escalation.
+- `ORD-1048`: cause not determined; `GENERAL_COMMERCE_OPERATIONS`.
+- `ORD-1049`: payment not confirmed; `PAYMENT_OPERATIONS`.
+- `ORD-1050`: conflicting inventory; `NEEDS_MORE_INFO`, no diagnosis, `OPERATIONS_DATA_REVIEW`.
 
-Approved investigation statuses are `RUNNING`, `COMPLETED`, `NEEDS_MORE_INFO`, and `FAILED`. Evidence statuses are `COMPLETE`, `MISSING`, and `CONFLICTING`. Human-review statuses are `AWAITING_REVIEW`, `IN_REVIEW`, and `CLOSED`. Diagnosis codes remain separate from all lifecycle statuses.
+Synthetic evidence uses the fixed reference time `2026-07-30T12:00:00.000Z`. Wall-clock age alone does not invalidate the demo evidence.
 
-Core approved invariants:
+## Package ownership
 
-- `COMPLETED` requires `COMPLETE` evidence, a diagnosis, confidence, matched rule, terminal timestamp, and an evidence row.
-- `NEEDS_MORE_INFO` requires explicit missing fields or conflicts and forbids a diagnosis.
-- Evidence snapshots are immutable and audit events are append-only.
-- Escalations are derived from stored investigations; the LLM cannot supply diagnosis/evidence.
-- Foreign keys and composite keys prevent cross-order source relationships.
-- Runtime grants and later integration tests must prove every commerce mutation fails.
+- `packages/schemas`: public Zod and TypeScript contracts; no infrastructure imports.
+- `packages/db`: Prisma, clients, transactions, repositories, migrations, and owner-only testing helpers.
+- `packages/fixtures`: frozen scenarios and explicit seed/reset/verify composition.
+- `packages/evidence`: normalized source collection through repository contracts.
+- `packages/diagnosis`: pure readiness and deterministic diagnosis; schemas-only runtime dependency.
+- `packages/observability`: safe audit builders and trace reads.
+- `packages/workflow`: orchestration, persistence, idempotency, escalation, and safe workflow errors.
+- `packages/mcp`: the five approved tool adapters and MCP error mapping; imports only schemas, workflow, and the official MCP SDK.
+- `apps/api`: Express composition, health, `/mcp`, Host validation, transport lifecycle, and graceful shutdown.
+- `packages/evaluations`: direct protocol and later model evaluations; may consume top-level runtime packages but is never imported by runtime code.
+- `packages/agent`: Phase 11 host-neutral model instructions and provider/evaluation helpers.
+- `apps/web`: later read-only trace viewer; no direct database access.
 
-Phase 3 approved one schema amendment: inventory observations are keyed by `(warehouse_id, sku, source_system)` rather than only `(warehouse_id, sku)`. This preserves separate `WAREHOUSE_SYSTEM` and `COMMERCE_SYSTEM` observations for `ORD-1050`. Absence remains distinct from a persisted zero quantity.
+Prisma remains private to `packages/db`. Packages never import application code. Runtime packages never import evaluations or fixtures.
 
-## Approved synthetic scenarios
+## Phase 10 MCP surface
 
-The nine-case matrix in `docs/scenarios/approved-synthetic-scenarios.md` was approved on 2026-07-30 and is frozen:
-
-- `ORD-1042`: assigned warehouse out of stock; escalate to `FULFILMENT_OPERATIONS`.
-- `ORD-1043`: fulfilment creation failed; escalate to `FULFILMENT_OPERATIONS`.
-- `ORD-1044`: within expected processing time; no escalation by default.
-- `ORD-1045`: shipment-label creation failed; escalate to `SHIPPING_OPERATIONS`.
-- `ORD-1046`: missing inventory evidence; `NEEDS_MORE_INFO`, no diagnosis, escalate to `OPERATIONS_DATA_REVIEW`.
-- `ORD-1047`: shipment already exists; no escalation by default.
-- `ORD-1048`: cause not determined; escalate to `GENERAL_COMMERCE_OPERATIONS`.
-- `ORD-1049`: payment source reports `PROCESSING`; escalate to `PAYMENT_OPERATIONS`.
-- `ORD-1050`: conflicting persisted inventory observations; `NEEDS_MORE_INFO`, no diagnosis, escalate to `OPERATIONS_DATA_REVIEW`.
-
-Every later scenario investigation persists an investigation, evidence snapshot, and audit trail with `commerceStateChanged=false`. Escalations are created only when `shouldEscalate=true`. Scenario changes require explicit client approval.
-
-The demo seed contains commerce evidence only. It never seeds investigations, investigation evidence, escalations, idempotency records, or audit events. Missing evidence is represented by absence, never quantity zero. Conflicting evidence remains stored as separate source observations.
-
-## Stack and repository conventions
-
-Target conventions from the final plan:
-
-- Bun is the only package manager. Repository instructions and scripts must use `bun`, `bunx`, and Turbo; do not introduce npm, pnpm, or yarn commands.
-- Turborepo
-- TypeScript strict mode and ESM
-- No `src/` directories
-- Node.js and Express API
-- Node.js 20.9.0 or newer, matching the Next.js 16 runtime requirement
-- PostgreSQL and Prisma in `packages/db`, following the accepted `commerce` / `operations` schema boundary
-- Zod schemas in `packages/schemas` validate every untrusted/external input and shared protocol contract
-- A small Tailwind trace viewer in `apps/web`, built after core MCP correctness
-- No speculative Redis, queues, Kafka, RAG, multi-agent orchestration, event sourcing, or complex production authentication
-
-Phase 2 reused the existing Bun/Turborepo and Prisma foundation. Phase 3 implemented the approved two-schema Prisma model, typed scenario contracts, validated fixtures, and explicit non-production seed/reset commands. Phase 4 added live role separation, reviewed grants, and database-enforced cross-table invariants. Phase 5 added a read-only commerce repository facade over the restricted workflow connection. Phase 6 added normalized, source-aware evidence collection. Phase 7 added a pure conditional readiness/conflict gate. Phase 8 added a pure deterministic diagnosis engine with versioned rules, selected supporting facts, fixed processing chronology, and safe human-review guidance. Phase 9 adds atomic operations persistence, exact idempotency, explicit case creation/reuse, safe audit events, and read-only case/trace queries. The API remains disconnected from PostgreSQL, and `apps/docs` remains intentionally absent.
-
-## Package graph and ownership
-
-The planned dependency direction is:
-
-- Applications may depend on packages; packages never depend on applications.
-- `apps/api` owns HTTP, health, MCP transport, and read-only trace routes; it is Node.js and Express.
-- `apps/web` consumes read-only trace APIs and has no direct database access.
-- `packages/mcp` adapts approved tool contracts to `packages/workflow`.
-- `packages/workflow` orchestrates evidence, readiness, diagnosis, persistence, idempotency, escalation, and audit behavior.
-- `packages/evidence` collects and normalizes source records through repository contracts exported by `packages/db`; it does not import Prisma.
-- `packages/diagnosis` applies deterministic rules to normalized schemas and never imports Prisma.
-- `packages/db` owns Prisma, migrations, clients, transaction boundaries, repository contracts, and repository implementations. Prisma remains private to this package.
-- `packages/schemas` owns public Zod and TypeScript contracts and must remain infrastructure-independent.
-- `packages/fixtures` owns typed synthetic cases and seed validation.
-- `packages/agent` owns host-neutral instructions and LLM evaluation helpers, not business rules.
-- `packages/evaluations` owns scenario, guardrail, contract, and model evaluations.
-- `packages/observability` owns the internal trace event vocabulary, safe summaries, and trace queries; public Zod trace contracts live in `packages/schemas`.
-- `packages/config` owns shared TypeScript, environment, and test configuration.
-
-Concrete public surfaces through Phase 9:
-
-- `@repo/config` exports API parsing plus separate schema-owner, demo, and workflow PostgreSQL URL validation.
-- `apps/api/app.ts` exports the composed Express application for startup and smoke testing.
-- `GET /health` returns `{"status":"ok"}`.
-- `@repo/schemas` exports the approved scenario, fixture, evidence, readiness,
-  decision, workflow, escalation, persisted-record, audit, trace, and workflow
-  error Zod schemas and inferred types.
-- `@repo/fixtures` exports the frozen scenario manifest, typed commerce fixtures, fixed-clock helper, pure validation, and explicit seed/reset/verify composition.
-- `@repo/db` exports the Phase 3 transactional demo operations,
-  `CommerceReadRepository`, `OperationsWorkflowRepository`, and
-  `createWorkflowRepositoryContext`; Prisma and transactions remain private.
-- The commerce facade reads order, items, current payment/fulfilment/shipment, ordered events, inventory observations, and warehouses through `WORKFLOW_DATABASE_URL`; its public types contain no Prisma types.
-- `@repo/evidence` exports `EvidenceCollector`, `EvidenceClock`, and `createEvidenceCollector({ commerce, clock? })`; runtime code depends only on the injected `CommerceReadRepository` and public schemas.
-- `@repo/diagnosis` exports `EvidenceReadinessEvaluator`, `DiagnosisEngine`, and their factories; its runtime dependency is only `@repo/schemas`.
-- The diagnosis engine consumes validated normalized evidence plus readiness, applies the frozen rule precedence without a runtime clock, and returns a Zod-validated `InvestigationDecision` with `commerceStateChanged=false`.
-- `@repo/observability` exports pure safe audit builders and a read-only
-  investigation trace reader over the operations repository contract.
-- `@repo/workflow` exports `CommerceOperationsWorkflow`, its
-  dependency-injected factory, its restricted runtime context factory, and
-  finite safe `WorkflowError`.
-- MCP, agent, and evaluation packages still export no behavior.
-
-The remaining planned conceptual public surfaces are the five MCP tool
-adapters, agent behavior, evaluations, HTTP trace routes, and web trace viewer.
-Concrete signatures remain deferred to their owning phases and must use types
-from `packages/schemas`.
-
-Keep public APIs small and export them through package roots. A phase may refine this graph, but it must document and review any changed direction. The complete acyclic graph is in `docs/architecture/package-graph.md`.
-
-## MCP tools
-
-Only these domain capabilities are planned:
+Register exactly:
 
 - `list_demo_cases`
 - `investigate_order_exception`
@@ -170,368 +75,83 @@ Only these domain capabilities are planned:
 - `get_review_case`
 - `get_investigation_trace`
 
-Do not expose `run_sql`, generic record or API tools, inventory reservation, fulfilment reassignment, hold release, shipment retry, or shipment creation.
+The server must advertise no prompts, generic resources, SQL tools, CRUD tools, unrestricted HTTP tools, or operational mutation tools.
 
-Investigation and escalation tools may persist only `operations` workflow records. Their descriptions and annotations must state their real side effects and must report `commerceStateChanged=false`.
+Tool rules:
 
-## Commands verified
+- `list_demo_cases`, `get_review_case`, and `get_investigation_trace` are read-only.
+- Investigation and escalation are non-destructive operations-workflow writes and idempotent by their approved keys.
+- Investigation never creates a review case automatically.
+- Escalation accepts only `investigationId` and `idempotencyKey`; queue, reason, order, and next step are server-derived.
+- All inputs and structured outputs validate through shared schemas.
+- Expected workflow failures return finite safe envelopes; unexpected failures map to `INTERNAL_ERROR`.
 
-Phase 0 commands:
+## Remote transport
 
-- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun --version`
-- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bunx prettier --check AGENTS.md README.md docs/**/*.md`
-- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun run --filter @repo/ui check-types`
-- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun run --filter @repo/ui build:components`
-- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun run check-types`
-- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun run --filter @repo/ui lint`
-- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun run lint`
-- `/usr/bin/git diff --check`
+- Use stable `@modelcontextprotocol/sdk` v1; current resolved version is `1.30.0`.
+- Use Streamable HTTP at `/mcp`.
+- Use stateless mode with JSON responses.
+- Do not implement legacy HTTP+SSE.
+- Validate the Host header before MCP processing.
+- Production requires a nonempty explicit `MCP_ALLOWED_HOSTS`; wildcards are forbidden.
+- Keep `GET /health` unchanged and `x-powered-by` disabled.
+- Do not add duplicate REST routes for MCP workflow actions.
 
-The first Phase 0 root typecheck failed because the starter's `@repo/ui` export
-map targeted generated `dist` files. During Phase 3 review, all internal
-workspace packages were changed to source-first exports, so consumers now
-resolve package-root TypeScript directly. Package builds may still emit
-artifacts for verification, but those artifacts are not workspace entry
-points. `apps/api` uses Bun's bundler with `--target node`, and the produced
-`dist/server.js` remains a Node.js runtime artifact.
+## Phase 10 direct evaluation
 
-The expected and actual results are recorded in `docs/evaluations/phase-00.md`. No test, migrate, seed, reset, development, or evaluation-harness command was required or claimed for this documentation-only phase.
+`bun run eval:mcp:direct` must:
 
-Phase 1 commands:
+1. clear only demo operations rows through the owner-only cleanup boundary;
+2. verify the approved commerce fixtures;
+3. build and start the real Express API on a temporary local port;
+4. connect using the official `Client` and `StreamableHTTPClientTransport`;
+5. discover exactly five tools and no prompt/resource capabilities;
+6. execute all nine investigations and compare frozen outcomes;
+7. create seven eligible review cases and reject `ORD-1044`/`ORD-1047` escalation;
+8. verify exact retry, idempotency-key conflict, second-key case reuse, case reads, and trace reads;
+9. reject forbidden tools, extra business fields, malformed identifiers, and disallowed hosts;
+10. prove commerce fixtures are unchanged;
+11. always clear operations rows in `finally` and verify final zero workflow counts.
 
-- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun -e '<schema-document consistency assertions>'`
-- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun -e '<client-summary consistency assertions>'`
-- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bunx prettier --check AGENTS.md README.md docs/**/*.md`
-- `/usr/bin/git diff --check`
-- `/usr/bin/git diff -- packages/db`
-- Prisma migration-directory absence check
-- Mermaid CLI availability check followed by manual ER syntax review
+The direct evaluator is explicit and serial. Do not place destructive cleanup inside parallel root tests.
 
-Expected and actual results are recorded in `docs/evaluations/phase-01.md`. No Prisma validation, generation, migration, or database command was run during Phase 1; schema implementation remains assigned to Phase 4.
+## Phase 11 boundary
 
-Phase 2 commands:
+Phase 11, not Phase 10, owns:
 
-- `bun install`
-- `bun run --filter @repo/config typecheck`
-- `bun run --filter @repo/api typecheck`
-- `bun run --filter @repo/config test`
-- `bun run --filter @repo/api test`
-- `bun run build`
-- `bun run typecheck`
-- `bun run test`
-- `bun run lint`
-- `PORT=43120 NODE_ENV=test node apps/api/dist/server.js` followed by `curl -i http://127.0.0.1:43120/health`
-- Browser verification of the production web shell at `http://127.0.0.1:43121`
-- Package-name, dependency-direction, cycle, no-`src/`, schema-diff, migration-absence, ignored-file, and whitespace checks
+- `MODEL_PROVIDER`
+- `MODEL_NAME`
+- `MODEL_API_KEY`
+- one concrete provider SDK
+- AI-host tool discovery and selection
+- tool-order evaluation
+- grounded explanation evaluation
+- refusal, prompt-injection, and adversarial model evaluation
 
-The final package and Turbo checks passed. The API smoke test passed with one focused test, and the compiled API returned HTTP 200 with `{"status":"ok"}`. Local TCP listeners and the Next.js build worker required execution outside the managed sandbox because loopback binding and worker creation were restricted there; the application checks themselves passed. Full expected and actual results, including the failed diagnostic attempts, are recorded in `docs/evaluations/phase-02.md`.
+The model must use MCP tools and explain server-produced structured outcomes. It must not calculate diagnosis, queue, reason, or operational actions itself.
 
-Phase 3 commands:
+## Repository conventions
 
-- `bun install`
-- `bun run db:generate`
-- `bun --bun run prisma format`
-- `bun --bun run prisma validate`
-- `bun run db:migrate`
-- `bun run db:seed`
-- `bun run db:reset-demo`
-- `bun run db:verify-demo`
-- `bun run --filter @repo/fixtures test:integration`
-- `bun run build`
-- `bun run typecheck`
-- `bun run test`
-- `bun run lint`
-- Formatting, dependency-direction, no-`src/`, secret/artifact, forbidden-capability, schema-drift, migration-status, and whitespace checks
+- Bun is the only package manager.
+- TypeScript strict mode and ESM.
+- No `src/` directories.
+- Node.js 20.9.0 or newer.
+- Use Zod for every external/untrusted contract.
+- Keep public APIs small and exported through package roots.
+- Do not introduce Redis, queues, Kafka, RAG, multi-agent orchestration, event sourcing, or complex production authentication.
+- Never commit `.env`, credentials, production data, local database dumps, generated secrets, or private AI transcripts.
 
-The database commands use the explicitly configured development/schema-owner credential. Runtime credentials are not implemented or used. Expected versus actual results and the final row counts are recorded in `docs/evaluations/phase-03-synthetic-scenarios.md`.
+## Required review packet
 
-Final Phase 3 results: build 14/14 Turbo tasks, typecheck 14/14, test 17/17 Turbo tasks (fixtures 30/30, config 4/4, API 1/1), and lint 2/2. PostgreSQL read-back returned 9 orders, 9 items, 9 payments, 2 warehouses, 8 inventory observations, 7 fulfilments, 14 events, and 1 shipment; every workflow-table count was zero.
+Before Phase 10 is accepted, show:
 
-The source-first export review correction was rechecked with install, build
-(14/14), typecheck (14/14), lint (2/2), a Node-built API health request (HTTP
-200), and read-only database verification. The root test rerun passed the API,
-config, and 29 non-database fixture tests, but the remote PostgreSQL integration
-test then received Prisma `P2028` because the interactive transaction exceeded
-its five-second timeout. The same integration test passed before this
-package-manifest-only correction, and the database remained readable with the
-approved counts; a clean transaction-capable rerun is still required.
-
-Phase 4 resolved that handoff: the unchanged Phase 3 integration test first
-passed cleanly in 21.2 seconds. After moving seed/reset to `commerce_demo`, the
-hosted connection required a demo-only 15-second acquisition window, a
-30-second transaction timeout, and a 90-second integration-test ceiling. The
-test then passed in 33.8 seconds without changing the fixture transaction
-design.
-
-Phase 4 commands:
-
-- `bun install --frozen-lockfile`
-- `bun run db:generate`
-- `bun --bun run prisma validate`
-- `bun run db:migrate`
-- `bun run db:setup-access:local`
-- `bun run db:setup-access`
-- `bun run db:verify-access`
-- `bun run --filter @repo/fixtures test:integration`
-- `bun run --filter @repo/db test`
-- `bun run db:verify-demo`
-- `bun run build`
-- `bun run typecheck`
-- `bun run test`
-- `bun run lint`
-- Prisma migration-status, restricted-role, unchanged-data, formatting, and whitespace checks
-
-Final Phase 4 application checks: build 14/14, typecheck 14/14, root test
-18/18 Turbo tasks, lint 2/2, config 10/10, database hardening 6/6, fixtures
-30/30, and API 1/1. The live Neon database accepted both restricted roles and
-all required permission/invariant checks.
-
-Phase 5 commands:
-
-- `bun install --frozen-lockfile`
-- `bun run db:verify-demo`
-- `bun run db:verify-access`
-- `bun test tests/commerce-repository.test.ts` from `packages/db`
-- `bun run --filter @repo/db test`
-- `bun run build`
-- `bun run typecheck`
-- `bun run test`
-- `bun run lint`
-- Representative restricted-role reads, public declaration inspection,
-  formatting, scope, secret, and whitespace checks
-
-Final Phase 5 checks: build 14/14, typecheck 14/14, root test 18/18 Turbo
-tasks, lint 2/2, config 10/10, database 7/7 with 104 assertions, fixtures
-30/30, and API 1/1. The focused repository integration test passed 1/1 with 36
-assertions. Final demo verification retained every approved commerce count and
-zero operations rows.
-
-Phase 6 commands:
-
-- `bun install --frozen-lockfile`
-- `bun run db:verify-demo`
-- `bun run db:verify-access`
-- `bun run --filter @repo/db test`
-- `bun run --filter @repo/evidence test`
-- `bun run --filter @repo/evidence typecheck`
-- `bun run build`
-- `bun run typecheck`
-- `bun run test`
-- `bun run lint`
-- Formatting, package-import, forbidden-field, Prisma-import, migration, and
-  whitespace checks
-
-Final Phase 6 checks: build 14/14, typecheck 14/14, root test 19/19 Turbo
-tasks, and lint 2/2. Evidence tests passed 4/4 with 81 assertions, including
-six live scenarios read through the restricted workflow connection. Database
-regressions passed 7/7 with 104 assertions. Final demo verification retained
-all approved commerce counts and zero operations rows.
-
-Phase 7 commands:
-
-- `bun install --frozen-lockfile`
-- `bun run db:verify-demo`
-- `bun run db:verify-access`
-- `bun run --filter @repo/db test`
-- `bun run --filter @repo/evidence test`
-- `bun run --filter @repo/diagnosis test`
-- `bun run --filter @repo/diagnosis typecheck`
-- `bun run build`
-- `bun run typecheck`
-- `bun run test`
-- `bun run lint`
-- All-nine restricted scenario output, formatting, import-boundary, migration,
-  generated-file, environment-file, and whitespace checks
-
-Final Phase 7 checks: build 14/14, typecheck 14/14, root test 20/20 Turbo
-tasks, and lint 2/2. Readiness tests passed 9/9 with 63 assertions, including
-all nine scenarios through the restricted workflow connection. Corrected
-evidence tests passed 6/6 with 94 assertions, and database regressions passed
-7/7 with 104 assertions. Final demo verification retained all approved
-commerce counts and zero operations rows.
-
-Phase 8 commands:
-
-- `bun install --frozen-lockfile`
-- `bun run db:verify-demo`
-- `bun run db:verify-access`
-- `bun run --filter @repo/db test`
-- `bun run --filter @repo/evidence test`
-- `bun run --filter @repo/diagnosis test`
-- `bun run --filter @repo/diagnosis typecheck`
-- `bun run build`
-- `bun run typecheck`
-- `bun run test`
-- `bun run lint`
-- Formatting, import-boundary, forbidden-clock, migration, generated-file,
-  environment-file, and whitespace checks
-
-Final Phase 8 results are recorded in
-`docs/evaluations/phase-08-diagnosis-engine.md`.
-
-Phase 9 commands:
-
-- `bun install --frozen-lockfile`
-- `bun run db:verify-demo`
-- `bun run db:verify-access`
-- `bun run db:reset-workflow-demo`
-- `bun run --filter @repo/db test`
-- `bun run --filter @repo/evidence test`
-- `bun run --filter @repo/diagnosis test`
-- `bun run --filter @repo/observability test`
-- `bun run --filter @repo/workflow test`
-- `bun run --filter @repo/workflow typecheck`
-- `bun run build`
-- `bun run typecheck`
-- `bun run test`
-- `bun run lint`
-- Formatting, import-boundary, runtime-cleanup, commerce-mutation, migration,
-  generated-file, environment-file, and whitespace checks
-
-Final Phase 9 checks: build 14/14, typecheck 14/14, test 22/22 Turbo tasks,
-and lint 2/2. Database tests passed 10/10, evidence 6/6, diagnosis 19/19,
-observability 2/2, and workflow 12/12. The live workflow persisted nine
-investigations, created seven explicitly requested eligible cases, rejected
-the two non-actionable cases, and passed same-key/client-request/case
-concurrency checks. Final approved commerce counts were unchanged and all five
-operations tables were empty after owner-only cleanup.
-
-Full expected and actual output is recorded in
-`docs/evaluations/phase-09-persistence-escalation.md`.
-
-## Phase status
-
-| Phase | Status          | Evaluation report                                             | Notes                            |
-| ----- | --------------- | ------------------------------------------------------------- | -------------------------------- |
-| 0     | Complete        | `docs/evaluations/phase-00.md`                                | Accepted 2026-07-30              |
-| 1     | Complete        | `docs/evaluations/phase-01.md`                                | Accepted 2026-07-30              |
-| 2     | Complete        | `docs/evaluations/phase-02.md`                                | Accepted 2026-07-30              |
-| 3     | Complete        | `docs/evaluations/phase-03-synthetic-scenarios.md`            | Accepted and merged 2026-07-30   |
-| 4     | Complete        | `docs/evaluations/phase-04-database-hardening.md`             | Accepted and merged 2026-07-30   |
-| 5     | Complete        | `docs/evaluations/phase-05-readonly-commerce-repositories.md` | Accepted and merged as `1ad80d2` |
-| 6     | Complete        | `docs/evaluations/phase-06-evidence-collector.md`             | Accepted and merged as `1fd7887` |
-| 7     | Complete        | `docs/evaluations/phase-07-evidence-readiness.md`             | Accepted and merged as `d7999c7` |
-| 8     | Complete        | `docs/evaluations/phase-08-diagnosis-engine.md`               | Accepted and merged as `8f76a0c` |
-| 9     | Awaiting review | `docs/evaluations/phase-09-persistence-escalation.md`         | Persistent workflow verified     |
-| 10    | Not started     | Not created                                                   | Blocked by phase sequence        |
-| 11    | Not started     | Not created                                                   | Blocked by phase sequence        |
-| 12    | Not started     | Not created                                                   | Blocked by phase sequence        |
-| 13    | Not started     | Not created                                                   | Blocked by phase sequence        |
-
-## Decisions and trade-offs
-
-- 2026-07-30: Store the supplied final plan in the repository as the plan of record.
-- 2026-07-30: Treat this documentation intake as preparation, not Phase 0 completion.
-- 2026-07-30: Preserve the existing starter code until an approved phase explicitly changes it.
-- 2026-07-30: Record the two-schema safety boundary now, while deferring detailed schema approval to Phase 1.
-- 2026-07-30: Deterministic TypeScript owns evidence readiness and diagnosis; the LLM is limited to tool selection and explanation.
-- 2026-07-30: Repository contracts live at the `packages/db` boundary and Prisma stays private there, avoiding a `db`/`evidence` dependency cycle.
-- 2026-07-30: Public package surfaces are named conceptually in Phase 0; concrete signatures wait for the schema and contract phases that own them.
-- 2026-07-30: Reject generic SQL/API tools, commerce mutation capabilities, and speculative production infrastructure.
-- 2026-07-30: Phase 0 workflow contract and package graph accepted by the reviewer.
-- 2026-07-30: `apps/docs` is not required and was removed by the user.
-- 2026-07-30: Preserve the user-initialized `packages/db` Prisma skeleton through Phases 0 and 1; reconcile its schema and generated-client setup only in the phase that owns that implementation.
-- 2026-07-30: Approve zero-or-one current payment, fulfilment, and shipment per order; detailed histories are deferred and absent rows remain distinct from source-read failures.
-- 2026-07-30: Approve human-readable PostgreSQL `text` identifiers (Prisma `String`), native PostgreSQL enums, versioned immutable JSONB evidence, and relational searchable outcomes.
-- 2026-07-30: Approve one human-review case per investigation; retries reuse it and reopening a closed case is out of scope.
-- 2026-07-30: Permit cases only for outcomes requiring human action, including missing/conflicting evidence; `WITHIN_EXPECTED_PROCESSING_TIME` alone is not escalation-eligible.
-- 2026-07-30: Approve cross-schema foreign keys because both schemas share one PostgreSQL database.
-- 2026-07-30: Approve separate schema-owner/migration, demo seed/reset, and workflow-runtime roles; a separate reviewer interface/role remains optional.
-- 2026-07-30: Accept `docs/database/schema-proposal.md` as the database implementation source of truth.
-- 2026-07-30: Reject schema additions for histories, multi-tenancy, event sourcing, partitioning, archival, or external synchronization without a scoped need.
-- 2026-07-30: Reuse the initialized Bun/Turborepo workspace and `packages/db` Prisma setup instead of reinitializing either foundation.
-- 2026-07-30: Standardize application and product-package names under the existing `@repo/*` scope; keep package roots intentionally empty until their owning phases.
-- 2026-07-30: Move `packages/ui` source files from `src/` to `components/` and the package root to satisfy the no-`src/` convention without deleting the starter package.
-- 2026-07-30: Use the Node built-in test runner with the `tsx` loader for the Express smoke test because Bun's Node HTTP compatibility path could not bind an ephemeral port in this environment.
-- 2026-07-30: Make Next.js run TypeScript validation during builds and set the Turbopack root explicitly to the repository root; do not suppress build type errors.
-- 2026-07-30: Require Node.js 20.9.0 or newer because the retained Next.js 16 workspace requires that minimum runtime.
-- 2026-07-30: Keep Phase 2 free of Prisma models, migrations, repositories, domain contracts, MCP tools, AI behavior, and speculative infrastructure.
-- 2026-07-30: Reject reinitializing the repository, replacing the existing web framework, adding a second package manager, or introducing domain behavior before its phase gate.
-- 2026-07-30: Treat the committed Phase 2 foundation as accepted when the client supplied the final Phase 3 prompt and approved scenario matrix.
-- 2026-07-30: The latest Phase 3 prompt supersedes the original phase split by moving the minimum accepted Prisma schema, migration, and seed/reset implementation from Phase 4 into Phase 3.
-- 2026-07-30: Amend inventory identity to `(warehouse_id, sku, source_system)` so `ORD-1050` stores two independently sourced, conflicting quantities instead of constructing a conflict in memory.
-- 2026-07-30: Keep the historical PostgreSQL table name `commerce.inventory_levels`, while its rows and TypeScript contract represent source-specific inventory observations.
-- 2026-07-30: Use a fixed fixture clock (`2026-07-30T12:00:00.000Z`) and a four-hour processing window; never derive fixture behavior from `Date.now()`.
-- 2026-07-30: Use explicit schema-owner/development credentials for migration and non-production seed/reset only. Dedicated seed/reset and runtime roles remain a later hardening gate.
-- 2026-07-30: Keep Prisma private to `packages/db`; `packages/fixtures` composes public transactional demo-data operations after Zod and relationship validation.
-- 2026-07-30: Reject seeding workflow records, automatic startup reset, in-memory-only conflicts, diagnosis rules, MCP tools, LLM behavior, operational fixes, and any commerce mutation outside explicit demo seed/reset.
-- 2026-07-30: Use source-first TypeScript exports for internal Bun workspace packages. Keep the Express production artifact Node-compatible by bundling `apps/api/server.ts` with Bun's Node target before running it with Node.js.
-- 2026-07-30: Accept merged Phase 3 as the database-hardening baseline and keep the Phase 3 migration immutable.
-- 2026-07-30: Reserve `DATABASE_URL` for the schema owner, `DEMO_DATABASE_URL` for `commerce_demo`, and `WORKFLOW_DATABASE_URL` for `commerce_workflow`; credentials remain local and ignored.
-- 2026-07-30: Provision roles/grants only through the explicit owner command. Existing Neon roles are verified and reused because the provider permits creation but denies later password rotation through this owner connection.
-- 2026-07-30: Enforce terminal evidence, escalation, idempotency, evidence immutability, and audit append-only rules in PostgreSQL with deferred constraint triggers where same-transaction creation requires them.
-- 2026-07-30: Keep private validation functions non-executable by restricted roles; narrowly scoped trigger wrappers run as their migration owner.
-- 2026-07-30: Serialize dependency-package tests with Turbo `^test` so database invariant tests complete before fixture reset tests.
-- 2026-07-30: Accept and merge Phase 4 as commit `97fcf99`; Phase 5 starts from that clean database-hardening baseline.
-- 2026-07-30: Follow the final Phase 5 prompt's narrower boundary: implement commerce reads only and defer operations/workflow repositories.
-- 2026-07-30: Expose one `CommerceReadRepository` facade and one cleanup context backed exclusively by `WORKFLOW_DATABASE_URL`; Prisma remains an internal implementation detail.
-- 2026-07-30: Return validated plain records with ISO timestamps, decimal strings, JSON-safe event details, source-native statuses, explicit nulls/empty arrays, and PostgreSQL-native deterministic enum ordering.
-- 2026-07-30: Accept and merge Phase 5 as commit `1ad80d2`; Phase 6 starts from that clean read-repository baseline.
-- 2026-07-30: Collect all eight evidence sources in deterministic order through an injected `CommerceReadRepository`; represent source failures safely and preserve successful null/empty results as evidence facts.
-- 2026-07-30: Mark inventory and warehouse reads as dependency-skipped only when their required identifiers cannot be derived safely. Do not classify missing/conflicting evidence or evaluate freshness in Phase 6.
-- 2026-07-30: Accept and merge Phase 6 as commit `1fd7887`; Phase 7 starts from that clean normalized-evidence baseline.
-- 2026-07-30: Correct warehouse collection to use identifiers from either successful fulfilment or successful inventory evidence and skip only when neither dependency is available.
-- 2026-07-30: Apply the accepted conditional readiness gates in order and use `CONFLICTING > MISSING > COMPLETE` precedence without producing a diagnosis.
-- 2026-07-30: Detect inventory quantity conflicts without selecting, averaging, or freshness-ranking a source. No source-age threshold is accepted, so freshness rejection remains deferred.
-- 2026-07-30: Accept and merge Phase 7 as commit `d7999c7`; Phase 8 starts from that clean readiness baseline.
-- 2026-07-30: Approve synthetic records and the fixed reference time `2026-07-30T12:00:00.000Z` for deterministic scenario evaluation; wall-clock age does not invalidate the demo evidence.
-- 2026-07-30: Use `evidence.collectedAt` and internally valid event chronology for the inclusive four-hour processing rule; diagnosis has no real-time clock dependency.
-- 2026-07-30: Apply the frozen diagnosis precedence: payment, shipment, latest decisive failed event, assigned-warehouse shortage, expected processing window, then cause not determined.
-- 2026-07-30: Return only selected, ordered supporting facts and human-review guidance; diagnosis never persists, mutates commerce, or claims a suggested action occurred.
-- 2026-07-30: Accept and merge Phase 8 as
-  `8f76a0c8a750db6f006635a7f843b34de6944bec`; Phase 9 starts from that clean
-  deterministic-diagnosis baseline.
-- 2026-07-30: Preserve the exact `ORD-1046` inventory-verification guidance,
-  but use generic commerce-evidence guidance for every other valid missing
-  evidence result.
-- 2026-07-30: Implement Phase 9 without a migration or grant change; the
-  accepted operations schema, deferred triggers, and runtime permissions were
-  sufficient.
-- 2026-07-30: Investigation persists its terminal result, immutable evidence,
-  safe audits, and idempotency response atomically; it never creates a review
-  case automatically.
-- 2026-07-30: Human-review escalation accepts only investigation ID and
-  idempotency key, derives every case field from the stored terminal outcome,
-  and reuses one case per investigation.
-- 2026-07-30: Store and replay the exact response per idempotency key; a second
-  key for the same client request or case receives an explicitly stored reuse
-  response without duplicating the logical resource.
-- 2026-07-30: Keep demo workflow cleanup in an owner-only, non-production
-  testing entry point that truncates only the five operations tables together;
-  runtime packages cannot invoke it.
-
-## Known limitations
-
-- `apps/api` exposes only the health endpoint; MCP transport, trace routes,
-  workflow composition, and database access are intentionally absent.
-- `apps/web` is a static non-functional trace-viewer shell and has no API or database integration.
-- `packages/mcp`, `agent`, and `evaluations` remain empty package roots.
-- The persistent workflow is a package API only; no MCP, Express, scheduled,
-  startup, or browser entry point invokes it yet.
-- No wall-clock source-age expiry policy exists; source timestamps remain trace metadata and processing chronology uses only `evidence.collectedAt`.
-- The workflow Prisma client is constructed only inside `packages/db` from
-  `WORKFLOW_DATABASE_URL`; the API does not import the workflow factory or load
-  any database URL.
-- Neon does not allow the configured schema owner to rotate the passwords of existing child roles. Idempotent access setup therefore reapplies grants and verifies existing credentials instead of altering existing roles.
-- `db:seed` expects an empty migrated demo data set; use the explicit `db:reset-demo` helper for repeatable restoration.
-- Demo reset is intentionally commerce-only and will fail rather than delete persisted workflow evidence that references an approved order.
-- `db:reset-workflow-demo` is intentionally destructive to the five operations
-  demo tables, schema-owner-only, blocked in production, and separate from
-  commerce reset/runtime behavior.
-- Local development requires Bun 1.3.2 and Node.js 20.9.0 or newer.
-- Local TCP smoke tests and the Next.js production build require an environment that permits loopback listeners and worker creation.
-- Full copy-paste prompts for Phases 0-13 are not stored here. The repository currently stores the final plan and the prompt-use protocol only.
-- A separate human-reviewer role remains out of scope; `commerce_workflow` cannot update review cases.
-
-## Instructions for coding agents
-
-- Read this file, the root `README.md`, the final plan, and `docs/plans/how-to-use-phase-prompts.md` before editing.
-- Inspect the repository and current working tree before making changes.
-- Implement only the explicitly requested phase.
-- Do not continue automatically to the next phase.
-- Do not silently change permanent decisions, safety boundaries, the accepted schema, or dependency direction.
-- The Phase 1 schema is accepted. Any later deviation must be documented and reviewed before migration changes.
-- Run every reported command, inspect its key output, and report expected versus actual results honestly.
-- Before stopping a phase, update this file, the README phase table, and `docs/evaluations/phase-XX.md`.
-- In every phase handoff, list every file updated during that phase, grouped by app/package/documentation area.
-- Never claim a command, guardrail, workflow, deployment, or operational action was verified unless it was actually exercised.
+- exact five tools, inputs, outputs, annotations, and side effects;
+- stable SDK version and transport decision;
+- Host validation and lifecycle behavior;
+- all nine direct MCP results;
+- operations count progression;
+- retry, reuse, read, invalid-input, forbidden-tool, and missing-ID results;
+- commerce before/after proof and final cleanup;
+- static checks and live evaluation command results;
+- confirmation that no LLM SDK/key/provider was added;
+- files changed, lockfile/migration/grant/env changes, and proposed merge details.

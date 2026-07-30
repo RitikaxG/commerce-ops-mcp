@@ -1,8 +1,8 @@
 # Package Graph
 
-## Status and scope
+## Status
 
-This Phase 0 document freezes dependency direction and ownership. Phase 2 scaffolded every listed application/package boundary. Phase 3 added shared scenario/fixture schemas, typed fixtures, pure validation, and a Prisma-private transactional demo-data boundary. Phase 5 added plain commerce source-record contracts and a restricted read-only repository facade. Phase 6 added normalized evidence contracts and the collector. Phase 7 added the pure readiness/conflict evaluator. Phase 8 added the pure deterministic diagnosis engine. Phase 9 adds the persistent workflow, scoped operations repository, safe audit builders, and read-only case/trace queries. MCP, agent behavior, HTTP routes, and the web viewer remain deferred.
+Phases 0 through 9 implement the deterministic commerce-operations workflow. Phase 10 adds the remote MCP adapter, Streamable HTTP API composition, strict MCP contracts, and direct protocol evaluation. Actual LLM/AI-host behavior remains Phase 11 work.
 
 ## Dependency direction
 
@@ -13,18 +13,17 @@ flowchart TD
   Web --> Schemas
 
   API --> Config["packages/config"]
-  API --> DB["packages/db"]
   API --> MCP["packages/mcp"]
-  API --> Obs["packages/observability"]
+  API --> Workflow["packages/workflow"]
 
   MCP --> Schemas["packages/schemas"]
-  MCP --> Workflow["packages/workflow"]
+  MCP --> Workflow
 
   Workflow --> Schemas
-  Workflow --> DB
+  Workflow --> DB["packages/db"]
   Workflow --> Evidence["packages/evidence"]
   Workflow --> Diagnosis["packages/diagnosis"]
-  Workflow --> Obs
+  Workflow --> Obs["packages/observability"]
 
   Evidence --> Schemas
   Evidence --> DB
@@ -39,63 +38,59 @@ flowchart TD
   Agent["packages/agent"] --> Schemas
 
   Evaluations["packages/evaluations"] --> Fixtures
-  Evaluations --> Agent
   Evaluations --> MCP
   Evaluations --> Workflow
+  Evaluations --> DB
 
   DB --> Commerce[("PostgreSQL commerce<br/>runtime SELECT only")]
   DB --> Operations[("PostgreSQL operations<br/>scoped workflow writes")]
 ```
 
-The diagram shows the primary allowed relationships. The ownership table below is authoritative for allowed imports. Arrows mean "may depend on or call"; the browser-to-API arrow is an HTTP relationship, not a source-code import.
+Arrows mean source-code dependency unless explicitly labelled HTTP. Browser code never imports API or database runtime code.
 
-## Ownership and allowed imports
+## Ownership
 
-| Component                | Owns                                                                                         | May import                                                |
-| ------------------------ | -------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `apps/api`               | Express composition, `/health`, `/mcp`, and read-only trace/investigation/case routes        | `config`, `db`, `mcp`, `observability`                    |
-| `apps/web`               | Minimal Tailwind read-only trace viewer                                                      | Shared response types from `schemas`; API over HTTP       |
-| `packages/config`        | Shared TypeScript, environment, and test configuration                                       | No domain/runtime package                                 |
-| `packages/schemas`       | Zod schemas and public protocol/domain types                                                 | No infrastructure package                                 |
-| `packages/db`            | Prisma, migrations, database clients, transactions, repository contracts and implementations | `config`, `schemas`                                       |
-| `packages/fixtures`      | Typed synthetic cases, fixture validation, and explicit seed/reset helpers                   | `schemas`, `db`                                           |
-| `packages/evidence`      | Evidence collection, source normalization, source-read metadata, and source timestamps       | `schemas`, repository contracts from `db`                 |
-| `packages/diagnosis`     | Evidence readiness/conflict gate and deterministic diagnosis rules                           | `schemas` only                                            |
-| `packages/observability` | Internal trace event vocabulary, safe summaries, and trace queries                           | `schemas`, repository contracts from `db`                 |
-| `packages/workflow`      | Investigation and escalation orchestration, persistence, idempotency, and audit coordination | `schemas`, `db`, `evidence`, `diagnosis`, `observability` |
-| `packages/mcp`           | Approved tool registration, descriptions, input/output adapters, and MCP error mapping       | `schemas`, `workflow`                                     |
-| `packages/agent`         | Host-neutral tool-use/explanation/refusal instructions and model-evaluation helpers          | `schemas`                                                 |
-| `packages/evaluations`   | Scenario, guardrail, contract, and model evaluations                                         | Runtime packages under test, `fixtures`, and `agent`      |
+| Component | Owns | May import |
+| --- | --- | --- |
+| `apps/api` | Express composition, `/health`, `/mcp`, Host validation, MCP transport lifecycle, graceful shutdown | `config`, `mcp`, `workflow` |
+| `apps/web` | Later minimal read-only trace viewer | shared schemas and API over HTTP |
+| `packages/config` | Environment and shared configuration parsing | no domain runtime package |
+| `packages/schemas` | Public Zod and TypeScript contracts | no infrastructure package |
+| `packages/db` | Prisma, migrations, database clients, transactions, repository contracts and implementations | `config`, `schemas` |
+| `packages/fixtures` | Frozen scenarios, fixture validation, explicit seed/reset/verify | `schemas`, `db` |
+| `packages/evidence` | Evidence collection and source-read metadata | `schemas`, repository contracts from `db` |
+| `packages/diagnosis` | Readiness, conflicts, deterministic diagnosis | `schemas` only |
+| `packages/observability` | Safe audit builders and trace queries | `schemas`, repository contracts from `db` |
+| `packages/workflow` | Investigation/escalation orchestration, persistence, idempotency, audit coordination, demo catalog | `schemas`, `db`, `evidence`, `diagnosis`, `observability` |
+| `packages/mcp` | Exact five tool registrations, descriptions, annotations, adapters, safe error mapping, stateless transport handler | `schemas`, `workflow`, official MCP SDK |
+| `packages/evaluations` | Direct MCP protocol evaluation and later model evaluations | top-level runtime packages under test, `fixtures`, `db/testing` |
+| `packages/agent` | Phase 11 provider-neutral model instructions and evaluation helpers | `schemas` |
 
-## Planned public surfaces
+## Implemented Phase 10 surface
 
-These names describe ownership and dependency seams. Phase 9 implements the
-workflow, operations persistence, audit, and trace surfaces listed below;
-later MCP, agent, HTTP, and viewer signatures remain conceptual.
+`packages/mcp` exposes:
 
-| Owner           | Conceptual public surface                                                                                            |
-| --------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `schemas`       | Zod scenario, fixture, evidence, decision, workflow, escalation, case, audit, and trace contracts                    |
-| `db`            | Transactional demo operations, read-only commerce access, and narrow atomic operations-workflow persistence          |
-| `fixtures`      | Frozen scenario manifest, typed commerce evidence, fixed clock, pure validation, and explicit seed/reset composition |
-| `evidence`      | `EvidenceCollector`, `EvidenceClock`, and `createEvidenceCollector({ commerce, clock? })`                            |
-| `diagnosis`     | `EvidenceReadinessEvaluator`, `DiagnosisEngine`, and their factories                                                 |
-| `observability` | Pure safe audit-event builders and the read-only investigation trace reader                                          |
-| `workflow`      | `CommerceOperationsWorkflow` and its dependency-injected/runtime factories                                           |
-| `mcp`           | Registration for the five approved domain tools                                                                      |
-| `agent`         | Host-neutral instructions and evaluation case adapters                                                               |
+```ts
+createCommerceOperationsMcpServer({ workflow })
+handleCommerceOperationsMcpHttpRequest(request, response, { workflow })
+MCP_TOOL_NAMES
+```
 
-Rules for later public APIs:
+The server registers exactly:
 
-- Validate untrusted/external values with Zod contracts from `packages/schemas`.
-- Export supported APIs from package roots; do not expose arbitrary internal paths.
-- Do not expose the Prisma client outside `packages/db`.
-- Do not put business rules in repositories, MCP adapters, applications, or the LLM.
-- Do not add a generic utility/package dependency merely to avoid choosing an owner.
+- `list_demo_cases`
+- `investigate_order_exception`
+- `create_human_review_escalation`
+- `get_review_case`
+- `get_investigation_trace`
+
+`apps/api` mounts the stateless Streamable HTTP endpoint at `/mcp`. It lazily creates one workflow context, validates the Host header before MCP processing, limits JSON bodies, maps malformed transport requests safely, and disconnects the workflow context during shutdown.
+
+`packages/evaluations` owns the explicit serial evaluator. It builds and starts the real API, connects through the official MCP client and `StreamableHTTPClientTransport`, runs all nine scenarios, verifies persistence and idempotency, tests forbidden tools and invalid inputs, compares commerce before/after, and clears operations rows in `finally`.
 
 ## Acyclic layering
 
-The graph has this topological direction:
+The topological direction is:
 
 1. `config`, `schemas`
 2. `db`, `diagnosis`, `agent`
@@ -105,44 +100,17 @@ The graph has this topological direction:
 6. `apps/api`
 7. `apps/web` over HTTP and `evaluations` as top-level consumers
 
-No lower layer imports a higher layer. In particular:
+Permanent rules:
 
-- packages never import application code;
-- `db` does not import `evidence`, `diagnosis`, `workflow`, or `mcp`;
-- `evidence` consumes repository contracts without importing Prisma;
-- `diagnosis` imports schemas only;
-- `workflow` does not import MCP or application code;
-- runtime packages never import `evaluations`; and
-- `apps/web` never accesses PostgreSQL directly.
+- packages never import applications;
+- Prisma imports remain inside `packages/db`;
+- diagnosis imports schemas only;
+- workflow never imports MCP or application code;
+- MCP never imports DB, fixtures, evidence, diagnosis internals, observability internals, agent, evaluations, or applications;
+- runtime packages never import evaluations;
+- web code never accesses PostgreSQL directly;
+- business rules are not duplicated in repositories, MCP adapters, API routes, or model instructions.
 
-## Current repository differences
+## Phase 11 handoff
 
-| Current state                                                                    | Contract treatment                                                                                |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `apps/api` provides Express composition/health                                   | MCP, trace routes, workflow composition, and database access remain deferred.                     |
-| `apps/web` is a static Tailwind shell                                            | It remains secondary and has no API/database integration before the trace phase.                  |
-| `packages/ui` has no `src/` directory                                            | Starter components are retained but are not part of the product-domain graph.                     |
-| `packages/db` owns Prisma, demo data, commerce reads, and operations persistence | Prisma stays private; runtime repositories use only the restricted workflow connection.           |
-| `packages/schemas` owns all public workflow Zod contracts                        | Public contracts remain infrastructure-independent and expose no Prisma types.                    |
-| `packages/fixtures` depends on `schemas` and `db`                                | It validates before invoking the explicit seed/reset boundary; `db` never imports `fixtures`.     |
-| `packages/evidence` depends on `schemas` and `db`                                | It consumes only the repository interface from `db`; no Prisma or database client is imported.    |
-| `packages/diagnosis` depends only on `schemas` at runtime                        | Readiness and diagnosis are deterministic and pure; test-only packages exercise the live chain.   |
-| MCP, agent, and evaluation package roots remain empty                            | They deliberately export nothing until the phase that owns their contracts and behavior.          |
-| `@repo/config` exports API/database environment parsing                          | Database URL validation is shared, while credentials remain local and ignored.                    |
-| Internal workspace packages export TypeScript source                             | Bun resolves package-root source directly; generated `dist` files are not workspace entry points. |
-| `apps/api` produces a bundled Node-targeted artifact                             | Bun performs the build, while Node.js remains the Express production runtime.                     |
-
-`apps/docs` was removed by the user after Phase 0 review because it has no product responsibility.
-
-## Rejected dependency alternatives
-
-- App code shared by importing from `apps/*` into packages.
-- Prisma imports in `diagnosis`, `evidence`, `workflow`, MCP adapters, or the web app.
-- Repository interfaces owned by `evidence` when that would force `db` to import upward and create a cycle.
-- Direct database access from `apps/web`.
-- Business-rule duplication across MCP adapters, routes, and model instructions.
-- Redis, queues, Kafka, RAG, multi-agent orchestration, or event sourcing in the initial graph.
-
-## Change control
-
-Later phases may refine names or split an interface when implementation evidence requires it. Any changed dependency direction, new package, or expanded public surface must be recorded in `AGENTS.md` and the relevant phase evaluation report before acceptance.
+The future AI host connects to `/mcp`, discovers the five tools, selects and orders them, and explains strict structured results. Phase 11 may add one provider implementation behind a provider-neutral interface plus model-backed tool-selection, explanation, refusal, and adversarial evaluations. It must not move business diagnosis or escalation logic into the model.

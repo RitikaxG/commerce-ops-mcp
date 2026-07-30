@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import type { Server } from "node:http";
+import { request as httpRequest, type Server } from "node:http";
 import { test } from "node:test";
 
 import type {
@@ -28,6 +28,42 @@ const unusedWorkflow: CommerceOperationsWorkflow = {
   },
 };
 
+async function postWithHost(
+  port: number,
+  hostHeader: string,
+): Promise<{ status: number; body: unknown }> {
+  return new Promise((resolve, reject) => {
+    const request = httpRequest(
+      {
+        hostname: "127.0.0.1",
+        port,
+        path: "/mcp",
+        method: "POST",
+        headers: {
+          accept: "application/json, text/event-stream",
+          "content-type": "application/json",
+          host: hostHeader,
+        },
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        response.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf8");
+          resolve({
+            status: response.statusCode ?? 0,
+            body: JSON.parse(text) as unknown,
+          });
+        });
+      },
+    );
+    request.on("error", reject);
+    request.end("{}");
+  });
+}
+
 test("API preserves health and safely mounts stateless Streamable HTTP MCP", async () => {
   let disconnects = 0;
   const context: CommerceOperationsWorkflowContext = {
@@ -53,6 +89,7 @@ test("API preserves health and safely mounts stateless Streamable HTTP MCP", asy
 
     const health = await fetch(`${baseUrl}/health`);
     assert.equal(health.status, 200);
+    assert.equal(health.headers.get("x-powered-by"), null);
     assert.deepEqual(await health.json(), { status: "ok" });
 
     const initialized = await fetch(`${baseUrl}/mcp`, {
@@ -81,16 +118,23 @@ test("API preserves health and safely mounts stateless Streamable HTTP MCP", asy
       "commerce-operations-investigator",
     );
 
-    const invalidHost = await fetch(`${baseUrl}/mcp`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        host: "disallowed.example",
-      },
-      body: "{}",
-    });
+    for (const method of ["GET", "DELETE"] as const) {
+      const unsupported = await fetch(`${baseUrl}/mcp`, { method });
+      assert.equal(unsupported.status, 405);
+      assert.equal(unsupported.headers.get("allow"), "POST");
+      assert.deepEqual(await unsupported.json(), {
+        jsonrpc: "2.0",
+        error: { code: -32_000, message: "Method not allowed." },
+        id: null,
+      });
+    }
+
+    const invalidHost = await postWithHost(
+      address.port,
+      "disallowed.example",
+    );
     assert.equal(invalidHost.status, 403);
-    assert.deepEqual(await invalidHost.json(), {
+    assert.deepEqual(invalidHost.body, {
       error: "MCP_HOST_NOT_ALLOWED",
     });
 

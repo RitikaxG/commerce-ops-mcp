@@ -31,16 +31,18 @@ export const McpToolErrorCodeSchema = z.union([
 
 export const McpToolErrorMessageSchema = z.enum(MCP_SAFE_ERROR_MESSAGES);
 
+export const McpToolErrorSchema = z
+  .object({
+    code: McpToolErrorCodeSchema,
+    message: McpToolErrorMessageSchema,
+  })
+  .strict();
+
 export const McpToolFailureSchema = z
   .object({
     schemaVersion: z.literal(1),
     ok: z.literal(false),
-    error: z
-      .object({
-        code: McpToolErrorCodeSchema,
-        message: McpToolErrorMessageSchema,
-      })
-      .strict(),
+    error: McpToolErrorSchema,
     commerceStateChanged: z.literal(false),
   })
   .strict();
@@ -98,6 +100,76 @@ export function createMcpToolSuccessSchema<ResultSchema extends z.ZodType>(
     .strict();
 }
 
+/**
+ * MCP outputSchema must describe a top-level object. A discriminated Zod union
+ * is precise in TypeScript but is not transported consistently by the v1 SDK.
+ * This object-compatible schema retains the same success/failure invariants via
+ * superRefine, while handlers still parse the exact concrete envelope before
+ * returning structuredContent.
+ */
+export function createMcpToolOutputSchema<ResultSchema extends z.ZodType>(
+  resultSchema: ResultSchema,
+) {
+  return z
+    .object({
+      schemaVersion: z.literal(1),
+      ok: z.boolean(),
+      result: resultSchema.optional(),
+      error: McpToolErrorSchema.optional(),
+      commerceStateChanged: z.literal(false).optional(),
+    })
+    .strict()
+    .superRefine((value, context) => {
+      if (value.ok) {
+        if (value.result === undefined) {
+          context.addIssue({
+            code: "custom",
+            path: ["result"],
+            message: "Successful MCP output requires result",
+          });
+        }
+        if (value.error !== undefined) {
+          context.addIssue({
+            code: "custom",
+            path: ["error"],
+            message: "Successful MCP output cannot include error",
+          });
+        }
+        if (value.commerceStateChanged !== undefined) {
+          context.addIssue({
+            code: "custom",
+            path: ["commerceStateChanged"],
+            message:
+              "Successful MCP envelope must keep commerce state on its result",
+          });
+        }
+        return;
+      }
+
+      if (value.result !== undefined) {
+        context.addIssue({
+          code: "custom",
+          path: ["result"],
+          message: "Failed MCP output cannot include result",
+        });
+      }
+      if (value.error === undefined) {
+        context.addIssue({
+          code: "custom",
+          path: ["error"],
+          message: "Failed MCP output requires error",
+        });
+      }
+      if (value.commerceStateChanged !== false) {
+        context.addIssue({
+          code: "custom",
+          path: ["commerceStateChanged"],
+          message: "Failed MCP output must preserve commerce state",
+        });
+      }
+    });
+}
+
 export const ListDemoCasesToolSuccessSchema = createMcpToolSuccessSchema(
   ListDemoCasesResultSchema,
 );
@@ -110,6 +182,18 @@ export const GetReviewCaseToolSuccessSchema =
 export const GetInvestigationTraceToolSuccessSchema =
   createMcpToolSuccessSchema(InvestigationTraceSchema);
 
+export const ListDemoCasesToolOutputSchema = createMcpToolOutputSchema(
+  ListDemoCasesResultSchema,
+);
+export const InvestigateOrderExceptionToolOutputSchema =
+  createMcpToolOutputSchema(InvestigationWorkflowResultSchema);
+export const CreateHumanReviewEscalationToolOutputSchema =
+  createMcpToolOutputSchema(HumanReviewEscalationResultSchema);
+export const GetReviewCaseToolOutputSchema =
+  createMcpToolOutputSchema(ReviewCaseResultSchema);
+export const GetInvestigationTraceToolOutputSchema =
+  createMcpToolOutputSchema(InvestigationTraceSchema);
+
 export type McpToolErrorCode = z.infer<typeof McpToolErrorCodeSchema>;
 export type McpToolFailure = z.infer<typeof McpToolFailureSchema>;
 export type DemoCaseCategory = z.infer<typeof DemoCaseCategorySchema>;
@@ -121,3 +205,4 @@ export type McpToolSuccess<Result> = {
   ok: true;
   result: Result;
 };
+export type McpToolOutput<Result> = McpToolSuccess<Result> | McpToolFailure;

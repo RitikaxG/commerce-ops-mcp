@@ -3,14 +3,19 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import {
   CreateHumanReviewEscalationInputSchema,
+  CreateHumanReviewEscalationToolOutputSchema,
   CreateHumanReviewEscalationToolSuccessSchema,
   GetInvestigationTraceInputSchema,
+  GetInvestigationTraceToolOutputSchema,
   GetInvestigationTraceToolSuccessSchema,
   GetReviewCaseInputSchema,
+  GetReviewCaseToolOutputSchema,
   GetReviewCaseToolSuccessSchema,
   InvestigateOrderExceptionInputSchema,
+  InvestigateOrderExceptionToolOutputSchema,
   InvestigateOrderExceptionToolSuccessSchema,
   ListDemoCasesInputSchema,
+  ListDemoCasesToolOutputSchema,
   ListDemoCasesToolSuccessSchema,
   McpToolFailureSchema,
 } from "@repo/schemas";
@@ -125,7 +130,7 @@ export function createCommerceOperationsMcpServer(
       description:
         "Lists the nine approved synthetic order IDs and navigation categories without reading evidence or writing records. This catalog is for demo discovery only; call investigate_order_exception for the authoritative result.",
       inputSchema: ListDemoCasesInputSchema,
-      outputSchema: ListDemoCasesToolSuccessSchema,
+      outputSchema: ListDemoCasesToolOutputSchema,
       annotations: readAnnotations,
     },
     async () =>
@@ -141,7 +146,7 @@ export function createCommerceOperationsMcpServer(
       description:
         "Reads commerce evidence, applies the deterministic workflow, and persists an investigation, immutable evidence snapshot, idempotency response, and append-only audit events in operations records. It does not create a human-review case and always reports commerceStateChanged=false.",
       inputSchema: InvestigateOrderExceptionInputSchema,
-      outputSchema: InvestigateOrderExceptionToolSuccessSchema,
+      outputSchema: InvestigateOrderExceptionToolOutputSchema,
       annotations: workflowWriteAnnotations,
     },
     async (input) =>
@@ -157,7 +162,7 @@ export function createCommerceOperationsMcpServer(
       description:
         "Creates or reuses one persistent human-review case derived only from a stored eligible investigation. It writes escalation, idempotency, and append-only audit records but never changes commerce state and always reports commerceStateChanged=false.",
       inputSchema: CreateHumanReviewEscalationInputSchema,
-      outputSchema: CreateHumanReviewEscalationToolSuccessSchema,
+      outputSchema: CreateHumanReviewEscalationToolOutputSchema,
       annotations: workflowWriteAnnotations,
     },
     async (input) =>
@@ -173,7 +178,7 @@ export function createCommerceOperationsMcpServer(
       description:
         "Returns one persisted human-review case and its source investigation without writing records or changing commerce state.",
       inputSchema: GetReviewCaseInputSchema,
-      outputSchema: GetReviewCaseToolSuccessSchema,
+      outputSchema: GetReviewCaseToolOutputSchema,
       annotations: readAnnotations,
     },
     async (input) =>
@@ -189,7 +194,7 @@ export function createCommerceOperationsMcpServer(
       description:
         "Returns the persisted investigation, immutable evidence snapshot, and ordered safe audit events without writing records or changing commerce state.",
       inputSchema: GetInvestigationTraceInputSchema,
-      outputSchema: GetInvestigationTraceToolSuccessSchema,
+      outputSchema: GetInvestigationTraceToolOutputSchema,
       annotations: readAnnotations,
     },
     async (input) =>
@@ -201,8 +206,7 @@ export function createCommerceOperationsMcpServer(
   return server;
 }
 
-export interface CommerceOperationsMcpHttpRequest
-  extends IncomingMessage {
+export interface CommerceOperationsMcpHttpRequest extends IncomingMessage {
   body?: unknown;
 }
 

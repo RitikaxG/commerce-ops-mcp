@@ -37,81 +37,107 @@ export const EvidenceSourceReadErrorCodeSchema = z.enum([
   "WAREHOUSE_IDS_UNAVAILABLE",
 ]);
 
-export const EvidenceSourceReadSchema = z
-  .object({
-    source: EvidenceSourceNameSchema,
-    status: EvidenceSourceReadStatusSchema,
-    readAt: TimestampSchema,
-    latestSourceTimestamp: TimestampSchema.nullable(),
-    recordCount: z.number().int().nonnegative(),
-    errorCode: EvidenceSourceReadErrorCodeSchema.nullable(),
-  })
-  .strict()
-  .superRefine((read, context) => {
-    if (read.status === "SUCCEEDED") {
-      if (read.errorCode !== null) {
-        context.addIssue({
-          code: "custom",
-          message: "A successful source read cannot contain an error code",
-          path: ["errorCode"],
-        });
-      }
-      return;
-    }
+const EvidenceSourceReadShape = {
+  source: EvidenceSourceNameSchema,
+  status: EvidenceSourceReadStatusSchema,
+  readAt: TimestampSchema,
+  latestSourceTimestamp: TimestampSchema.nullable(),
+  recordCount: z.number().int().nonnegative(),
+  errorCode: EvidenceSourceReadErrorCodeSchema.nullable(),
+};
 
-    if (read.recordCount !== 0) {
-      context.addIssue({
-        code: "custom",
-        message: "A failed or skipped source read cannot contain records",
-        path: ["recordCount"],
-      });
-    }
-    if (read.latestSourceTimestamp !== null) {
-      context.addIssue({
-        code: "custom",
-        message:
-          "A failed or skipped source read cannot contain a source timestamp",
-        path: ["latestSourceTimestamp"],
-      });
-    }
-    if (read.errorCode === null) {
-      context.addIssue({
-        code: "custom",
-        message: "A failed or skipped source read requires a safe error code",
-        path: ["errorCode"],
-      });
-    }
-    if (read.status === "FAILED" && read.errorCode !== "SOURCE_READ_FAILED") {
-      context.addIssue({
-        code: "custom",
-        message: "A failed source read must use SOURCE_READ_FAILED",
-        path: ["errorCode"],
-      });
-    }
-    if (
-      read.status === "SKIPPED" &&
-      read.errorCode !== "ORDER_ITEMS_UNAVAILABLE" &&
-      read.errorCode !== "WAREHOUSE_IDS_UNAVAILABLE"
-    ) {
-      context.addIssue({
-        code: "custom",
-        message: "A skipped source read requires a dependency error code",
-        path: ["errorCode"],
-      });
-    }
-  });
+type EvidenceSourceReadValue = z.infer<
+  ReturnType<typeof createEvidenceSourceReadObjectSchema>
+>;
 
+function validateEvidenceSourceRead(
+  read: EvidenceSourceReadValue,
+  context: z.RefinementCtx,
+): void {
+  if (read.status === "SUCCEEDED") {
+    if (read.errorCode !== null) {
+      context.addIssue({
+        code: "custom",
+        message: "A successful source read cannot contain an error code",
+        path: ["errorCode"],
+      });
+    }
+    return;
+  }
+
+  if (read.recordCount !== 0) {
+    context.addIssue({
+      code: "custom",
+      message: "A failed or skipped source read cannot contain records",
+      path: ["recordCount"],
+    });
+  }
+  if (read.latestSourceTimestamp !== null) {
+    context.addIssue({
+      code: "custom",
+      message:
+        "A failed or skipped source read cannot contain a source timestamp",
+      path: ["latestSourceTimestamp"],
+    });
+  }
+  if (read.errorCode === null) {
+    context.addIssue({
+      code: "custom",
+      message: "A failed or skipped source read requires a safe error code",
+      path: ["errorCode"],
+    });
+  }
+  if (read.status === "FAILED" && read.errorCode !== "SOURCE_READ_FAILED") {
+    context.addIssue({
+      code: "custom",
+      message: "A failed source read must use SOURCE_READ_FAILED",
+      path: ["errorCode"],
+    });
+  }
+  if (
+    read.status === "SKIPPED" &&
+    read.errorCode !== "ORDER_ITEMS_UNAVAILABLE" &&
+    read.errorCode !== "WAREHOUSE_IDS_UNAVAILABLE"
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "A skipped source read requires a dependency error code",
+      path: ["errorCode"],
+    });
+  }
+}
+
+function createEvidenceSourceReadObjectSchema() {
+  return z.object(EvidenceSourceReadShape).strict();
+}
+
+export const EvidenceSourceReadSchema =
+  createEvidenceSourceReadObjectSchema().superRefine(validateEvidenceSourceRead);
+
+function createOrderedEvidenceSourceReadSchema<
+  Source extends (typeof EVIDENCE_SOURCE_NAMES)[number],
+>(source: Source) {
+  return z
+    .object({
+      ...EvidenceSourceReadShape,
+      source: z.literal(source),
+    })
+    .strict()
+    .superRefine(validateEvidenceSourceRead);
+}
+
+// Avoid Zod intersections here. The MCP SDK converts output schemas to JSON
+// Schema, and an intersection of two strict objects produces conflicting
+// additionalProperties constraints for otherwise valid source-read records.
 const OrderedSourceReadsSchema = z.tuple([
-  EvidenceSourceReadSchema.and(z.object({ source: z.literal("ORDER") })),
-  EvidenceSourceReadSchema.and(z.object({ source: z.literal("ORDER_ITEMS") })),
-  EvidenceSourceReadSchema.and(z.object({ source: z.literal("PAYMENT") })),
-  EvidenceSourceReadSchema.and(z.object({ source: z.literal("FULFILMENT") })),
-  EvidenceSourceReadSchema.and(
-    z.object({ source: z.literal("FULFILMENT_EVENTS") }),
-  ),
-  EvidenceSourceReadSchema.and(z.object({ source: z.literal("SHIPMENT") })),
-  EvidenceSourceReadSchema.and(z.object({ source: z.literal("INVENTORY") })),
-  EvidenceSourceReadSchema.and(z.object({ source: z.literal("WAREHOUSES") })),
+  createOrderedEvidenceSourceReadSchema("ORDER"),
+  createOrderedEvidenceSourceReadSchema("ORDER_ITEMS"),
+  createOrderedEvidenceSourceReadSchema("PAYMENT"),
+  createOrderedEvidenceSourceReadSchema("FULFILMENT"),
+  createOrderedEvidenceSourceReadSchema("FULFILMENT_EVENTS"),
+  createOrderedEvidenceSourceReadSchema("SHIPMENT"),
+  createOrderedEvidenceSourceReadSchema("INVENTORY"),
+  createOrderedEvidenceSourceReadSchema("WAREHOUSES"),
 ]);
 
 export const NormalizedOrderEvidenceSchema = z
