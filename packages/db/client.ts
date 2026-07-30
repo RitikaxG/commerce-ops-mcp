@@ -1,5 +1,8 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { parseDatabaseEnvironment } from "@repo/config";
+import {
+  parseDemoDatabaseEnvironment,
+  parseSchemaOwnerDatabaseEnvironment,
+} from "@repo/config";
 import { config } from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,10 +23,14 @@ function loadDatabaseEnvironment(): void {
   });
 }
 
-export function createDatabaseClient(): PrismaClient {
-  loadDatabaseEnvironment();
-  const { databaseUrl } = parseDatabaseEnvironment(process.env);
-  const connectionUrl = new URL(databaseUrl);
+function createClient(
+  connectionString: string,
+  transactionOptions?: {
+    maxWait: number;
+    timeout: number;
+  },
+): PrismaClient {
+  const connectionUrl = new URL(connectionString);
 
   // node-postgres currently treats `require` as full certificate verification
   // but warns that its next major will weaken that alias. Preserve the current
@@ -34,5 +41,22 @@ export function createDatabaseClient(): PrismaClient {
 
   const adapter = new PrismaPg({ connectionString: connectionUrl.toString() });
 
-  return new PrismaClient({ adapter });
+  return new PrismaClient({ adapter, transactionOptions });
+}
+
+export function createOwnerDatabaseClient(): PrismaClient {
+  loadDatabaseEnvironment();
+  const { databaseUrl } = parseSchemaOwnerDatabaseEnvironment(process.env);
+
+  return createClient(databaseUrl);
+}
+
+export function createDemoDatabaseClient(): PrismaClient {
+  loadDatabaseEnvironment();
+  const { demoDatabaseUrl } = parseDemoDatabaseEnvironment(process.env);
+
+  return createClient(demoDatabaseUrl, {
+    maxWait: 15_000,
+    timeout: 30_000,
+  });
 }

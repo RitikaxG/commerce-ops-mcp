@@ -4,9 +4,9 @@ This repository will implement a bounded operations workflow that explains why a
 
 ## Current state
 
-Phases 0, 1, and 2 are complete. Phase 3 has implemented the approved synthetic scenario contract, validated fixtures, PostgreSQL migration, and explicit seed/reset flow on `phase/03-approved-synthetic-scenarios`; it is awaiting review.
+Phases 0 through 3 are complete. Phase 4 has implemented and verified the PostgreSQL safety boundary on `phase/04-database-hardening`; it is awaiting review.
 
-The existing Bun/Turborepo and Prisma setup was reused rather than reinitialized. The repository builds and typechecks, the Express API returns `{"status":"ok"}` from `GET /health`, and the web application remains a static Tailwind trace-viewer shell. PostgreSQL now contains the validated nine-order commerce seed and empty workflow tables. No investigation workflow, diagnosis engine, AI behavior, or MCP implementation exists yet.
+The existing Bun/Turborepo and Prisma setup was reused rather than reinitialized. PostgreSQL contains the validated nine-order commerce seed and empty workflow tables. Separate owner, demo, and workflow roles now enforce the database boundary, while the Express API remains database-free. No repository layer, investigation workflow, diagnosis engine, AI behavior, or MCP implementation exists yet.
 
 Local prerequisites are Bun 1.3.2 and Node.js 20.9.0 or newer.
 
@@ -30,8 +30,8 @@ The final Phase 3 prompt moved the minimum Prisma schema, migration, and seed/re
 | 0     | Complete        | Workflow contract and repository rules                         | [Report](docs/evaluations/phase-00.md)                     |
 | 1     | Complete        | [Approved PostgreSQL schema](docs/database/schema-proposal.md) | [Report](docs/evaluations/phase-01.md)                     |
 | 2     | Complete        | Bun and Turborepo foundation                                   | [Report](docs/evaluations/phase-02.md)                     |
-| 3     | Awaiting review | Approved scenarios, validation, PostgreSQL seed/reset          | [Report](docs/evaluations/phase-03-synthetic-scenarios.md) |
-| 4     | Not started     | Remaining database hardening; scope must be reconciled         | Not created                                                |
+| 3     | Complete        | Approved scenarios, validation, PostgreSQL seed/reset          | [Report](docs/evaluations/phase-03-synthetic-scenarios.md) |
+| 4     | Awaiting review | Roles, grants, immutable records, cross-table invariants       | [Report](docs/evaluations/phase-04-database-hardening.md)  |
 | 5     | Not started     | Repositories and read-only commerce boundary                   | Not created                                                |
 | 6     | Not started     | Evidence collection and normalization                          | Not created                                                |
 | 7     | Not started     | Evidence readiness and conflict gate                           | Not created                                                |
@@ -91,23 +91,38 @@ Phase 3 verified:
 
 See the [Phase 3 evaluation report](docs/evaluations/phase-03-synthetic-scenarios.md) for expected and actual results.
 
-During review, internal package exports were corrected to resolve TypeScript
-source directly. Build, typecheck, lint, the bundled Node API health check, and
-read-only database verification passed after the correction. The remote
-PostgreSQL write-transaction test needs one more clean rerun after it exceeded
-Prisma's five-second interactive transaction timeout; the earlier Phase 3 full
-test run remains recorded in the evaluation report.
+Phase 4 completed the previously pending remote transaction rerun through the
+dedicated demo role. The approved seed/reset integration test now passes with a
+hosted-database-aware timeout configuration and without changing its
+transaction design.
+
+Phase 4 verified:
+
+- Live `commerce_demo` and `commerce_workflow` logins and idempotent grants
+- Workflow commerce `SELECT` with every commerce mutation rejected
+- Scoped operations inserts and investigation lifecycle updates
+- Immutable evidence, append-only audit, derived escalations, and valid idempotency resources
+- Build 14/14, typecheck 14/14, test 18/18, lint 2/2
 
 ## Demo database commands
 
 ```bash
 bun run db:migrate
+bun run db:setup-access
+bun run db:verify-access
 bun run db:seed
 bun run db:verify-demo
 bun run db:reset-demo
 ```
 
-Use `db:seed` for an empty migrated demo database. Use the explicit non-production `db:reset-demo` command to restore an existing demo database. API startup never seeds or resets data.
+`DATABASE_URL` is the schema-owner/migration connection.
+`DEMO_DATABASE_URL` is the explicit non-production commerce seed/reset
+connection. `WORKFLOW_DATABASE_URL` is the restricted future runtime
+connection. For local setup with missing role URLs, run
+`bun run db:setup-access:local`; generated credentials are written only to the
+ignored `packages/db/.env`.
+
+Use `db:seed` for an empty migrated demo database. Use the explicit non-production `db:reset-demo` command to restore an existing demo database. API startup never creates roles, seeds, resets, or connects to PostgreSQL.
 
 The fixture validation command is:
 
@@ -140,4 +155,4 @@ Plan-intake checks completed:
 
 The intended runtime exposes no commerce-state mutation capability. Operational commerce data is read-only. Allowed writes are limited to investigations, immutable evidence snapshots, human-review escalations, idempotency records, and append-only audit events.
 
-Phase 3 writes commerce data only through explicit non-production seed/reset commands. The runtime application still exposes no database or commerce-mutation capability. Dedicated runtime-role permissions and forbidden-DML tests remain required before runtime database access is added.
+Phase 4 proves with the actual restricted connection that the workflow role can read commerce data but cannot insert, update, delete, or truncate it. Operations writes are limited to the approved tables and investigation lifecycle columns. The runtime application still exposes no database or commerce-mutation capability.
