@@ -4,18 +4,24 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": {
-      "types": "./index.ts",
-      "bun": "./index.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./index.ts"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --project tsconfig.build.json",
+    "seed": "bun scripts/seed.ts",
+    "reset": "bun scripts/reset.ts",
+    "verify": "bun scripts/verify.ts",
+    "test": "bun test tests",
+    "test:integration": "bun test tests/database.test.ts",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/db": "*",
+    "@repo/schemas": "*"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",
+    "@types/bun": "latest",
     "typescript": "5.9.2"
   }
 }

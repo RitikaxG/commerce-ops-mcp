@@ -179,4 +179,6 @@ No domain IDs or investigation traces exist in Phase 2.
 
 ## Exit decision
 
-Awaiting review.
+**Accepted**
+
+The client committed the Phase 2 foundation as `1a53d26` and supplied the final Phase 3 prompt and approved scenario contract on 2026-07-30.

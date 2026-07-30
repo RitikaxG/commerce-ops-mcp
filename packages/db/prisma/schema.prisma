@@ -10,4 +10,412 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["commerce", "operations"]
+}
+
+enum OrderStatus {
+  CONFIRMED
+  PROCESSING
+
+  @@map("order_status")
+  @@schema("commerce")
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  PROCESSING
+  FAILED
+
+  @@map("payment_status")
+  @@schema("commerce")
+}
+
+enum InventorySourceSystem {
+  WAREHOUSE_SYSTEM
+  COMMERCE_SYSTEM
+
+  @@map("inventory_source_system")
+  @@schema("commerce")
+}
+
+enum FulfilmentStatus {
+  PENDING
+  PROCESSING
+  ON_HOLD
+  FAILED
+
+  @@map("fulfilment_status")
+  @@schema("commerce")
+}
+
+enum FulfilmentHoldReason {
+  INVENTORY_OUT_OF_STOCK
+  OTHER
+
+  @@map("fulfilment_hold_reason")
+  @@schema("commerce")
+}
+
+enum FulfilmentEventType {
+  FULFILMENT_CREATED
+  FULFILMENT_CREATION_FAILED
+  PROCESSING_STARTED
+  INVENTORY_HOLD_ADDED
+  SHIPMENT_LABEL_CREATION_FAILED
+
+  @@map("fulfilment_event_type")
+  @@schema("commerce")
+}
+
+enum FulfilmentEventStatus {
+  SUCCEEDED
+  FAILED
+
+  @@map("fulfilment_event_status")
+  @@schema("commerce")
+}
+
+enum ShipmentStatus {
+  CREATED
+  IN_TRANSIT
+  DELIVERED
+
+  @@map("shipment_status")
+  @@schema("commerce")
+}
+
+enum InvestigationStatus {
+  RUNNING
+  COMPLETED
+  NEEDS_MORE_INFO
+  FAILED
+
+  @@map("investigation_status")
+  @@schema("operations")
+}
+
+enum EvidenceStatus {
+  COMPLETE
+  MISSING
+  CONFLICTING
+
+  @@map("evidence_status")
+  @@schema("operations")
+}
+
+enum DiagnosisCode {
+  ASSIGNED_WAREHOUSE_OUT_OF_STOCK
+  FULFILMENT_CREATION_FAILED
+  WITHIN_EXPECTED_PROCESSING_TIME
+  SHIPMENT_LABEL_CREATION_FAILED
+  SHIPMENT_ALREADY_EXISTS
+  PAYMENT_NOT_CONFIRMED
+  CAUSE_NOT_DETERMINED
+
+  @@map("diagnosis_code")
+  @@schema("operations")
+}
+
+enum DiagnosisConfidence {
+  CONFIRMED
+
+  @@map("diagnosis_confidence")
+  @@schema("operations")
+}
+
+enum ReviewStatus {
+  AWAITING_REVIEW
+  IN_REVIEW
+  CLOSED
+
+  @@map("review_status")
+  @@schema("operations")
+}
+
+enum ReviewQueue {
+  FULFILMENT_OPERATIONS
+  SHIPPING_OPERATIONS
+  PAYMENT_OPERATIONS
+  OPERATIONS_DATA_REVIEW
+  GENERAL_COMMERCE_OPERATIONS
+
+  @@map("review_queue")
+  @@schema("operations")
+}
+
+enum ReviewReasonCode {
+  ASSIGNED_WAREHOUSE_OUT_OF_STOCK
+  FULFILMENT_CREATION_FAILED
+  SHIPMENT_LABEL_CREATION_FAILED
+  SHIPMENT_ALREADY_EXISTS
+  PAYMENT_NOT_CONFIRMED
+  CAUSE_NOT_DETERMINED
+  MISSING_EVIDENCE
+  CONFLICTING_EVIDENCE
+
+  @@map("review_reason_code")
+  @@schema("operations")
+}
+
+enum IdempotencyResourceType {
+  INVESTIGATION
+  HUMAN_REVIEW_ESCALATION
+
+  @@map("idempotency_resource_type")
+  @@schema("operations")
+}
+
+enum AuditStatus {
+  STARTED
+  SUCCEEDED
+  FAILED
+
+  @@map("audit_status")
+  @@schema("operations")
+}
+
+enum AuditEventType {
+  INVESTIGATION_STARTED
+  INVESTIGATION_FAILED
+  TOOL_CALL_STARTED
+  ORDER_FETCHED
+  PAYMENT_FETCHED
+  FULFILMENT_FETCHED
+  INVENTORY_FETCHED
+  SHIPMENT_CHECKED
+  EVENTS_FETCHED
+  EVIDENCE_VALIDATED
+  DIAGNOSIS_MATCHED
+  INVESTIGATION_PERSISTED
+  TOOL_CALL_SUCCEEDED
+  TOOL_CALL_FAILED
+  HUMAN_REVIEW_CASE_CREATED
+  HUMAN_REVIEW_CASE_REUSED
+
+  @@map("audit_event_type")
+  @@schema("operations")
+}
+
+model Order {
+  id             String                  @id
+  status         OrderStatus
+  createdAt      DateTime                @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                @map("updated_at") @db.Timestamptz(6)
+  items          OrderItem[]
+  payments       Payment[]
+  fulfilments    Fulfilment[]
+  events         FulfilmentEvent[]
+  shipments      Shipment[]
+  investigations Investigation[]
+  escalations    HumanReviewEscalation[]
+
+  @@map("orders")
+  @@schema("commerce")
+}
+
+model OrderItem {
+  id        String   @id
+  orderId   String   @map("order_id")
+  sku       String
+  quantity  Int
+  createdAt DateTime @map("created_at") @db.Timestamptz(6)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, sku], map: "order_items_order_id_sku_key")
+  @@map("order_items")
+  @@schema("commerce")
+}
+
+model Payment {
+  id                String        @id
+  orderId           String        @unique(map: "payments_order_id_key") @map("order_id")
+  status            PaymentStatus
+  amount            Decimal       @db.Decimal(12, 2)
+  currency          String        @db.Char(3)
+  providerReference String?       @unique(map: "payments_provider_reference_key") @map("provider_reference")
+  observedAt        DateTime      @map("observed_at") @db.Timestamptz(6)
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@map("payments")
+  @@schema("commerce")
+}
+
+model Warehouse {
+  id                    String                 @id
+  name                  String                 @unique
+  active                Boolean
+  createdAt             DateTime               @map("created_at") @db.Timestamptz(6)
+  inventoryObservations InventoryObservation[]
+  fulfilments           Fulfilment[]
+
+  @@map("warehouses")
+  @@schema("commerce")
+}
+
+model InventoryObservation {
+  warehouseId       String                @map("warehouse_id")
+  sku               String
+  sourceSystem      InventorySourceSystem @map("source_system")
+  availableQuantity Int                   @map("available_quantity")
+  observedAt        DateTime              @map("observed_at") @db.Timestamptz(6)
+  warehouse         Warehouse             @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+
+  @@id([warehouseId, sku, sourceSystem])
+  @@index([sku, warehouseId], map: "inventory_levels_sku_warehouse_id_idx")
+  @@map("inventory_levels")
+  @@schema("commerce")
+}
+
+model Fulfilment {
+  id                  String                @id
+  orderId             String                @unique(map: "fulfilments_order_id_key") @map("order_id")
+  status              FulfilmentStatus
+  holdReason          FulfilmentHoldReason? @map("hold_reason")
+  assignedWarehouseId String?               @map("assigned_warehouse_id")
+  providerReference   String?               @unique(map: "fulfilments_provider_reference_key") @map("provider_reference")
+  createdAt           DateTime              @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime              @map("updated_at") @db.Timestamptz(6)
+  observedAt          DateTime              @map("observed_at") @db.Timestamptz(6)
+  order               Order                 @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  assignedWarehouse   Warehouse?            @relation(fields: [assignedWarehouseId], references: [id], onDelete: Restrict)
+  events              FulfilmentEvent[]
+  shipments           Shipment[]
+
+  @@unique([id, orderId], map: "fulfilments_id_order_id_key")
+  @@index([assignedWarehouseId, orderId], map: "fulfilments_assigned_warehouse_id_order_id_idx")
+  @@map("fulfilments")
+  @@schema("commerce")
+}
+
+model FulfilmentEvent {
+  id                   String                @id
+  orderId              String                @map("order_id")
+  fulfilmentId         String?               @map("fulfilment_id")
+  sourceEventReference String?               @unique(map: "fulfilment_events_source_event_reference_key") @map("source_event_reference")
+  type                 FulfilmentEventType
+  status               FulfilmentEventStatus
+  details              Json                  @default("{}")
+  occurredAt           DateTime              @map("occurred_at") @db.Timestamptz(6)
+  order                Order                 @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  fulfilment           Fulfilment?           @relation(fields: [fulfilmentId, orderId], references: [id, orderId], onDelete: Restrict)
+
+  @@index([orderId, occurredAt, id], map: "fulfilment_events_order_id_occurred_at_id_idx")
+  @@index([fulfilmentId, occurredAt, id], map: "fulfilment_events_fulfilment_id_occurred_at_id_idx")
+  @@map("fulfilment_events")
+  @@schema("commerce")
+}
+
+model Shipment {
+  id                String         @id
+  orderId           String         @unique(map: "shipments_order_id_key") @map("order_id")
+  fulfilmentId      String?        @map("fulfilment_id")
+  status            ShipmentStatus
+  providerReference String?        @unique(map: "shipments_provider_reference_key") @map("provider_reference")
+  createdAt         DateTime       @map("created_at") @db.Timestamptz(6)
+  observedAt        DateTime       @map("observed_at") @db.Timestamptz(6)
+  order             Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  fulfilment        Fulfilment?    @relation(fields: [fulfilmentId, orderId], references: [id, orderId], onDelete: Restrict)
+
+  @@map("shipments")
+  @@schema("commerce")
+}
+
+model Investigation {
+  id                String                 @id
+  traceId           String                 @unique @map("trace_id")
+  orderId           String                 @map("order_id")
+  clientRequestId   String                 @unique @map("client_request_id")
+  status            InvestigationStatus
+  evidenceStatus    EvidenceStatus?        @map("evidence_status")
+  diagnosisCode     DiagnosisCode?         @map("diagnosis_code")
+  confidence        DiagnosisConfidence?
+  matchedRule       String?                @map("matched_rule")
+  suggestedQueue    ReviewQueue?           @map("suggested_queue")
+  suggestedNextStep String?                @map("suggested_next_step")
+  errorCode         String?                @map("error_code")
+  createdAt         DateTime               @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime               @map("updated_at") @db.Timestamptz(6)
+  completedAt       DateTime?              @map("completed_at") @db.Timestamptz(6)
+  order             Order                  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  evidence          InvestigationEvidence?
+  escalation        HumanReviewEscalation?
+  auditEvents       AuditEvent[]
+
+  @@index([orderId, createdAt, id], map: "investigations_order_id_created_at_id_idx")
+  @@index([status, createdAt, id], map: "investigations_status_created_at_id_idx")
+  @@map("investigations")
+  @@schema("operations")
+}
+
+model InvestigationEvidence {
+  investigationId       String        @id @map("investigation_id")
+  snapshotSchemaVersion Int           @default(1) @map("snapshot_schema_version") @db.SmallInt
+  snapshot              Json
+  missingFields         String[]      @default([]) @map("missing_fields")
+  conflicts             Json          @default("[]")
+  sourceObservedAt      Json          @map("source_observed_at")
+  createdAt             DateTime      @map("created_at") @db.Timestamptz(6)
+  investigation         Investigation @relation(fields: [investigationId], references: [id], onDelete: Restrict)
+
+  @@map("investigation_evidence")
+  @@schema("operations")
+}
+
+model HumanReviewEscalation {
+  id                String           @id
+  investigationId   String           @unique(map: "human_review_escalations_investigation_id_key") @map("investigation_id")
+  orderId           String           @map("order_id")
+  status            ReviewStatus
+  queue             ReviewQueue
+  reasonCode        ReviewReasonCode @map("reason_code")
+  suggestedNextStep String           @map("suggested_next_step")
+  dedupeKey         String           @unique @map("dedupe_key")
+  createdAt         DateTime         @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime         @map("updated_at") @db.Timestamptz(6)
+  closedAt          DateTime?        @map("closed_at") @db.Timestamptz(6)
+  investigation     Investigation    @relation(fields: [investigationId], references: [id], onDelete: Restrict)
+  order             Order            @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  auditEvents       AuditEvent[]
+
+  @@index([queue, status, createdAt, id], map: "human_review_escalations_queue_status_created_at_id_idx")
+  @@map("human_review_escalations")
+  @@schema("operations")
+}
+
+model IdempotencyRecord {
+  toolName         String                  @map("tool_name")
+  idempotencyKey   String                  @map("idempotency_key")
+  requestHash      String                  @map("request_hash") @db.Char(64)
+  resourceType     IdempotencyResourceType @map("resource_type")
+  resourceId       String                  @map("resource_id")
+  responseSnapshot Json                    @map("response_snapshot")
+  createdAt        DateTime                @map("created_at") @db.Timestamptz(6)
+
+  @@id([toolName, idempotencyKey])
+  @@map("idempotency_records")
+  @@schema("operations")
+}
+
+model AuditEvent {
+  id                BigInt                 @id @default(autoincrement())
+  eventKey          String                 @unique @map("event_key")
+  traceId           String                 @map("trace_id")
+  investigationId   String?                @map("investigation_id")
+  escalationId      String?                @map("escalation_id")
+  eventType         AuditEventType         @map("event_type")
+  toolName          String?                @map("tool_name")
+  status            AuditStatus
+  safeInputSummary  Json?                  @map("safe_input_summary")
+  safeOutputSummary Json?                  @map("safe_output_summary")
+  errorCode         String?                @map("error_code")
+  durationMs        Int?                   @map("duration_ms")
+  createdAt         DateTime               @map("created_at") @db.Timestamptz(6)
+  investigation     Investigation?         @relation(fields: [investigationId], references: [id], onDelete: Restrict)
+  escalation        HumanReviewEscalation? @relation(fields: [escalationId], references: [id], onDelete: Restrict)
+
+  @@index([traceId, createdAt, id], map: "audit_events_trace_id_created_at_id_idx")
+  @@index([investigationId, createdAt, id], map: "audit_events_investigation_id_created_at_id_idx")
+  @@index([escalationId, createdAt, id], map: "audit_events_escalation_id_created_at_id_idx")
+  @@map("audit_events")
+  @@schema("operations")
 }

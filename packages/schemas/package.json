@@ -4,18 +4,18 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": {
-      "types": "./index.ts",
-      "bun": "./index.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./index.ts"
   },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
   "devDependencies": {
     "@repo/typescript-config": "*",
+    "@types/bun": "latest",
     "typescript": "5.9.2"
   }
 }

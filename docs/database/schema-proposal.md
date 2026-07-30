@@ -2,11 +2,11 @@
 
 ## Review status
 
-**Status: Accepted on 2026-07-30**
+**Status: Accepted on 2026-07-30; amended by the approved Phase 3 scenario contract on 2026-07-30**
 
 This document is the accepted Phase 1 database design and the source of truth for later Prisma models, PostgreSQL migrations, repositories, seed data, and permission tests. Phase 1 did not modify the existing Prisma schema or authorize implementation work.
 
-Any later deviation must be documented in the relevant phase evaluation and reviewed before a migration changes.
+The Phase 3 scenario amendment changes inventory from one warehouse/SKU row to source-specific observations keyed by `(warehouse_id, sku, source_system)`. This is required to persist the approved `ORD-1050` conflict and was approved with the final scenario matrix. No other entity boundary changed.
 
 ## 1. Scope and safety boundary
 
@@ -36,7 +36,7 @@ Every investigation and escalation response must state `commerceStateChanged=fal
 - Foreign keys use `ON DELETE RESTRICT`. Runtime roles have no delete permission.
 - JSONB is used only for evolving evidence and safe audit summaries. Common lookup fields remain relational and indexed.
 - `created_at` values default to `transaction_timestamp()` in the future migration. Source observation times are supplied by the evidence source and never defaulted silently.
-- The Prisma scaffold in `packages/db` remained unchanged during Phase 1. Schema implementation belongs to Phase 4 after the intervening phase gates.
+- The Prisma scaffold remained unchanged during Phase 1. The approved Phase 3 prompt later absorbed the minimum schema migration needed to seed and test the final synthetic scenarios. Remaining role/permission and cross-table trigger hardening stays gated for the reconciled database-hardening phase.
 
 ## 3. Enum catalogue
 
@@ -46,6 +46,7 @@ Every investigation and escalation response must state `commerceStateChanged=fal
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | `commerce.order_status`            | `CONFIRMED`, `PROCESSING`                                                                                                          | Current scoped order state needed by the synthetic scenarios.   |
 | `commerce.payment_status`          | `SUCCEEDED`, `PROCESSING`, `FAILED`                                                                                                | Current payment source-of-truth state.                          |
+| `commerce.inventory_source_system` | `WAREHOUSE_SYSTEM`, `COMMERCE_SYSTEM`                                                                                              | Identifies independent persisted inventory observations.        |
 | `commerce.fulfilment_status`       | `PENDING`, `PROCESSING`, `ON_HOLD`, `FAILED`                                                                                       | Current scoped fulfilment state.                                |
 | `commerce.fulfilment_hold_reason`  | `INVENTORY_OUT_OF_STOCK`, `OTHER`                                                                                                  | Nullable reason when a fulfilment is on hold.                   |
 | `commerce.fulfilment_event_type`   | `FULFILMENT_CREATED`, `FULFILMENT_CREATION_FAILED`, `PROCESSING_STARTED`, `INVENTORY_HOLD_ADDED`, `SHIPMENT_LABEL_CREATION_FAILED` | Progression and failure facts needed by the approved scenarios. |
@@ -150,16 +151,17 @@ Purpose: valid inventory and fulfilment locations.
 
 ### 4.5 `commerce.inventory_levels`
 
-Purpose: current stock evidence for a SKU at a warehouse.
+Purpose: source-specific current stock evidence for a SKU at a warehouse.
 
-| Column               | Type          | Nullable | Key / constraint                              | Rationale                 |
-| -------------------- | ------------- | -------- | --------------------------------------------- | ------------------------- |
-| `warehouse_id`       | `text`        | No       | Composite PK; FK to `commerce.warehouses(id)` | Inventory location.       |
-| `sku`                | `text`        | No       | Composite PK; non-empty                       | Inventory item.           |
-| `available_quantity` | `integer`     | No       | `available_quantity >= 0`                     | Available stock evidence. |
-| `observed_at`        | `timestamptz` | No       |                                               | Evidence freshness.       |
+| Column               | Type                               | Nullable | Key / constraint                              | Rationale                        |
+| -------------------- | ---------------------------------- | -------- | --------------------------------------------- | -------------------------------- |
+| `warehouse_id`       | `text`                             | No       | Composite PK; FK to `commerce.warehouses(id)` | Inventory location.              |
+| `sku`                | `text`                             | No       | Composite PK; non-empty                       | Inventory item.                  |
+| `source_system`      | `commerce.inventory_source_system` | No       | Composite PK                                  | Independent observation source.  |
+| `available_quantity` | `integer`                          | No       | `available_quantity >= 0`                     | Source-reported available stock. |
+| `observed_at`        | `timestamptz`                      | No       |                                               | Evidence freshness.              |
 
-The primary key is `(warehouse_id, sku)`. An absent row is distinguishable from a row with zero quantity and is treated as missing evidence, not out-of-stock evidence.
+The primary key is `(warehouse_id, sku, source_system)`. An absent required observation is distinguishable from a row with zero quantity and is treated as missing evidence, not out-of-stock evidence. Multiple sources may coexist; disagreeing quantities remain separate persisted observations and produce `CONFLICTING` evidence.
 
 ### 4.6 `commerce.fulfilments`
 
@@ -366,6 +368,7 @@ erDiagram
   COMMERCE_INVENTORY_LEVELS {
     text warehouse_id PK,FK
     text sku PK
+    inventory_source_system source_system PK
     int available_quantity
   }
   COMMERCE_FULFILMENTS {
@@ -486,7 +489,7 @@ Primary keys and unique constraints create their own indexes. PostgreSQL does no
 | Order lookup                        | `commerce.orders(id)` PK                                                                             | Direct investigation input.                                    |
 | Order items                         | `UNIQUE commerce.order_items(order_id, sku)`                                                         | Evidence collection by order and deterministic SKU uniqueness. |
 | Current payment/fulfilment/shipment | Unique `order_id` on each current table                                                              | Enforces maximum one and supports lookup.                      |
-| Alternative warehouse stock         | `commerce.inventory_levels(sku, warehouse_id)`                                                       | Find eligible warehouses for all order SKUs.                   |
+| Alternative warehouse stock         | `commerce.inventory_levels(sku, warehouse_id)`                                                       | Find every source observation for eligible warehouses/SKUs.    |
 | Assigned fulfilments                | `commerce.fulfilments(assigned_warehouse_id, order_id)`                                              | Warehouse evidence and diagnostics.                            |
 | Ordered events                      | `commerce.fulfilment_events(order_id, occurred_at, id)`                                              | Deterministic order trace.                                     |
 | Fulfilment events                   | `commerce.fulfilment_events(fulfilment_id, occurred_at, id)`                                         | Scoped fulfilment history.                                     |
@@ -542,7 +545,7 @@ Raw prompts, secrets, credentials, unrestricted provider payloads, and hidden ch
 | `commerce.order_items`       | `ITEM-1042-1`, `ORD-1042`, `SKU-RED-SHOE-42`, quantity `1`              |
 | `commerce.payments`          | `PAY-1042`, `ORD-1042`, `SUCCEEDED`                                     |
 | `commerce.warehouses`        | `WH-A` and `WH-B`, both active                                          |
-| `commerce.inventory_levels`  | `WH-A/SKU-RED-SHOE-42 = 0`; `WH-B/SKU-RED-SHOE-42 = 3`                  |
+| `commerce.inventory_levels`  | Warehouse-source observations: `WH-A/SKU-1042 = 0`; `WH-B/SKU-1042 = 3` |
 | `commerce.fulfilments`       | `FUL-1042`, `ON_HOLD`, reason `INVENTORY_OUT_OF_STOCK`, assigned `WH-A` |
 | `commerce.fulfilment_events` | `FULFILMENT_CREATED`, then `INVENTORY_HOLD_ADDED`                       |
 | `commerce.shipments`         | No row; shipment lookup succeeded and found none                        |
@@ -605,7 +608,7 @@ Use `ORD-1046`:
 - payment is `SUCCEEDED`;
 - fulfilment is `ON_HOLD` at `WH-A`;
 - shipment lookup succeeds and finds no row;
-- the `commerce.inventory_levels` row for the assigned warehouse/SKU is absent.
+- every required `commerce.inventory_levels` observation for the assigned warehouse/SKU is absent.
 
 The system must not treat absence as zero stock.
 
@@ -656,6 +659,7 @@ No ad hoc column or guessed diagnosis is needed.
 ### Selected trade-offs
 
 - Current-record tables plus ordered fulfilment events cover the assignment without introducing payment/fulfilment/shipment history models.
+- Source-specific inventory observations permit real persisted conflicts without adding a general inventory-history model.
 - SKU is a non-empty shared business key in order items and inventory; a product catalogue is outside scope, so fixture validation enforces SKU coherence.
 - Human-readable text IDs improve demo clarity; UUIDs remain an implementation alternative.
 - Native enums strengthen validation but require reviewed migrations for new values.
@@ -695,4 +699,4 @@ Accepted on 2026-07-30:
 8. **Snapshot model:** immutable versioned JSONB evidence plus relational searchable outcome and trace fields.
 9. **Uncertainty:** missing or conflicting evidence produces `NEEDS_MORE_INFO` with no guessed diagnosis.
 
-Later implementation must follow the phase sequence and this accepted design.
+Phase 3 amendment: the final approved synthetic matrix requires persisted `ORD-1050` inventory conflicts, so `source_system` joins the inventory primary key. The same amendment moves the minimum schema migration and seed/reset implementation into Phase 3. Remaining database hardening must follow this amended design.

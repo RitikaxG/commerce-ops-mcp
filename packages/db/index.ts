@@ -1,3 +1,7 @@
-// Prisma configuration remains in this package. Models, generated clients,
-// repositories, and runtime constructors begin only after their phase gates.
-export {};
+export {
+  getDemoDataSummary,
+  readDemoCommerceData,
+  resetDemoData,
+  seedDemoData,
+  type DemoDataSummary,
+} from "./demo-data.js";

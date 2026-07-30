@@ -4,11 +4,7 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": {
-      "types": "./index.ts",
-      "bun": "./index.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./index.ts"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",

@@ -5,5 +5,5 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "exclude": ["dist", "node_modules", "tests"]
+  "exclude": ["dist", "node_modules", "scripts", "tests"]
 }

@@ -8,12 +8,12 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 
 - Phase 0 was reviewed and accepted on 2026-07-30.
 - Phase 1 was reviewed and accepted on 2026-07-30.
-- Phase 2 implementation and its review packet are complete and awaiting reviewer acceptance.
-- The next permitted action is Phase 2 review or revision on `phase/02-turborepo-foundation`.
-- Phase 3 and later phases remain blocked until Phase 2 is explicitly accepted.
+- Phase 2 was committed and accepted for Phase 3 to begin on 2026-07-30.
+- Phase 3 implementation and its review packet are being completed on `phase/03-approved-synthetic-scenarios`.
+- The next permitted action after this session is Phase 3 review or revision.
+- Phase 4 and later phases remain blocked until Phase 3 is explicitly accepted and the Phase 4 prompt is reconciled with the database work moved into Phase 3.
 - Use one phase prompt in one coding session and stop at its review gate.
-- Do not start Phase 3 without its explicit prompt in a later coding session.
-- The existing Prisma skeleton in `packages/db` remains unchanged and model-free; schema implementation belongs to Phase 4.
+- Do not start Phase 4 automatically.
 
 ## Permanent safety boundary
 
@@ -27,9 +27,9 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 
 - `commerce` schema: synthetic operational order, payment, inventory, fulfilment, event, and shipment records. The runtime role has `SELECT` only.
 - `operations` schema: investigation, evidence, escalation, idempotency, and append-only audit records. The runtime role receives only the workflow permissions it requires.
-- The two-schema safety boundary is fixed by the final plan. The detailed entities, columns, statuses, invariants, permissions, and indexes in `docs/database/schema-proposal.md` were accepted on 2026-07-30.
+- The two-schema safety boundary is fixed by the final plan. The detailed entities, columns, statuses, invariants, permissions, and indexes in `docs/database/schema-proposal.md` were accepted on 2026-07-30 and amended by the final Phase 3 scenario contract.
 - `docs/database/client-review-summary.md` records the accepted client decisions.
-- `docs/database/schema-proposal.md` is the approved source of truth for later schema and database implementation.
+- `docs/database/schema-proposal.md` is the approved and amended source of truth for schema and database implementation.
 - Any later deviation from the accepted schema must be documented and reviewed before migration changes.
 
 ## Phase 1 approved schema
@@ -61,6 +61,26 @@ Core approved invariants:
 - Foreign keys and composite keys prevent cross-order source relationships.
 - Runtime grants and later integration tests must prove every commerce mutation fails.
 
+Phase 3 approved one schema amendment: inventory observations are keyed by `(warehouse_id, sku, source_system)` rather than only `(warehouse_id, sku)`. This preserves separate `WAREHOUSE_SYSTEM` and `COMMERCE_SYSTEM` observations for `ORD-1050`. Absence remains distinct from a persisted zero quantity.
+
+## Approved synthetic scenarios
+
+The nine-case matrix in `docs/scenarios/approved-synthetic-scenarios.md` was approved on 2026-07-30 and is frozen:
+
+- `ORD-1042`: assigned warehouse out of stock; escalate to `FULFILMENT_OPERATIONS`.
+- `ORD-1043`: fulfilment creation failed; escalate to `FULFILMENT_OPERATIONS`.
+- `ORD-1044`: within expected processing time; no escalation by default.
+- `ORD-1045`: shipment-label creation failed; escalate to `SHIPPING_OPERATIONS`.
+- `ORD-1046`: missing inventory evidence; `NEEDS_MORE_INFO`, no diagnosis, escalate to `OPERATIONS_DATA_REVIEW`.
+- `ORD-1047`: shipment already exists; no escalation by default.
+- `ORD-1048`: cause not determined; escalate to `GENERAL_COMMERCE_OPERATIONS`.
+- `ORD-1049`: payment source reports `PROCESSING`; escalate to `PAYMENT_OPERATIONS`.
+- `ORD-1050`: conflicting persisted inventory observations; `NEEDS_MORE_INFO`, no diagnosis, escalate to `OPERATIONS_DATA_REVIEW`.
+
+Every later scenario investigation persists an investigation, evidence snapshot, and audit trail with `commerceStateChanged=false`. Escalations are created only when `shouldEscalate=true`. Scenario changes require explicit client approval.
+
+The demo seed contains commerce evidence only. It never seeds investigations, investigation evidence, escalations, idempotency records, or audit events. Missing evidence is represented by absence, never quantity zero. Conflicting evidence remains stored as separate source observations.
+
 ## Stack and repository conventions
 
 Target conventions from the final plan:
@@ -76,7 +96,7 @@ Target conventions from the final plan:
 - A small Tailwind trace viewer in `apps/web`, built after core MCP correctness
 - No speculative Redis, queues, Kafka, RAG, multi-agent orchestration, event sourcing, or complex production authentication
 
-Phase 2 reuses the existing Bun/Turborepo and user-initialized Prisma foundation. It adds the Express health API, a static Tailwind trace-viewer shell, and empty package roots for later phases. `apps/docs` remains intentionally absent. The Prisma schema is still model-free and unchanged.
+Phase 2 reused the existing Bun/Turborepo and Prisma foundation. Phase 3 now implements the approved two-schema Prisma model, one reviewed migration, typed scenario contracts, validated fixtures, and explicit non-production seed/reset commands. `apps/docs` remains intentionally absent.
 
 ## Package graph and ownership
 
@@ -97,12 +117,15 @@ The planned dependency direction is:
 - `packages/observability` owns the internal trace event vocabulary, safe summaries, and trace queries; public Zod trace contracts live in `packages/schemas`.
 - `packages/config` owns shared TypeScript, environment, and test configuration.
 
-Phase 2 introduces only these concrete public surfaces:
+Concrete public surfaces through Phase 3:
 
-- `@repo/config` exports `ApiEnvironmentSchema`, `ApiEnvironment`, and `parseApiEnvironment`.
+- `@repo/config` exports API and PostgreSQL environment parsing.
 - `apps/api/app.ts` exports the composed Express application for startup and smoke testing.
 - `GET /health` returns `{"status":"ok"}`.
-- `packages/db` and every domain package root export nothing while their owning phases remain blocked.
+- `@repo/schemas` exports the approved scenario and commerce-fixture Zod schemas and inferred types.
+- `@repo/fixtures` exports the frozen scenario manifest, typed commerce fixtures, fixed-clock helper, pure validation, and explicit seed/reset/verify composition.
+- `@repo/db` exports only transactional demo seed/reset/read-back operations and summaries; the Prisma client remains private.
+- Evidence, diagnosis, workflow, MCP, agent, evaluation, and observability packages still export no behavior.
 
 The planned conceptual public surfaces are `EvidenceCollector`, `EvidenceReadinessEvaluator`, `DiagnosisEngine`, `InvestigationWorkflow`, `HumanReviewWorkflow`, repository contracts, trace queries, and the five MCP tool contracts below. Concrete TypeScript signatures remain deferred to their owning phases and must use types from `packages/schemas`.
 
@@ -135,7 +158,13 @@ Phase 0 commands:
 - `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun run lint`
 - `/usr/bin/git diff --check`
 
-The first root typecheck failed because the starter's `@repo/ui` export map targets generated `dist` files. The package-level component build generated those files, after which the root typecheck passed. This prerequisite is not yet encoded in Turbo.
+The first Phase 0 root typecheck failed because the starter's `@repo/ui` export
+map targeted generated `dist` files. During Phase 3 review, all internal
+workspace packages were changed to source-first exports, so consumers now
+resolve package-root TypeScript directly. Package builds may still emit
+artifacts for verification, but those artifacts are not workspace entry
+points. `apps/api` uses Bun's bundler with `--target node`, and the produced
+`dist/server.js` remains a Node.js runtime artifact.
 
 The expected and actual results are recorded in `docs/evaluations/phase-00.md`. No test, migrate, seed, reset, development, or evaluation-harness command was required or claimed for this documentation-only phase.
 
@@ -168,24 +197,54 @@ Phase 2 commands:
 
 The final package and Turbo checks passed. The API smoke test passed with one focused test, and the compiled API returned HTTP 200 with `{"status":"ok"}`. Local TCP listeners and the Next.js build worker required execution outside the managed sandbox because loopback binding and worker creation were restricted there; the application checks themselves passed. Full expected and actual results, including the failed diagnostic attempts, are recorded in `docs/evaluations/phase-02.md`.
 
+Phase 3 commands:
+
+- `bun install`
+- `bun run db:generate`
+- `bun --bun run prisma format`
+- `bun --bun run prisma validate`
+- `bun run db:migrate`
+- `bun run db:seed`
+- `bun run db:reset-demo`
+- `bun run db:verify-demo`
+- `bun run --filter @repo/fixtures test:integration`
+- `bun run build`
+- `bun run typecheck`
+- `bun run test`
+- `bun run lint`
+- Formatting, dependency-direction, no-`src/`, secret/artifact, forbidden-capability, schema-drift, migration-status, and whitespace checks
+
+The database commands use the explicitly configured development/schema-owner credential. Runtime credentials are not implemented or used. Expected versus actual results and the final row counts are recorded in `docs/evaluations/phase-03-synthetic-scenarios.md`.
+
+Final Phase 3 results: build 14/14 Turbo tasks, typecheck 14/14, test 17/17 Turbo tasks (fixtures 30/30, config 4/4, API 1/1), and lint 2/2. PostgreSQL read-back returned 9 orders, 9 items, 9 payments, 2 warehouses, 8 inventory observations, 7 fulfilments, 14 events, and 1 shipment; every workflow-table count was zero.
+
+The source-first export review correction was rechecked with install, build
+(14/14), typecheck (14/14), lint (2/2), a Node-built API health request (HTTP
+200), and read-only database verification. The root test rerun passed the API,
+config, and 29 non-database fixture tests, but the remote PostgreSQL integration
+test then received Prisma `P2028` because the interactive transaction exceeded
+its five-second timeout. The same integration test passed before this
+package-manifest-only correction, and the database remained readable with the
+approved counts; a clean transaction-capable rerun is still required.
+
 ## Phase status
 
-| Phase | Status          | Evaluation report              | Notes                            |
-| ----- | --------------- | ------------------------------ | -------------------------------- |
-| 0     | Complete        | `docs/evaluations/phase-00.md` | Accepted 2026-07-30              |
-| 1     | Complete        | `docs/evaluations/phase-01.md` | Accepted 2026-07-30              |
-| 2     | Awaiting review | `docs/evaluations/phase-02.md` | Foundation implemented           |
-| 3     | Not started     | Not created                    | Blocked until Phase 2 acceptance |
-| 4     | Not started     | Not created                    | Blocked by phase sequence        |
-| 5     | Not started     | Not created                    | Blocked by phase sequence        |
-| 6     | Not started     | Not created                    | Blocked by phase sequence        |
-| 7     | Not started     | Not created                    | Blocked by phase sequence        |
-| 8     | Not started     | Not created                    | Blocked by phase sequence        |
-| 9     | Not started     | Not created                    | Blocked by phase sequence        |
-| 10    | Not started     | Not created                    | Blocked by phase sequence        |
-| 11    | Not started     | Not created                    | Blocked by phase sequence        |
-| 12    | Not started     | Not created                    | Blocked by phase sequence        |
-| 13    | Not started     | Not created                    | Blocked by phase sequence        |
+| Phase | Status          | Evaluation report                                  | Notes                          |
+| ----- | --------------- | -------------------------------------------------- | ------------------------------ |
+| 0     | Complete        | `docs/evaluations/phase-00.md`                     | Accepted 2026-07-30            |
+| 1     | Complete        | `docs/evaluations/phase-01.md`                     | Accepted 2026-07-30            |
+| 2     | Complete        | `docs/evaluations/phase-02.md`                     | Accepted 2026-07-30            |
+| 3     | Awaiting review | `docs/evaluations/phase-03-synthetic-scenarios.md` | Scenarios and seed implemented |
+| 4     | Not started     | Not created                                        | Scope must be reconciled       |
+| 5     | Not started     | Not created                                        | Blocked by phase sequence      |
+| 6     | Not started     | Not created                                        | Blocked by phase sequence      |
+| 7     | Not started     | Not created                                        | Blocked by phase sequence      |
+| 8     | Not started     | Not created                                        | Blocked by phase sequence      |
+| 9     | Not started     | Not created                                        | Blocked by phase sequence      |
+| 10    | Not started     | Not created                                        | Blocked by phase sequence      |
+| 11    | Not started     | Not created                                        | Blocked by phase sequence      |
+| 12    | Not started     | Not created                                        | Blocked by phase sequence      |
+| 13    | Not started     | Not created                                        | Blocked by phase sequence      |
 
 ## Decisions and trade-offs
 
@@ -216,20 +275,30 @@ The final package and Turbo checks passed. The API smoke test passed with one fo
 - 2026-07-30: Require Node.js 20.9.0 or newer because the retained Next.js 16 workspace requires that minimum runtime.
 - 2026-07-30: Keep Phase 2 free of Prisma models, migrations, repositories, domain contracts, MCP tools, AI behavior, and speculative infrastructure.
 - 2026-07-30: Reject reinitializing the repository, replacing the existing web framework, adding a second package manager, or introducing domain behavior before its phase gate.
+- 2026-07-30: Treat the committed Phase 2 foundation as accepted when the client supplied the final Phase 3 prompt and approved scenario matrix.
+- 2026-07-30: The latest Phase 3 prompt supersedes the original phase split by moving the minimum accepted Prisma schema, migration, and seed/reset implementation from Phase 4 into Phase 3.
+- 2026-07-30: Amend inventory identity to `(warehouse_id, sku, source_system)` so `ORD-1050` stores two independently sourced, conflicting quantities instead of constructing a conflict in memory.
+- 2026-07-30: Keep the historical PostgreSQL table name `commerce.inventory_levels`, while its rows and TypeScript contract represent source-specific inventory observations.
+- 2026-07-30: Use a fixed fixture clock (`2026-07-30T12:00:00.000Z`) and a four-hour processing window; never derive fixture behavior from `Date.now()`.
+- 2026-07-30: Use explicit schema-owner/development credentials for migration and non-production seed/reset only. Dedicated seed/reset and runtime roles remain a later hardening gate.
+- 2026-07-30: Keep Prisma private to `packages/db`; `packages/fixtures` composes public transactional demo-data operations after Zod and relationship validation.
+- 2026-07-30: Reject seeding workflow records, automatic startup reset, in-memory-only conflicts, diagnosis rules, MCP tools, LLM behavior, operational fixes, and any commerce mutation outside explicit demo seed/reset.
+- 2026-07-30: Use source-first TypeScript exports for internal Bun workspace packages. Keep the Express production artifact Node-compatible by bundling `apps/api/server.ts` with Bun's Node target before running it with Node.js.
 
 ## Known limitations
 
 - `apps/api` exposes only the health endpoint; MCP transport, trace routes, workflow composition, and database access are intentionally absent.
 - `apps/web` is a static non-functional trace-viewer shell and has no API or database integration.
-- `packages/schemas`, `fixtures`, `evidence`, `diagnosis`, `workflow`, `mcp`, `agent`, `evaluations`, and `observability` are compileable empty package roots; their contracts and behavior begin in later phases.
-- `packages/db` is initialized with Prisma 7.9.1, but its Prisma schema remains model-free and has no generated domain client, migrations, repositories, or runtime constructor.
-- The full planned migrate, seed, reset, development, and evaluation command set does not exist yet.
+- `packages/evidence`, `diagnosis`, `workflow`, `mcp`, `agent`, `evaluations`, and `observability` remain empty package roots.
+- The Prisma schema and demo-data transaction layer exist, but runtime repositories and runtime-role database construction are intentionally absent.
+- Cross-table terminal investigation/evidence, escalation/order consistency, polymorphic idempotency, immutable-evidence, append-only-audit, and role/grant enforcement remain for the reconciled database-hardening phase.
+- The current remote prototype database uses the development/schema-owner credential for migration and explicit seed/reset. It does not yet prove workflow-runtime `SELECT`-only commerce permissions.
+- `db:seed` expects an empty migrated demo data set; use the explicit `db:reset-demo` helper for repeatable restoration.
+- Diagnosis expectations in the manifest are acceptance data only. No diagnosis engine evaluates them yet.
 - Local development requires Bun 1.3.2 and Node.js 20.9.0 or newer.
 - Local TCP smoke tests and the Next.js production build require an environment that permits loopback listeners and worker creation.
 - Full copy-paste prompts for Phases 0-13 are not stored here. The repository currently stores the final plan and the prompt-use protocol only.
-- The safety boundary and package graph are documentation contracts only; no database permission or runtime guardrail exists yet.
-- The Phase 1 schema is accepted but none of its entities, enums, triggers, grants, or indexes is implemented yet.
-- Cross-table terminal-state and escalation consistency will require reviewed PostgreSQL constraint triggers in Phase 4.
+- The runtime safety boundary is not yet connected to an application database client or proven with restricted-role DML tests.
 
 ## Instructions for coding agents
 
