@@ -30,6 +30,7 @@ import {
   InvestigateOrderExceptionInputSchema,
   InvestigationWorkflowResultSchema,
   InvestigationWorkflowSuccessSchema,
+  ListDemoCasesResultSchema,
   PersistedEvidenceSourceObservationsSchema,
   PersistedInvestigationEvidenceSchema,
   ReviewCaseResultSchema,
@@ -40,6 +41,7 @@ import {
   type InvestigateOrderExceptionInput,
   type InvestigationTrace,
   type InvestigationWorkflowResult,
+  type ListDemoCasesResult,
   type EvidenceReadinessResult,
   type NormalizedOrderEvidence,
   type PersistedInvestigationSummary,
@@ -66,6 +68,7 @@ export interface EvidenceReadinessEvaluator {
 }
 
 export interface CommerceOperationsWorkflow {
+  listDemoCases(): Promise<ListDemoCasesResult>;
   investigateOrderException(
     input: InvestigateOrderExceptionInput,
   ): Promise<InvestigationWorkflowResult>;
@@ -104,6 +107,61 @@ const runtimeIdentifiers: WorkflowIdentifierFactory = {
   nextReviewCaseId: () => `CASE-${randomUUID()}`,
   nextAuditEventKey: () => `AUDIT-${randomUUID()}`,
 };
+
+const demoCaseCatalog = ListDemoCasesResultSchema.parse({
+  schemaVersion: 1,
+  purpose: "DEMO_DISCOVERY_ONLY",
+  cases: [
+    {
+      orderId: "ORD-1042",
+      title:
+        "Assigned warehouse is out of stock; another warehouse has enough stock",
+      category: "INVENTORY",
+    },
+    {
+      orderId: "ORD-1043",
+      title: "Payment succeeded, but fulfilment creation failed",
+      category: "FULFILMENT",
+    },
+    {
+      orderId: "ORD-1044",
+      title: "Fulfilment is still within the expected processing window",
+      category: "PROCESSING",
+    },
+    {
+      orderId: "ORD-1045",
+      title: "Shipment-label creation failed",
+      category: "SHIPPING",
+    },
+    {
+      orderId: "ORD-1046",
+      title: "Required inventory evidence is missing",
+      category: "DATA_QUALITY",
+    },
+    {
+      orderId: "ORD-1047",
+      title: "A shipment already exists",
+      category: "SHIPMENT",
+    },
+    {
+      orderId: "ORD-1048",
+      title: "Available evidence does not identify a confirmed cause",
+      category: "GENERAL",
+    },
+    {
+      orderId: "ORD-1049",
+      title:
+        "Operator says paid, but the authoritative payment source reports PROCESSING",
+      category: "PAYMENT",
+    },
+    {
+      orderId: "ORD-1050",
+      title: "Inventory sources report conflicting quantities",
+      category: "DATA_QUALITY",
+    },
+  ],
+  commerceStateChanged: false,
+});
 
 const safeMessages = {
   INVALID_INPUT: "The workflow input is invalid.",
@@ -210,6 +268,10 @@ class DefaultCommerceOperationsWorkflow implements CommerceOperationsWorkflow {
     this.traceReader =
       dependencies.traceReader ??
       createInvestigationTraceReader(dependencies.operations);
+  }
+
+  async listDemoCases(): Promise<ListDemoCasesResult> {
+    return demoCaseCatalog;
   }
 
   private async replayInvestigationIdempotency(

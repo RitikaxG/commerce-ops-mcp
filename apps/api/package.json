@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@repo/config": "*",
+    "@repo/mcp": "*",
+    "@repo/workflow": "*",
     "express": "^5.2.1"
   },
   "devDependencies": {

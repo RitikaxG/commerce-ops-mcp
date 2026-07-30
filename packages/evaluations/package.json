@@ -8,10 +8,22 @@
   },
   "scripts": {
     "build": "tsc",
+    "eval:mcp:direct": "bun direct-mcp.ts",
+    "test": "bun test tests",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@repo/db": "*",
+    "@repo/fixtures": "*",
+    "@repo/mcp": "*",
+    "@repo/schemas": "*",
+    "@repo/workflow": "*"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",
+    "@types/bun": "latest",
+    "@types/node": "^22.15.30",
     "typescript": "5.9.2"
   }
 }
