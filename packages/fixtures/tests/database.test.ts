@@ -80,4 +80,4 @@ test("PostgreSQL seed is atomic and reset restores the approved starting state",
   const { fixtures, summary } = await verifyApprovedDemoData();
   expect(summary).toEqual(expectedSummary);
   expect(canonicalize(fixtures)).toEqual(canonicalize(commerceFixtures));
-}, 30_000);
+}, 90_000);

@@ -3,7 +3,10 @@ import {
   type CommerceFixtureSet,
 } from "@repo/schemas";
 
-import { createDatabaseClient } from "./client.js";
+import {
+  createDemoDatabaseClient,
+  createOwnerDatabaseClient,
+} from "./client.js";
 import { Prisma, type PrismaClient } from "./generated/prisma/client.js";
 
 type DatabaseTransaction = Prisma.TransactionClient;
@@ -96,47 +99,6 @@ async function removeApprovedDemoData(
   fixtures: CommerceFixtureSet,
 ): Promise<void> {
   const orderIds = fixtures.orders.map(({ id }) => id);
-  const investigationRows = await transaction.investigation.findMany({
-    where: { orderId: { in: orderIds } },
-    select: { id: true },
-  });
-  const investigationIds = investigationRows.map(({ id }) => id);
-  const escalationRows =
-    investigationIds.length === 0
-      ? []
-      : await transaction.humanReviewEscalation.findMany({
-          where: { investigationId: { in: investigationIds } },
-          select: { id: true },
-        });
-  const escalationIds = escalationRows.map(({ id }) => id);
-  const workflowResourceIds = [...investigationIds, ...escalationIds];
-
-  if (investigationIds.length > 0 || escalationIds.length > 0) {
-    await transaction.auditEvent.deleteMany({
-      where: {
-        OR: [
-          { investigationId: { in: investigationIds } },
-          { escalationId: { in: escalationIds } },
-        ],
-      },
-    });
-  }
-  if (workflowResourceIds.length > 0) {
-    await transaction.idempotencyRecord.deleteMany({
-      where: { resourceId: { in: workflowResourceIds } },
-    });
-  }
-  if (investigationIds.length > 0) {
-    await transaction.investigationEvidence.deleteMany({
-      where: { investigationId: { in: investigationIds } },
-    });
-    await transaction.humanReviewEscalation.deleteMany({
-      where: { investigationId: { in: investigationIds } },
-    });
-    await transaction.investigation.deleteMany({
-      where: { id: { in: investigationIds } },
-    });
-  }
 
   await transaction.shipment.deleteMany({
     where: { orderId: { in: orderIds } },
@@ -176,33 +138,35 @@ export async function seedDemoData(
   input: CommerceFixtureSet,
 ): Promise<DemoDataSummary> {
   const fixtures = CommerceFixtureSetSchema.parse(input);
-  const database = createDatabaseClient();
+  const database = createDemoDatabaseClient();
 
   try {
     await database.$transaction((transaction) =>
       insertCommerceFixtures(transaction, fixtures),
     );
-    return await getDemoDataSummaryWithClient(database, fixtures);
   } finally {
     await database.$disconnect();
   }
+
+  return getDemoDataSummary(fixtures);
 }
 
 export async function resetDemoData(
   input: CommerceFixtureSet,
 ): Promise<DemoDataSummary> {
   const fixtures = CommerceFixtureSetSchema.parse(input);
-  const database = createDatabaseClient();
+  const database = createDemoDatabaseClient();
 
   try {
     await database.$transaction(async (transaction) => {
       await removeApprovedDemoData(transaction, fixtures);
       await insertCommerceFixtures(transaction, fixtures);
     });
-    return await getDemoDataSummaryWithClient(database, fixtures);
   } finally {
     await database.$disconnect();
   }
+
+  return getDemoDataSummary(fixtures);
 }
 
 async function getDemoDataSummaryWithClient(
@@ -306,7 +270,7 @@ export async function getDemoDataSummary(
   input: CommerceFixtureSet,
 ): Promise<DemoDataSummary> {
   const fixtures = CommerceFixtureSetSchema.parse(input);
-  const database = createDatabaseClient();
+  const database = createOwnerDatabaseClient();
 
   try {
     return await getDemoDataSummaryWithClient(database, fixtures);
@@ -320,7 +284,7 @@ export async function readDemoCommerceData(
 ): Promise<CommerceFixtureSet> {
   const fixtures = CommerceFixtureSetSchema.parse(input);
   const orderIds = fixtures.orders.map(({ id }) => id);
-  const database = createDatabaseClient();
+  const database = createOwnerDatabaseClient();
 
   try {
     const [

@@ -10,6 +10,10 @@
     "build": "tsc --project tsconfig.build.json",
     "db:generate": "bun --bun run prisma generate",
     "db:migrate": "bun --bun run prisma migrate deploy",
+    "db:setup-access": "bun scripts/setup-access.ts",
+    "db:setup-access:local": "bun scripts/setup-access.ts --create-local-credentials",
+    "test": "bun test tests",
+    "test:access": "bun test tests/permissions.test.ts tests/invariants.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
