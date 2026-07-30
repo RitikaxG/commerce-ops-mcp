@@ -124,6 +124,13 @@ const fulfilment: CommerceFulfilmentRecord = {
   observedAt: "2026-07-30T12:00:00.000Z",
 };
 
+const warehouseB: CommerceWarehouseRecord = {
+  id: "WH-B",
+  name: "Warehouse B",
+  active: true,
+  createdAt: "2026-07-28T08:00:00.000Z",
+};
+
 describe("evidence collector", () => {
   test("normalizes all successful records with deterministic ordering and timestamps", async () => {
     const items: CommerceOrderItemRecord[] = [
@@ -296,12 +303,13 @@ describe("evidence collector", () => {
     expect(JSON.stringify(snapshot)).not.toContain("SELECT");
   });
 
-  test("skips dependent inventory and warehouses when order items are unavailable", async () => {
+  test("retains an assigned warehouse when order items and inventory are unavailable", async () => {
     const repository = new FakeCommerceRepository({
       listOrderItemsForOrder: async () => {
         throw new Error("source unavailable");
       },
       findCurrentFulfilmentForOrder: async () => fulfilment,
+      listWarehousesByIds: async () => [warehouseB],
     });
 
     const snapshot = await createEvidenceCollector({
@@ -311,9 +319,9 @@ describe("evidence collector", () => {
 
     expect(snapshot.orderItems).toEqual([]);
     expect(snapshot.inventoryObservations).toEqual([]);
-    expect(snapshot.warehouses).toEqual([]);
+    expect(snapshot.warehouses).toEqual([warehouseB]);
     expect(repository.inventoryRequests).toEqual([]);
-    expect(repository.warehouseRequests).toEqual([]);
+    expect(repository.warehouseRequests).toEqual([["WH-B"]]);
     expect(snapshot.sourceReads[1]).toMatchObject({
       source: "ORDER_ITEMS",
       status: "FAILED",
@@ -326,10 +334,90 @@ describe("evidence collector", () => {
     });
     expect(snapshot.sourceReads[7]).toMatchObject({
       source: "WAREHOUSES",
-      status: "SKIPPED",
-      errorCode: "WAREHOUSE_IDS_UNAVAILABLE",
+      status: "SUCCEEDED",
+      recordCount: 1,
+      errorCode: null,
     });
     expect(snapshot.sourceReads[4].status).toBe("SUCCEEDED");
     expect(snapshot.sourceReads[5].status).toBe("SUCCEEDED");
+  });
+
+  test("retains inventory-observation warehouses when fulfilment is unavailable", async () => {
+    const item: CommerceOrderItemRecord = {
+      id: "ITEM-TEST",
+      orderId: order.id,
+      sku: "SKU-TEST",
+      quantity: 1,
+      createdAt: "2026-07-30T09:00:00.000Z",
+    };
+    const observation: CommerceInventoryObservationRecord = {
+      warehouseId: "WH-B",
+      sku: item.sku,
+      sourceSystem: "WAREHOUSE_SYSTEM",
+      availableQuantity: 2,
+      observedAt: "2026-07-30T12:00:00.000Z",
+    };
+    const repository = new FakeCommerceRepository({
+      listOrderItemsForOrder: async () => [item],
+      findCurrentFulfilmentForOrder: async () => {
+        throw new Error("fulfilment unavailable");
+      },
+      listInventoryObservationsForSkus: async () => [observation],
+      listWarehousesByIds: async () => [warehouseB],
+    });
+
+    const snapshot = await createEvidenceCollector({
+      commerce: repository,
+      clock: fixedClock,
+    }).collect(order.id);
+
+    expect(snapshot.fulfilment).toBeNull();
+    expect(snapshot.inventoryObservations).toEqual([observation]);
+    expect(snapshot.warehouses).toEqual([warehouseB]);
+    expect(repository.inventoryRequests).toEqual([["SKU-TEST"]]);
+    expect(repository.warehouseRequests).toEqual([["WH-B"]]);
+    expect(snapshot.sourceReads[3]).toMatchObject({
+      source: "FULFILMENT",
+      status: "FAILED",
+    });
+    expect(snapshot.sourceReads[7]).toMatchObject({
+      source: "WAREHOUSES",
+      status: "SUCCEEDED",
+      recordCount: 1,
+    });
+  });
+
+  test("skips warehouses only when both identifier dependencies are unavailable", async () => {
+    const repository = new FakeCommerceRepository({
+      listOrderItemsForOrder: async () => {
+        throw new Error("order items unavailable");
+      },
+      findCurrentFulfilmentForOrder: async () => {
+        throw new Error("fulfilment unavailable");
+      },
+    });
+
+    const snapshot = await createEvidenceCollector({
+      commerce: repository,
+      clock: fixedClock,
+    }).collect(order.id);
+
+    expect(snapshot.inventoryObservations).toEqual([]);
+    expect(snapshot.warehouses).toEqual([]);
+    expect(repository.inventoryRequests).toEqual([]);
+    expect(repository.warehouseRequests).toEqual([]);
+    expect(snapshot.sourceReads[6]).toMatchObject({
+      source: "INVENTORY",
+      status: "SKIPPED",
+      errorCode: "ORDER_ITEMS_UNAVAILABLE",
+    });
+    expect(snapshot.sourceReads[7]).toEqual({
+      source: "WAREHOUSES",
+      status: "SKIPPED",
+      readAt: FIXED_TIME,
+      latestSourceTimestamp: null,
+      recordCount: 0,
+      errorCode: "WAREHOUSE_IDS_UNAVAILABLE",
+    });
   });
 });

@@ -7,11 +7,19 @@
     ".": "./index.ts"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --project tsconfig.build.json",
+    "test": "bun test tests",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@repo/schemas": "*"
+  },
   "devDependencies": {
+    "@repo/db": "*",
+    "@repo/evidence": "*",
+    "@repo/fixtures": "*",
     "@repo/typescript-config": "*",
+    "@types/bun": "latest",
     "typescript": "5.9.2"
   }
 }

@@ -12,11 +12,12 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 - Phase 3 was accepted and merged to `main` in commit `13e4aaa` on 2026-07-30.
 - Phase 4 was accepted and merged to `main` in commit `97fcf99` on 2026-07-30.
 - Phase 5 was accepted and merged to `main` in commit `1ad80d2` on 2026-07-30.
-- Phase 6 evidence collection and normalization are implemented on `phase/06-evidence-collector` and awaiting review.
-- The next permitted action is Phase 6 review or revision.
-- Phase 7 and later phases remain blocked until Phase 6 is explicitly accepted.
+- Phase 6 was accepted and merged to `main` in commit `1fd7887` on 2026-07-30.
+- Phase 7 evidence readiness and conflict evaluation are implemented on `phase/07-evidence-readiness` and awaiting review.
+- The next permitted action is Phase 7 review or revision.
+- Phase 8 and later phases remain blocked until Phase 7 is explicitly accepted.
 - Use one phase prompt in one coding session and stop at its review gate.
-- Do not start Phase 7 automatically.
+- Do not start Phase 8 automatically.
 
 ## Permanent safety boundary
 
@@ -103,7 +104,7 @@ Target conventions from the final plan:
 - A small Tailwind trace viewer in `apps/web`, built after core MCP correctness
 - No speculative Redis, queues, Kafka, RAG, multi-agent orchestration, event sourcing, or complex production authentication
 
-Phase 2 reused the existing Bun/Turborepo and Prisma foundation. Phase 3 implemented the approved two-schema Prisma model, typed scenario contracts, validated fixtures, and explicit non-production seed/reset commands. Phase 4 added live role separation, reviewed grants, and database-enforced cross-table invariants. Phase 5 added a read-only commerce repository facade over the restricted workflow connection. Phase 6 adds normalized, source-aware evidence collection without readiness, conflict, diagnosis, or persistence behavior. The API remains disconnected from PostgreSQL, and `apps/docs` remains intentionally absent.
+Phase 2 reused the existing Bun/Turborepo and Prisma foundation. Phase 3 implemented the approved two-schema Prisma model, typed scenario contracts, validated fixtures, and explicit non-production seed/reset commands. Phase 4 added live role separation, reviewed grants, and database-enforced cross-table invariants. Phase 5 added a read-only commerce repository facade over the restricted workflow connection. Phase 6 added normalized, source-aware evidence collection. Phase 7 adds a pure conditional readiness/conflict gate without diagnosis or persistence behavior. The API remains disconnected from PostgreSQL, and `apps/docs` remains intentionally absent.
 
 ## Package graph and ownership
 
@@ -124,19 +125,20 @@ The planned dependency direction is:
 - `packages/observability` owns the internal trace event vocabulary, safe summaries, and trace queries; public Zod trace contracts live in `packages/schemas`.
 - `packages/config` owns shared TypeScript, environment, and test configuration.
 
-Concrete public surfaces through Phase 6:
+Concrete public surfaces through Phase 7:
 
 - `@repo/config` exports API parsing plus separate schema-owner, demo, and workflow PostgreSQL URL validation.
 - `apps/api/app.ts` exports the composed Express application for startup and smoke testing.
 - `GET /health` returns `{"status":"ok"}`.
-- `@repo/schemas` exports the approved scenario, fixture, JSON-value, plain commerce source-record, source-read metadata, and versioned normalized-evidence Zod schemas and inferred types.
+- `@repo/schemas` exports the approved scenario, fixture, JSON-value, plain commerce source-record, source-read metadata, normalized-evidence, structured conflict, and readiness-result Zod schemas and inferred types.
 - `@repo/fixtures` exports the frozen scenario manifest, typed commerce fixtures, fixed-clock helper, pure validation, and explicit seed/reset/verify composition.
 - `@repo/db` exports the Phase 3 transactional demo operations plus `CommerceReadRepository`, `CommerceRepositoryContext`, and `createWorkflowRepositoryContext`.
 - The commerce facade reads order, items, current payment/fulfilment/shipment, ordered events, inventory observations, and warehouses through `WORKFLOW_DATABASE_URL`; its public types contain no Prisma types.
 - `@repo/evidence` exports `EvidenceCollector`, `EvidenceClock`, and `createEvidenceCollector({ commerce, clock? })`; runtime code depends only on the injected `CommerceReadRepository` and public schemas.
-- Diagnosis, workflow, MCP, agent, evaluation, and observability packages still export no behavior.
+- `@repo/diagnosis` exports `EvidenceReadinessEvaluator` and `createEvidenceReadinessEvaluator()`; its runtime dependency is only `@repo/schemas`.
+- Workflow, MCP, agent, evaluation, and observability packages still export no behavior.
 
-The remaining planned conceptual public surfaces are `EvidenceReadinessEvaluator`, `DiagnosisEngine`, `InvestigationWorkflow`, `HumanReviewWorkflow`, workflow-write repositories, trace queries, and the five MCP tool contracts below. Concrete TypeScript signatures for those later surfaces remain deferred to their owning phases and must use types from `packages/schemas`.
+The remaining planned conceptual public surfaces are `DiagnosisEngine`, `InvestigationWorkflow`, `HumanReviewWorkflow`, workflow-write repositories, trace queries, and the five MCP tool contracts below. Concrete TypeScript signatures for those later surfaces remain deferred to their owning phases and must use types from `packages/schemas`.
 
 Keep public APIs small and export them through package roots. A phase may refine this graph, but it must document and review any changed direction. The complete acyclic graph is in `docs/architecture/package-graph.md`.
 
@@ -307,24 +309,47 @@ six live scenarios read through the restricted workflow connection. Database
 regressions passed 7/7 with 104 assertions. Final demo verification retained
 all approved commerce counts and zero operations rows.
 
+Phase 7 commands:
+
+- `bun install --frozen-lockfile`
+- `bun run db:verify-demo`
+- `bun run db:verify-access`
+- `bun run --filter @repo/db test`
+- `bun run --filter @repo/evidence test`
+- `bun run --filter @repo/diagnosis test`
+- `bun run --filter @repo/diagnosis typecheck`
+- `bun run build`
+- `bun run typecheck`
+- `bun run test`
+- `bun run lint`
+- All-nine restricted scenario output, formatting, import-boundary, migration,
+  generated-file, environment-file, and whitespace checks
+
+Final Phase 7 checks: build 14/14, typecheck 14/14, root test 20/20 Turbo
+tasks, and lint 2/2. Readiness tests passed 9/9 with 63 assertions, including
+all nine scenarios through the restricted workflow connection. Corrected
+evidence tests passed 6/6 with 94 assertions, and database regressions passed
+7/7 with 104 assertions. Final demo verification retained all approved
+commerce counts and zero operations rows.
+
 ## Phase status
 
-| Phase | Status          | Evaluation report                                             | Notes                                  |
-| ----- | --------------- | ------------------------------------------------------------- | -------------------------------------- |
-| 0     | Complete        | `docs/evaluations/phase-00.md`                                | Accepted 2026-07-30                    |
-| 1     | Complete        | `docs/evaluations/phase-01.md`                                | Accepted 2026-07-30                    |
-| 2     | Complete        | `docs/evaluations/phase-02.md`                                | Accepted 2026-07-30                    |
-| 3     | Complete        | `docs/evaluations/phase-03-synthetic-scenarios.md`            | Accepted and merged 2026-07-30         |
-| 4     | Complete        | `docs/evaluations/phase-04-database-hardening.md`             | Accepted and merged 2026-07-30         |
-| 5     | Complete        | `docs/evaluations/phase-05-readonly-commerce-repositories.md` | Accepted and merged as `1ad80d2`       |
-| 6     | Awaiting review | `docs/evaluations/phase-06-evidence-collector.md`             | Normalized evidence collector verified |
-| 7     | Not started     | Not created                                                   | Blocked by phase sequence              |
-| 8     | Not started     | Not created                                                   | Blocked by phase sequence              |
-| 9     | Not started     | Not created                                                   | Blocked by phase sequence              |
-| 10    | Not started     | Not created                                                   | Blocked by phase sequence              |
-| 11    | Not started     | Not created                                                   | Blocked by phase sequence              |
-| 12    | Not started     | Not created                                                   | Blocked by phase sequence              |
-| 13    | Not started     | Not created                                                   | Blocked by phase sequence              |
+| Phase | Status          | Evaluation report                                             | Notes                                        |
+| ----- | --------------- | ------------------------------------------------------------- | -------------------------------------------- |
+| 0     | Complete        | `docs/evaluations/phase-00.md`                                | Accepted 2026-07-30                          |
+| 1     | Complete        | `docs/evaluations/phase-01.md`                                | Accepted 2026-07-30                          |
+| 2     | Complete        | `docs/evaluations/phase-02.md`                                | Accepted 2026-07-30                          |
+| 3     | Complete        | `docs/evaluations/phase-03-synthetic-scenarios.md`            | Accepted and merged 2026-07-30               |
+| 4     | Complete        | `docs/evaluations/phase-04-database-hardening.md`             | Accepted and merged 2026-07-30               |
+| 5     | Complete        | `docs/evaluations/phase-05-readonly-commerce-repositories.md` | Accepted and merged as `1ad80d2`             |
+| 6     | Complete        | `docs/evaluations/phase-06-evidence-collector.md`             | Accepted and merged as `1fd7887`             |
+| 7     | Awaiting review | `docs/evaluations/phase-07-evidence-readiness.md`             | Conditional readiness/conflict gate verified |
+| 8     | Not started     | Not created                                                   | Blocked by phase sequence                    |
+| 9     | Not started     | Not created                                                   | Blocked by phase sequence                    |
+| 10    | Not started     | Not created                                                   | Blocked by phase sequence                    |
+| 11    | Not started     | Not created                                                   | Blocked by phase sequence                    |
+| 12    | Not started     | Not created                                                   | Blocked by phase sequence                    |
+| 13    | Not started     | Not created                                                   | Blocked by phase sequence                    |
 
 ## Decisions and trade-offs
 
@@ -377,13 +402,17 @@ all approved commerce counts and zero operations rows.
 - 2026-07-30: Accept and merge Phase 5 as commit `1ad80d2`; Phase 6 starts from that clean read-repository baseline.
 - 2026-07-30: Collect all eight evidence sources in deterministic order through an injected `CommerceReadRepository`; represent source failures safely and preserve successful null/empty results as evidence facts.
 - 2026-07-30: Mark inventory and warehouse reads as dependency-skipped only when their required identifiers cannot be derived safely. Do not classify missing/conflicting evidence or evaluate freshness in Phase 6.
+- 2026-07-30: Accept and merge Phase 6 as commit `1fd7887`; Phase 7 starts from that clean normalized-evidence baseline.
+- 2026-07-30: Correct warehouse collection to use identifiers from either successful fulfilment or successful inventory evidence and skip only when neither dependency is available.
+- 2026-07-30: Apply the accepted conditional readiness gates in order and use `CONFLICTING > MISSING > COMPLETE` precedence without producing a diagnosis.
+- 2026-07-30: Detect inventory quantity conflicts without selecting, averaging, or freshness-ranking a source. No source-age threshold is accepted, so freshness rejection remains deferred.
 
 ## Known limitations
 
 - `apps/api` exposes only the health endpoint; MCP transport, trace routes, workflow composition, and database access are intentionally absent.
 - `apps/web` is a static non-functional trace-viewer shell and has no API or database integration.
-- `packages/diagnosis`, `workflow`, `mcp`, `agent`, `evaluations`, and `observability` remain empty package roots.
-- Phase 6 collects and normalizes source facts only. Evidence readiness, missing/conflict classification, freshness acceptance, diagnosis, and all operations-table repositories remain deferred.
+- `packages/workflow`, `mcp`, `agent`, `evaluations`, and `observability` remain empty package roots.
+- Phase 7 evaluates readiness and inventory conflicts only. Source-age rejection, diagnosis, suggested action, and all operations-table repositories remain deferred.
 - The workflow Prisma client is constructed only inside `packages/db` from `WORKFLOW_DATABASE_URL`; the API does not import the repository factory or load any database URL.
 - Neon does not allow the configured schema owner to rotate the passwords of existing child roles. Idempotent access setup therefore reapplies grants and verifies existing credentials instead of altering existing roles.
 - `db:seed` expects an empty migrated demo data set; use the explicit `db:reset-demo` helper for repeatable restoration.

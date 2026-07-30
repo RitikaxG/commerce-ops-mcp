@@ -261,9 +261,12 @@ class DefaultEvidenceCollector implements EvidenceCollector {
             ),
           };
 
-    const warehouseDependenciesAvailable =
-      fulfilmentOutcome.read.status === "SUCCEEDED" &&
+    const fulfilmentCanProvideWarehouseIds =
+      fulfilmentOutcome.read.status === "SUCCEEDED";
+    const inventoryCanProvideWarehouseIds =
       inventoryOutcome.read.status === "SUCCEEDED";
+    const warehouseDependenciesAvailable =
+      fulfilmentCanProvideWarehouseIds || inventoryCanProvideWarehouseIds;
 
     const warehouseOutcome: SourceOutcome<CommerceWarehouseRecord[]> =
       warehouseDependenciesAvailable
@@ -274,12 +277,15 @@ class DefaultEvidenceCollector implements EvidenceCollector {
               normalizeWarehouses(
                 await this.commerce.listWarehousesByIds(
                   uniqueSorted([
-                    ...(fulfilmentOutcome.value?.assignedWarehouseId
+                    ...(fulfilmentCanProvideWarehouseIds &&
+                    fulfilmentOutcome.value?.assignedWarehouseId
                       ? [fulfilmentOutcome.value.assignedWarehouseId]
                       : []),
-                    ...inventoryOutcome.value.map(
-                      ({ warehouseId }) => warehouseId,
-                    ),
+                    ...(inventoryCanProvideWarehouseIds
+                      ? inventoryOutcome.value.map(
+                          ({ warehouseId }) => warehouseId,
+                        )
+                      : []),
                   ]),
                 ),
               ),
