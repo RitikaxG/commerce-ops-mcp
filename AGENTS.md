@@ -7,13 +7,12 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 ## Current gate
 
 - Phase 0 was reviewed and accepted on 2026-07-30.
-- Phase 1 schema documents are complete and awaiting client schema approval.
-- The next permitted action is Phase 1 client review or revision.
-- Phase 2 and all application, Prisma migration, AI, and MCP implementation remain blocked until the schema proposal is accepted.
+- Phase 1 was reviewed and accepted on 2026-07-30.
+- The next permitted implementation phase is Phase 2, in a separate coding session using only the Phase 2 prompt.
+- Phase 3 and later phases remain blocked by the phase sequence.
 - Use one phase prompt in one coding session and stop at its review gate.
-- Phase 1 is schema design and client review only.
-- Do not scaffold or implement the application, Prisma migrations, AI behavior, or MCP layer until the Phase 1 PostgreSQL schema is accepted.
-- The existing Prisma skeleton in `packages/db` remains unchanged and model-free.
+- Do not start Phase 2 without its explicit prompt, and do not implement work from later phases during Phase 2.
+- The existing Prisma skeleton in `packages/db` remains unchanged and model-free; schema implementation belongs to Phase 4.
 
 ## Permanent safety boundary
 
@@ -27,26 +26,32 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 
 - `commerce` schema: synthetic operational order, payment, inventory, fulfilment, event, and shipment records. The runtime role has `SELECT` only.
 - `operations` schema: investigation, evidence, escalation, idempotency, and append-only audit records. The runtime role receives only the workflow permissions it requires.
-- The two-schema safety boundary is fixed by the final plan. Detailed entities, columns, statuses, invariants, permissions, and indexes are proposed in `docs/database/schema-proposal.md`.
-- `docs/database/client-review-summary.md` is the concise client review packet.
-- Once accepted, `docs/database/schema-proposal.md` becomes the approved source of truth.
+- The two-schema safety boundary is fixed by the final plan. The detailed entities, columns, statuses, invariants, permissions, and indexes in `docs/database/schema-proposal.md` were accepted on 2026-07-30.
+- `docs/database/client-review-summary.md` records the accepted client decisions.
+- `docs/database/schema-proposal.md` is the approved source of truth for later schema and database implementation.
 - Any later deviation from the accepted schema must be documented and reviewed before migration changes.
 
-## Phase 1 schema proposal
+## Phase 1 approved schema
 
-The following is proposed and remains subject to client approval:
+The following was accepted on 2026-07-30:
 
 - `commerce` owns orders, order items, current payments, warehouses, inventory levels, current fulfilments, fulfilment events, and current shipments.
 - `operations` owns investigations, immutable evidence snapshots, human-review escalations, idempotency records, and append-only audit events.
 - Each order has at most one current payment, fulfilment, and shipment; absent rows remain representable as evidence.
 - Terminal investigations require exactly one immutable evidence snapshot.
-- An investigation has at most one human-review escalation in the scoped model.
+- Human-readable identifiers use PostgreSQL `text` and later Prisma `String` fields.
+- Native PostgreSQL enums represent the scoped states.
+- An investigation has at most one human-review escalation; retries reuse it and reopening a closed case is out of scope.
+- Human-review cases are allowed only for outcomes requiring human action, including missing/conflicting evidence, and not merely for `WITHIN_EXPECTED_PROCESSING_TIME`.
+- Cross-schema foreign keys are permitted because `commerce` and `operations` share one PostgreSQL database.
+- Migration, seed/reset, and workflow-runtime roles are separate; a separate reviewer interface/role is optional and must not broaden scope.
+- Evidence uses an immutable versioned JSONB snapshot with relational searchable outcome and trace fields.
 - Idempotency is unique by `(tool_name, idempotency_key)` and a reused key with a different request hash conflicts.
 - Runtime roles have `SELECT` only on `commerce`; evidence/idempotency/audit records are insert-only after creation.
 
-Proposed investigation statuses are `RUNNING`, `COMPLETED`, `NEEDS_MORE_INFO`, and `FAILED`. Evidence statuses are `COMPLETE`, `MISSING`, and `CONFLICTING`. Human-review statuses are `AWAITING_REVIEW`, `IN_REVIEW`, and `CLOSED`. Diagnosis codes remain separate from all lifecycle statuses.
+Approved investigation statuses are `RUNNING`, `COMPLETED`, `NEEDS_MORE_INFO`, and `FAILED`. Evidence statuses are `COMPLETE`, `MISSING`, and `CONFLICTING`. Human-review statuses are `AWAITING_REVIEW`, `IN_REVIEW`, and `CLOSED`. Diagnosis codes remain separate from all lifecycle statuses.
 
-Core proposed invariants:
+Core approved invariants:
 
 - `COMPLETED` requires `COMPLETE` evidence, a diagnosis, confidence, matched rule, terminal timestamp, and an evidence row.
 - `NEEDS_MORE_INFO` requires explicit missing fields or conflicts and forbids a diagnosis.
@@ -54,8 +59,6 @@ Core proposed invariants:
 - Escalations are derived from stored investigations; the LLM cannot supply diagnosis/evidence.
 - Foreign keys and composite keys prevent cross-order source relationships.
 - Runtime grants and later integration tests must prove every commerce mutation fails.
-
-Open client decisions: readable text IDs, native PostgreSQL enums, maximum-one current source rows, one case per investigation lifetime, cross-schema foreign keys, separate database roles, and versioned JSONB evidence snapshots.
 
 ## Stack and repository conventions
 
@@ -137,26 +140,26 @@ Phase 1 commands:
 - Prisma migration-directory absence check
 - Mermaid CLI availability check followed by manual ER syntax review
 
-Expected and actual results are recorded in `docs/evaluations/phase-01.md`. No Prisma validation, generation, migration, or database command is authorized before client schema approval.
+Expected and actual results are recorded in `docs/evaluations/phase-01.md`. No Prisma validation, generation, migration, or database command was run during Phase 1; schema implementation remains assigned to Phase 4.
 
 ## Phase status
 
-| Phase | Status                          | Evaluation report              | Notes                                   |
-| ----- | ------------------------------- | ------------------------------ | --------------------------------------- |
-| 0     | Complete                        | `docs/evaluations/phase-00.md` | Accepted 2026-07-30                     |
-| 1     | Awaiting client schema approval | `docs/evaluations/phase-01.md` | Proposal and client summary ready       |
-| 2     | Not started                     | Not created                    | Blocked until Phase 1 schema acceptance |
-| 3     | Not started                     | Not created                    | Blocked by phase sequence               |
-| 4     | Not started                     | Not created                    | Blocked by phase sequence               |
-| 5     | Not started                     | Not created                    | Blocked by phase sequence               |
-| 6     | Not started                     | Not created                    | Blocked by phase sequence               |
-| 7     | Not started                     | Not created                    | Blocked by phase sequence               |
-| 8     | Not started                     | Not created                    | Blocked by phase sequence               |
-| 9     | Not started                     | Not created                    | Blocked by phase sequence               |
-| 10    | Not started                     | Not created                    | Blocked by phase sequence               |
-| 11    | Not started                     | Not created                    | Blocked by phase sequence               |
-| 12    | Not started                     | Not created                    | Blocked by phase sequence               |
-| 13    | Not started                     | Not created                    | Blocked by phase sequence               |
+| Phase | Status      | Evaluation report              | Notes                     |
+| ----- | ----------- | ------------------------------ | ------------------------- |
+| 0     | Complete    | `docs/evaluations/phase-00.md` | Accepted 2026-07-30       |
+| 1     | Complete    | `docs/evaluations/phase-01.md` | Accepted 2026-07-30       |
+| 2     | Not started | Not created                    | Next permitted phase      |
+| 3     | Not started | Not created                    | Blocked by phase sequence |
+| 4     | Not started | Not created                    | Blocked by phase sequence |
+| 5     | Not started | Not created                    | Blocked by phase sequence |
+| 6     | Not started | Not created                    | Blocked by phase sequence |
+| 7     | Not started | Not created                    | Blocked by phase sequence |
+| 8     | Not started | Not created                    | Blocked by phase sequence |
+| 9     | Not started | Not created                    | Blocked by phase sequence |
+| 10    | Not started | Not created                    | Blocked by phase sequence |
+| 11    | Not started | Not created                    | Blocked by phase sequence |
+| 12    | Not started | Not created                    | Blocked by phase sequence |
+| 13    | Not started | Not created                    | Blocked by phase sequence |
 
 ## Decisions and trade-offs
 
@@ -170,11 +173,14 @@ Expected and actual results are recorded in `docs/evaluations/phase-01.md`. No P
 - 2026-07-30: Reject generic SQL/API tools, commerce mutation capabilities, and speculative production infrastructure.
 - 2026-07-30: Phase 0 workflow contract and package graph accepted by the reviewer.
 - 2026-07-30: `apps/docs` is not required and was removed by the user.
-- 2026-07-30: Preserve the user-initialized `packages/db` Prisma skeleton, while treating its empty schema and generated client setup as unapproved implementation until the schema gate is accepted.
-- 2026-07-30: Propose zero-or-one current payment, fulfilment, and shipment per order; detailed histories are deferred.
-- 2026-07-30: Propose human-readable text IDs, native PostgreSQL enums, versioned immutable JSONB evidence, and relational searchable outcomes.
-- 2026-07-30: Propose one human-review case per investigation lifetime; reopen-as-new-case remains an explicit client decision.
-- 2026-07-30: Propose separate schema-owner, demo seed/reset, workflow runtime, and human-review database roles.
+- 2026-07-30: Preserve the user-initialized `packages/db` Prisma skeleton through Phases 0 and 1; reconcile its schema and generated-client setup only in the phase that owns that implementation.
+- 2026-07-30: Approve zero-or-one current payment, fulfilment, and shipment per order; detailed histories are deferred and absent rows remain distinct from source-read failures.
+- 2026-07-30: Approve human-readable PostgreSQL `text` identifiers (Prisma `String`), native PostgreSQL enums, versioned immutable JSONB evidence, and relational searchable outcomes.
+- 2026-07-30: Approve one human-review case per investigation; retries reuse it and reopening a closed case is out of scope.
+- 2026-07-30: Permit cases only for outcomes requiring human action, including missing/conflicting evidence; `WITHIN_EXPECTED_PROCESSING_TIME` alone is not escalation-eligible.
+- 2026-07-30: Approve cross-schema foreign keys because both schemas share one PostgreSQL database.
+- 2026-07-30: Approve separate schema-owner/migration, demo seed/reset, and workflow-runtime roles; a separate reviewer interface/role remains optional.
+- 2026-07-30: Accept `docs/database/schema-proposal.md` as the database implementation source of truth.
 - 2026-07-30: Reject schema additions for histories, multi-tenancy, event sourcing, partitioning, archival, or external synchronization without a scoped need.
 
 ## Known limitations
@@ -187,7 +193,7 @@ Expected and actual results are recorded in `docs/evaluations/phase-01.md`. No P
 - The starter root typecheck is not clean-clone standalone: `@repo/ui` must run `build:components` first because its export map resolves generated `dist` files and Turbo does not encode that dependency.
 - Full copy-paste prompts for Phases 0-13 are not stored here. The repository currently stores the final plan and the prompt-use protocol only.
 - The safety boundary and package graph are documentation contracts only; no database permission or runtime guardrail exists yet.
-- Phase 1 client approval is pending; none of the proposed entities, enums, triggers, grants, or indexes is implemented.
+- The Phase 1 schema is accepted but none of its entities, enums, triggers, grants, or indexes is implemented yet.
 - Cross-table terminal-state and escalation consistency will require reviewed PostgreSQL constraint triggers in Phase 4.
 
 ## Instructions for coding agents
@@ -197,7 +203,7 @@ Expected and actual results are recorded in `docs/evaluations/phase-01.md`. No P
 - Implement only the explicitly requested phase.
 - Do not continue automatically to the next phase.
 - Do not silently change permanent decisions, safety boundaries, the accepted schema, or dependency direction.
-- For Phase 1, produce schema-review documents only and leave its status as awaiting client approval until the client accepts it.
+- The Phase 1 schema is accepted. Any later deviation must be documented and reviewed before migration changes.
 - Run every reported command, inspect its key output, and report expected versus actual results honestly.
 - Before stopping a phase, update this file, the README phase table, and `docs/evaluations/phase-XX.md`.
 - In every phase handoff, list every file updated during that phase, grouped by app/package/documentation area.

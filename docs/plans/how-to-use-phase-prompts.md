@@ -121,4 +121,4 @@ Do not link to an evaluation report until that report exists. Do not mark a phas
 
 ## Current handoff
 
-Phase 0 is accepted. Phase 1 schema documents are complete and awaiting client schema approval. The next authorized action is to approve the proposal or request revisions. Do not start Phase 2 or add Prisma models/migrations, application behavior, AI, or MCP implementation until approval.
+Phases 0 and 1 are accepted. `docs/database/schema-proposal.md` is the approved database source of truth. Phase 2 is the next authorized phase and must begin in a separate coding session using only the Phase 2 prompt. Do not add Prisma models/migrations or work from Phase 3 and later during Phase 2.

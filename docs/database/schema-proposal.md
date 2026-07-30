@@ -1,12 +1,12 @@
-# Scoped PostgreSQL Schema Proposal
+# Approved Scoped PostgreSQL Schema
 
 ## Review status
 
-**Status: Awaiting client schema approval**
+**Status: Accepted on 2026-07-30**
 
-This document is the Phase 1 design proposal. It does not modify the existing Prisma schema and does not authorize migrations, application scaffolding, AI behavior, or MCP implementation.
+This document is the accepted Phase 1 database design and the source of truth for later Prisma models, PostgreSQL migrations, repositories, seed data, and permission tests. Phase 1 did not modify the existing Prisma schema or authorize implementation work.
 
-After explicit client acceptance, this document becomes the source of truth for later Prisma models, PostgreSQL migrations, repositories, seed data, and permission tests. Any later deviation must be documented in the relevant phase evaluation and reviewed before a migration changes.
+Any later deviation must be documented in the relevant phase evaluation and reviewed before a migration changes.
 
 ## 1. Scope and safety boundary
 
@@ -29,14 +29,14 @@ Every investigation and escalation response must state `commerceStateChanged=fal
 
 ## 2. Design conventions
 
-- Identifiers use `text` so the synthetic IDs remain readable (`ORD-1042`, `INV-2001`, `TRACE-2001`, `CASE-2001`). A later production system could use UUIDs without changing entity boundaries.
+- Identifiers use PostgreSQL `text` so the synthetic IDs remain readable (`ORD-1042`, `INV-2001`, `TRACE-2001`, `CASE-2001`). When implemented in Prisma, these columns use the Prisma `String` type (`@db.Text` is optional because PostgreSQL `text` is its default mapping). A later production system could use UUIDs without changing entity boundaries.
 - All timestamps use `timestamptz` and are stored in UTC.
 - Statuses use schema-owned PostgreSQL enum types. The finite values make invalid state impossible at the database boundary; adding a value requires a reviewed migration.
 - External/provider references are nullable but unique when present.
 - Foreign keys use `ON DELETE RESTRICT`. Runtime roles have no delete permission.
 - JSONB is used only for evolving evidence and safe audit summaries. Common lookup fields remain relational and indexed.
 - `created_at` values default to `transaction_timestamp()` in the future migration. Source observation times are supplied by the evidence source and never defaulted silently.
-- The Prisma scaffold in `packages/db` remains unchanged until this proposal is accepted.
+- The Prisma scaffold in `packages/db` remained unchanged during Phase 1. Schema implementation belongs to Phase 4 after the intervening phase gates.
 
 ## 3. Enum catalogue
 
@@ -56,20 +56,20 @@ These are intentionally not a complete commerce lifecycle. New operational state
 
 ### 3.2 Operations enums
 
-| Enum                                   | Values                                                                                                                                                                                                                                                       | Use                                                                              |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| `operations.investigation_status`      | `RUNNING`, `COMPLETED`, `NEEDS_MORE_INFO`, `FAILED`                                                                                                                                                                                                          | Workflow lifecycle only.                                                         |
-| `operations.evidence_status`           | `COMPLETE`, `MISSING`, `CONFLICTING`                                                                                                                                                                                                                         | Whether deterministic diagnosis is safe.                                         |
-| `operations.diagnosis_code`            | `ASSIGNED_WAREHOUSE_OUT_OF_STOCK`, `FULFILMENT_CREATION_FAILED`, `WITHIN_EXPECTED_PROCESSING_TIME`, `SHIPMENT_LABEL_CREATION_FAILED`, `SHIPMENT_ALREADY_EXISTS`, `PAYMENT_NOT_CONFIRMED`, `CAUSE_NOT_DETERMINED`                                             | Business outcome, separate from workflow status.                                 |
-| `operations.diagnosis_confidence`      | `CONFIRMED`                                                                                                                                                                                                                                                  | The scoped workflow issues only deterministic, evidence-complete diagnoses.      |
-| `operations.review_status`             | `AWAITING_REVIEW`, `IN_REVIEW`, `CLOSED`                                                                                                                                                                                                                     | Human-review lifecycle.                                                          |
-| `operations.review_queue`              | `FULFILMENT_OPERATIONS`, `SHIPPING_OPERATIONS`, `PAYMENT_OPERATIONS`, `OPERATIONS_DATA_REVIEW`, `GENERAL_COMMERCE_OPERATIONS`                                                                                                                                | Explicit human ownership.                                                        |
-| `operations.review_reason_code`        | `ASSIGNED_WAREHOUSE_OUT_OF_STOCK`, `FULFILMENT_CREATION_FAILED`, `WITHIN_EXPECTED_PROCESSING_TIME`, `SHIPMENT_LABEL_CREATION_FAILED`, `SHIPMENT_ALREADY_EXISTS`, `PAYMENT_NOT_CONFIRMED`, `CAUSE_NOT_DETERMINED`, `MISSING_EVIDENCE`, `CONFLICTING_EVIDENCE` | Supports diagnosed and uncertainty-based handoffs without inventing a diagnosis. |
-| `operations.idempotency_resource_type` | `INVESTIGATION`, `HUMAN_REVIEW_ESCALATION`                                                                                                                                                                                                                   | Type of persisted resource returned by a retried request.                        |
-| `operations.audit_status`              | `STARTED`, `SUCCEEDED`, `FAILED`                                                                                                                                                                                                                             | Outcome of an observable workflow step.                                          |
-| `operations.audit_event_type`          | Listed below                                                                                                                                                                                                                                                 | Stable vocabulary for trace reconstruction.                                      |
+| Enum                                   | Values                                                                                                                                                                                                                    | Use                                                                                                                                                     |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `operations.investigation_status`      | `RUNNING`, `COMPLETED`, `NEEDS_MORE_INFO`, `FAILED`                                                                                                                                                                       | Workflow lifecycle only.                                                                                                                                |
+| `operations.evidence_status`           | `COMPLETE`, `MISSING`, `CONFLICTING`                                                                                                                                                                                      | Whether deterministic diagnosis is safe.                                                                                                                |
+| `operations.diagnosis_code`            | `ASSIGNED_WAREHOUSE_OUT_OF_STOCK`, `FULFILMENT_CREATION_FAILED`, `WITHIN_EXPECTED_PROCESSING_TIME`, `SHIPMENT_LABEL_CREATION_FAILED`, `SHIPMENT_ALREADY_EXISTS`, `PAYMENT_NOT_CONFIRMED`, `CAUSE_NOT_DETERMINED`          | Business outcome, separate from workflow status.                                                                                                        |
+| `operations.diagnosis_confidence`      | `CONFIRMED`                                                                                                                                                                                                               | The scoped workflow issues only deterministic, evidence-complete diagnoses.                                                                             |
+| `operations.review_status`             | `AWAITING_REVIEW`, `IN_REVIEW`, `CLOSED`                                                                                                                                                                                  | Human-review lifecycle.                                                                                                                                 |
+| `operations.review_queue`              | `FULFILMENT_OPERATIONS`, `SHIPPING_OPERATIONS`, `PAYMENT_OPERATIONS`, `OPERATIONS_DATA_REVIEW`, `GENERAL_COMMERCE_OPERATIONS`                                                                                             | Explicit human ownership.                                                                                                                               |
+| `operations.review_reason_code`        | `ASSIGNED_WAREHOUSE_OUT_OF_STOCK`, `FULFILMENT_CREATION_FAILED`, `SHIPMENT_LABEL_CREATION_FAILED`, `SHIPMENT_ALREADY_EXISTS`, `PAYMENT_NOT_CONFIRMED`, `CAUSE_NOT_DETERMINED`, `MISSING_EVIDENCE`, `CONFLICTING_EVIDENCE` | Supports actionable diagnosed and uncertainty-based handoffs without inventing a diagnosis. `WITHIN_EXPECTED_PROCESSING_TIME` is deliberately excluded. |
+| `operations.idempotency_resource_type` | `INVESTIGATION`, `HUMAN_REVIEW_ESCALATION`                                                                                                                                                                                | Type of persisted resource returned by a retried request.                                                                                               |
+| `operations.audit_status`              | `STARTED`, `SUCCEEDED`, `FAILED`                                                                                                                                                                                          | Outcome of an observable workflow step.                                                                                                                 |
+| `operations.audit_event_type`          | Listed below                                                                                                                                                                                                              | Stable vocabulary for trace reconstruction.                                                                                                             |
 
-Proposed `operations.audit_event_type` values:
+Approved `operations.audit_event_type` values:
 
 - `INVESTIGATION_STARTED`
 - `INVESTIGATION_FAILED`
@@ -274,7 +274,9 @@ Purpose: persistent human-review handoff derived from a stored investigation.
 | `updated_at`          | `timestamptz`                   | No       | `updated_at >= created_at`                    | Review lifecycle update time.                                   |
 | `closed_at`           | `timestamptz`                   | Yes      | Required only for `CLOSED`                    | Closure time.                                                   |
 
-The proposal permits one escalation over the lifetime of an investigation. A repeated escalation request returns the same case. If the client requires reopen-as-new-case behavior, replace the lifetime unique constraints with reviewed partial unique indexes for non-closed cases.
+The approved design permits one escalation over the lifetime of an investigation. A repeated escalation request returns the same case, including after closure. Reopening a closed case is out of scope.
+
+A case may be created only when the stored outcome requires human action and provides a server-derived queue and next step. Eligible outcomes include `NEEDS_MORE_INFO` caused by missing or conflicting evidence. `WITHIN_EXPECTED_PROCESSING_TIME` is not eligible merely because the order remains within the expected window.
 
 ### 5.4 `operations.idempotency_records`
 
@@ -427,7 +429,7 @@ During `RUNNING`, an investigation may temporarily have no evidence row. `COMPLE
 
 ## 7. Invariants and enforcement
 
-| Invariant                                                                                                                | Proposed enforcement                                                                                                                           |
+| Invariant                                                                                                                | Required enforcement                                                                                                                           |
 | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | Order-item quantities are positive.                                                                                      | `CHECK (quantity > 0)`.                                                                                                                        |
 | Inventory is non-negative.                                                                                               | `CHECK (available_quantity >= 0)`.                                                                                                             |
@@ -442,6 +444,7 @@ During `RUNNING`, an investigation may temporarily have no evidence row. `COMPLE
 | Evidence is immutable.                                                                                                   | Runtime has no `UPDATE`/`DELETE` grant on `investigation_evidence`; optional defensive trigger rejects mutation.                               |
 | Audit events are append-only.                                                                                            | Runtime has no `UPDATE`/`DELETE` grant on `audit_events`; `event_key` is unique.                                                               |
 | Escalation data is derived from the stored investigation.                                                                | Service accepts only investigation ID/idempotency key; deferred trigger validates matching order and reason category.                          |
+| Escalation requires a human-action outcome; `WITHIN_EXPECTED_PROCESSING_TIME` alone is ineligible.                       | Service eligibility rule requires a derived queue/next step; enum omission and a deferred trigger reject the non-actionable reason.            |
 | Closed cases have a close time; open cases do not.                                                                       | `CHECK` tying `status` to `closed_at`.                                                                                                         |
 | Duplicate escalation is prevented.                                                                                       | `UNIQUE (investigation_id)` and `UNIQUE (dedupe_key)`.                                                                                         |
 | Idempotency is per tool and key.                                                                                         | Composite PK `(tool_name, idempotency_key)` plus request-hash comparison before effects.                                                       |
@@ -452,7 +455,7 @@ The cross-table constraint triggers are PostgreSQL migration details for Phase 4
 
 ## 8. Permissions
 
-Proposed role separation:
+Approved role separation:
 
 | Role                  | `commerce`                             | `operations`                                                              | Intended use                                               |
 | --------------------- | -------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -657,12 +660,13 @@ No ad hoc column or guessed diagnosis is needed.
 - Human-readable text IDs improve demo clarity; UUIDs remain an implementation alternative.
 - Native enums strengthen validation but require reviewed migrations for new values.
 - JSONB preserves evolving decision-time evidence while relational fields support known queries.
-- One case per investigation makes retry/review history unambiguous; reopen-as-new-case is deferred pending confirmation.
+- One case per investigation makes retry/review history unambiguous; retries reuse it and reopening a closed case is out of scope.
+- Review cases are limited to outcomes requiring human action. Missing/conflicting evidence is eligible; being within the expected processing window alone is not.
 - Cross-schema foreign keys are appropriate because both logical schemas share one PostgreSQL system of record.
 
 ### Explicit exclusions
 
-This is not a complete commerce backend. The proposal defers:
+This is not a complete commerce backend. The approved design defers:
 
 - payment attempt and provider history;
 - multiple/split fulfilments and shipments;
@@ -677,16 +681,18 @@ This is not a complete commerce backend. The proposal defers:
 
 The model evolves safely because provider histories can be added beside current tables, snapshot versions preserve older evidence, top-level indexed outcomes remain stable, and package boundaries isolate Prisma from diagnosis/business rules.
 
-## 14. Client decisions requested
+## 14. Client acceptance record
 
-Please confirm:
+Accepted on 2026-07-30:
 
-1. **Current-record cardinality:** at most one current payment, fulfilment, and shipment per order; absent rows remain representable.
-2. **Identifiers:** human-readable `text` IDs for the prototype rather than UUIDs.
-3. **Enum strategy:** native PostgreSQL enums with reviewed migrations for new values.
-4. **Escalation lifecycle:** one case for the lifetime of an investigation; retries reuse it. If a closed case must reopen as a new record, partial unique indexes are required instead.
-5. **Cross-schema foreign keys:** `operations` records directly reference `commerce.orders` because both schemas share one PostgreSQL database.
-6. **Role separation:** runtime, seed/reset, migration, and optional human-review roles use separate credentials and grants.
-7. **Snapshot model:** immutable versioned JSONB evidence plus relational searchable outcome fields.
+1. **Safety boundary:** workflow runtime reads `commerce`; synthetic commerce writes occur only through explicit seed/reset paths. Workflow persistence is limited to the approved `operations` records.
+2. **Current-record cardinality:** at most one current payment, fulfilment, and shipment per order; absent rows remain distinct from source-read failures.
+3. **Identifiers:** human-readable PostgreSQL `text` IDs for the prototype, represented as Prisma `String` fields when implemented.
+4. **Enum strategy:** native PostgreSQL enums with reviewed migrations for new values.
+5. **Escalation lifecycle:** one case per investigation; retries reuse it and reopening a closed case is out of scope. Cases are allowed for outcomes requiring human action, including missing/conflicting evidence, but not merely `WITHIN_EXPECTED_PROCESSING_TIME`.
+6. **Cross-schema foreign keys:** `operations` records directly reference `commerce.orders` because both schemas share one PostgreSQL database.
+7. **Role separation:** migration, seed/reset, and workflow-runtime credentials/grants are separate. A separate human-review interface or expanded reviewer workflow is optional and must not broaden the assignment.
+8. **Snapshot model:** immutable versioned JSONB evidence plus relational searchable outcome and trace fields.
+9. **Uncertainty:** missing or conflicting evidence produces `NEEDS_MORE_INFO` with no guessed diagnosis.
 
-No Prisma model or migration should be created until these decisions and the complete proposal are accepted.
+Later implementation must follow the phase sequence and this accepted design.

@@ -12,20 +12,21 @@ Produce a complete, client-reviewable PostgreSQL schema proposal before applicat
 - Added an ER diagram, permission design, invariant enforcement, indexes, JSONB snapshot rationale, and audit rationale.
 - Demonstrated `ORD-1042` and `NEEDS_MORE_INFO` without ad hoc fields.
 - Added a concise client-review summary and explicit confirmation questions.
+- Recorded client acceptance of the schema and all requested decisions.
 
 No Prisma model, migration, database client, seed, application, AI behavior, or MCP tool was created or changed.
 
 ## Files and packages changed
 
-| Area                   | File                                     | Change                                                                 |
-| ---------------------- | ---------------------------------------- | ---------------------------------------------------------------------- |
-| Database documentation | `docs/database/schema-proposal.md`       | Complete scoped PostgreSQL proposal.                                   |
-| Database documentation | `docs/database/client-review-summary.md` | Concise client-facing review packet.                                   |
-| Evaluation             | `docs/evaluations/phase-01.md`           | Phase 1 checks, evidence, limitations, and decision.                   |
-| Repository guidance    | `AGENTS.md`                              | Phase status, proposed schema decisions, gates, and verified commands. |
-| Repository summary     | `README.md`                              | Phase 1 status and proposal/evaluation links.                          |
-| Accepted contract      | `docs/workflow-contract.md`              | Corrected Phase 0 contract status to accepted.                         |
-| Phase process          | `docs/plans/how-to-use-phase-prompts.md` | Updated the current handoff to client schema review.                   |
+| Area                   | File                                     | Change                                                        |
+| ---------------------- | ---------------------------------------- | ------------------------------------------------------------- |
+| Database documentation | `docs/database/schema-proposal.md`       | Accepted scoped PostgreSQL source of truth.                   |
+| Database documentation | `docs/database/client-review-summary.md` | Client acceptance and resolved decisions.                     |
+| Evaluation             | `docs/evaluations/phase-01.md`           | Phase 1 checks, evidence, acceptance, and decision.           |
+| Repository guidance    | `AGENTS.md`                              | Accepted schema decisions, phase gate, and verified commands. |
+| Repository summary     | `README.md`                              | Accepted Phase 1 status and proposal/evaluation links.        |
+| Accepted contract      | `docs/workflow-contract.md`              | Corrected Phase 0 contract status to accepted.                |
+| Phase process          | `docs/plans/how-to-use-phase-prompts.md` | Updated the current handoff to client schema review.          |
 
 No app or package implementation file changed.
 
@@ -36,6 +37,10 @@ No app or package implementation file changed.
 | Bun schema-document consistency assertion, initial run   | Required entities/statuses/scenarios and `commerceStateChanged` are explicit; ER references are defined.               | Failed because the proposal enforced no mutation but omitted the explicit `commerceStateChanged=false` response field. | Fail   |
 | Bun schema-document consistency assertion, rerun         | Same assertions after correction.                                                                                      | `27 required tokens present; 12 ER entities defined; 0 undefined ER references`.                                       | Pass   |
 | Bun client-summary consistency assertion                 | Summary contains the boundary, entity groups, lifecycle/evidence/review states, all 7 diagnosis codes, and `ORD-1042`. | All required summary tokens matched the proposal.                                                                      | Pass   |
+| Bun acceptance consistency assertion, initial run        | Accepted decisions are aligned and the expected-window diagnosis is absent from review-reason enum values.             | False positive: the check searched the full table row, including prose that says the value is excluded.                | Fail   |
+| Bun acceptance consistency assertion, corrected rerun    | Inspect only the enum-values cell while checking the accepted decisions and phase statuses.                            | `6 documents aligned; 8 acceptance markers present; expected-window diagnosis excluded from review reasons`.           | Pass   |
+| Post-acceptance Prettier check, initial run              | Updated Markdown is formatted.                                                                                         | Reported style issues in `AGENTS.md`, `README.md`, the schema, and this report.                                        | Fail   |
+| `bunx prettier --write` on the four reported files       | Apply only mechanical Markdown formatting.                                                                             | All four files formatted successfully.                                                                                 | Pass   |
 | `bunx prettier --check AGENTS.md README.md docs/**/*.md` | All Markdown is formatted.                                                                                             | `All matched files use Prettier code style!`                                                                           | Pass   |
 | `git diff --check`                                       | No whitespace errors.                                                                                                  | No output; exit code 0.                                                                                                | Pass   |
 | `git diff -- packages/db`                                | Existing Prisma scaffold remains unchanged.                                                                            | No output.                                                                                                             | Pass   |
@@ -54,6 +59,8 @@ The exact Bun consistency commands were:
 PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun -e 'const text = await Bun.file("docs/database/schema-proposal.md").text(); const required = ["commerce.orders","commerce.order_items","commerce.payments","commerce.warehouses","commerce.inventory_levels","commerce.fulfilments","commerce.fulfilment_events","commerce.shipments","operations.investigations","operations.investigation_evidence","operations.human_review_escalations","operations.idempotency_records","operations.audit_events","RUNNING","COMPLETED","NEEDS_MORE_INFO","FAILED","COMPLETE","MISSING","CONFLICTING","AWAITING_REVIEW","IN_REVIEW","CLOSED","ORD-1042","ORD-1046","IDEMPOTENCY_KEY_REUSE","commerceStateChanged"]; const missing = required.filter((token) => !text.includes(token)); if (missing.length) throw new Error("Missing required tokens: " + missing.join(", ")); const diagram = text.split("```mermaid")[1]?.split("```")[0] ?? ""; const defined = new Set(["COMMERCE_ORDERS","COMMERCE_ORDER_ITEMS","COMMERCE_PAYMENTS","COMMERCE_WAREHOUSES","COMMERCE_INVENTORY_LEVELS","COMMERCE_FULFILMENTS","COMMERCE_FULFILMENT_EVENTS","COMMERCE_SHIPMENTS","OPERATIONS_INVESTIGATIONS","OPERATIONS_INVESTIGATION_EVIDENCE","OPERATIONS_HUMAN_REVIEW_ESCALATIONS","OPERATIONS_AUDIT_EVENTS"]); const refs = [...diagram.matchAll(/(?:COMMERCE|OPERATIONS)_[A-Z_]+/g)].map((match) => match[0]); const unknown = [...new Set(refs.filter((ref) => !defined.has(ref)))]; if (unknown.length) throw new Error("Undefined ER entities: " + unknown.join(", ")); console.log("schema-doc consistency: 27 required tokens present; " + defined.size + " ER entities defined; 0 undefined ER references");'
 
 PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun -e 'const proposal = await Bun.file("docs/database/schema-proposal.md").text(); const summary = await Bun.file("docs/database/client-review-summary.md").text(); const diagnoses = ["ASSIGNED_WAREHOUSE_OUT_OF_STOCK","FULFILMENT_CREATION_FAILED","WITHIN_EXPECTED_PROCESSING_TIME","SHIPMENT_LABEL_CREATION_FAILED","SHIPMENT_ALREADY_EXISTS","PAYMENT_NOT_CONFIRMED","CAUSE_NOT_DETERMINED"]; const required = ["commerce","operations","investigations","investigation_evidence","human_review_escalations","idempotency_records","audit_events","RUNNING","COMPLETED","NEEDS_MORE_INFO","FAILED","COMPLETE","MISSING","CONFLICTING","AWAITING_REVIEW","IN_REVIEW","CLOSED","ORD-1042","commerceStateChanged=false",...diagnoses]; const missingSummary = required.filter((token) => !summary.includes(token)); const missingProposal = diagnoses.filter((token) => !proposal.includes(token)); if (missingSummary.length || missingProposal.length) throw new Error("Review summary mismatch: " + [...missingSummary,...missingProposal].join(", ")); console.log("client-summary consistency: boundary, 13 entity names/groups, 11 lifecycle/evidence/review states, 7 diagnosis codes, and ORD-1042 present");'
+
+PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun -e 'const paths = ["AGENTS.md", "README.md", "docs/database/schema-proposal.md", "docs/database/client-review-summary.md", "docs/evaluations/phase-01.md", "docs/plans/how-to-use-phase-prompts.md"]; const texts = Object.fromEntries(await Promise.all(paths.map(async (path) => [path, await Bun.file(path).text()]))); const required = ["Accepted on 2026-07-30", "Prisma `String`", "source-read failures", "reopening a closed case is out of scope", "missing/conflicting evidence", "WITHIN_EXPECTED_PROCESSING_TIME", "cross-schema foreign keys", "immutable versioned JSONB"]; const combined = Object.values(texts).join("\n"); const missing = required.filter((token) => !combined.includes(token)); if (missing.length) throw new Error("Missing acceptance tokens: " + missing.join(", ")); for (const path of paths.slice(0, 4)) { if (texts[path].includes("Awaiting client schema approval")) throw new Error("Stale approval status in " + path); } if (!texts["docs/evaluations/phase-01.md"].includes("**Accepted**")) throw new Error("Evaluation exit decision is not accepted"); const proposal = texts["docs/database/schema-proposal.md"]; const diagnosisLine = proposal.split("\n").find((line) => line.includes("operations.diagnosis_code")) ?? ""; const reviewLine = proposal.split("\n").find((line) => line.includes("operations.review_reason_code")) ?? ""; const diagnosisValues = diagnosisLine.split("|")[2] ?? ""; const reviewValues = reviewLine.split("|")[2] ?? ""; if (!diagnosisValues.includes("WITHIN_EXPECTED_PROCESSING_TIME")) throw new Error("Expected-window diagnosis missing"); if (reviewValues.includes("WITHIN_EXPECTED_PROCESSING_TIME")) throw new Error("Expected-window diagnosis remains escalation-eligible"); for (const token of ["MISSING_EVIDENCE", "CONFLICTING_EVIDENCE"]) { if (!reviewValues.includes(token)) throw new Error("Missing review reason " + token); } console.log("acceptance consistency: 6 documents aligned; 8 acceptance markers present; expected-window diagnosis excluded from review reasons");'
 ````
 
 No Prisma validate, format, generate, migrate, push, seed, or database command was run.
@@ -128,8 +135,8 @@ Manually inspected the `erDiagram` block:
 - Missing inventory cannot be interpreted as zero inventory.
 - Evidence snapshots are immutable; audit events are append-only.
 - Escalations are derived from stored investigations, not model-supplied facts.
-- Database roles separate migration, seed/reset, workflow runtime, and human review.
-- Phase 2 remains blocked until client schema approval.
+- Database roles separate migration, seed/reset, and workflow runtime; a reviewer role/interface remains optional.
+- Phase 2 is the next permitted phase but has not started.
 
 ## Sample output / IDs / trace evidence
 
@@ -137,23 +144,23 @@ The proposal represents planned IDs `ORD-1042`, `INV-2001`, `TRACE-2001`, `CASE-
 
 ## Known limitations
 
-- Client schema approval is pending.
-- The existing Prisma schema remains empty; no proposal detail is implemented.
+- The existing Prisma schema remains empty; no accepted schema detail is implemented.
 - Cross-table terminal-state and escalation consistency require PostgreSQL constraint triggers in Phase 4 because Prisma schema syntax cannot express them alone.
 - Mermaid CLI was unavailable; the ERD received manual syntax review only.
-- Native enum, identifier, current-record cardinality, role-separation, and reopen-case choices may change during client review.
 
-## Unresolved questions
+## Client decisions resolved
 
-Client confirmation is required for:
+The client accepted:
 
-1. maximum one current payment, fulfilment, and shipment per order;
-2. human-readable `text` identifiers;
-3. native PostgreSQL enums;
-4. one case per investigation lifetime versus reopen-as-new-case;
-5. cross-schema foreign keys;
-6. separate migration, seed/reset, runtime, and reviewer roles; and
-7. versioned immutable JSONB evidence plus relational searchable outcomes.
+1. runtime-read-only `commerce` with explicit synthetic seed/reset writes;
+2. workflow-only writes in `operations`;
+3. zero-or-one current payment, fulfilment, and shipment, with absence distinct from read failure;
+4. human-readable PostgreSQL `text` identifiers, represented as Prisma `String`;
+5. native PostgreSQL enums;
+6. one reusable case per investigation, no reopen, and escalation only for human-action outcomes—including missing/conflicting evidence but excluding expected-window processing alone;
+7. cross-schema foreign keys in the shared database;
+8. separate migration, seed/reset, and workflow-runtime roles, with reviewer UI/workflow optional; and
+9. immutable versioned JSONB evidence with relational searchable outcome/trace fields.
 
 ## Decisions changed during review
 
@@ -161,8 +168,10 @@ No accepted Phase 0 safety or package-boundary decision changed.
 
 The initial consistency check led to an explicit `commerceStateChanged=false` response guarantee in both review documents. The proposal also clarifies that SKU is a shared text business key because a product catalogue is outside scope.
 
+Client review accepted the proposal and clarified that `WITHIN_EXPECTED_PROCESSING_TIME` alone is not escalation-eligible, while missing/conflicting evidence can require a human-review case. The review also fixed one reusable case per investigation with reopening out of scope.
+
 ## Exit decision
 
-**Awaiting client schema approval**
+**Accepted**
 
-The Phase 1 documents pass the required design checks and are ready for client acceptance or revision. No implementation phase may begin before approval.
+The client accepted the Phase 1 schema on 2026-07-30. Phase 2 may begin only in a separate coding session with the Phase 2 prompt; no Phase 2 implementation is included here.

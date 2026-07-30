@@ -4,42 +4,40 @@ This repository will implement a bounded operations workflow that explains why a
 
 ## Current state
 
-Phase 0 is complete. Phase 1 schema documents are ready and awaiting client schema approval.
+Phases 0 and 1 are complete. The PostgreSQL schema proposal was accepted on 2026-07-30 and is now the database implementation source of truth. Phase 2 is the next permitted phase and must start in a separate coding session with its own prompt.
 
-The user removed `apps/docs` and initialized a Prisma skeleton in `packages/db`. The Prisma schema remains empty. No proposed Phase 1 entity, migration, application workflow, AI behavior, or MCP implementation exists in code.
+The user removed `apps/docs` and initialized a Prisma skeleton in `packages/db`. The Prisma schema remains empty. No accepted Phase 1 entity, migration, application workflow, AI behavior, or MCP implementation exists in code yet.
 
 ## Plan and working instructions
 
 - [Final plan](docs/plans/Diligence_AI_Commerce_Operations_Final_Plan_Updated.pdf)
 - [Workflow contract](docs/workflow-contract.md)
 - [Package graph](docs/architecture/package-graph.md)
-- [PostgreSQL schema proposal](docs/database/schema-proposal.md)
-- [Client review summary](docs/database/client-review-summary.md)
+- [Approved PostgreSQL schema](docs/database/schema-proposal.md)
+- [Schema acceptance summary](docs/database/client-review-summary.md)
 - [How to use the phase prompts](docs/plans/how-to-use-phase-prompts.md)
 - [Coding-agent instructions](AGENTS.md)
 
-Review the Phase 1 proposal, client summary, [evaluation report](docs/evaluations/phase-01.md), `AGENTS.md`, and this status table. Approve the schema or request revisions.
-
-Phase 1 is a client-review gate. It may design and document the scoped PostgreSQL schema, but application scaffolding, Prisma migrations, AI behavior, and MCP implementation must wait until the schema is accepted.
+Phase 1 was a documentation-only client-review gate. Its schema is accepted; no Prisma model or migration was created. Use only the Phase 2 prompt in the next coding session and stop at its review gate.
 
 ## Implementation status
 
-| Phase | Status                          | Main output                                                    | Evaluation                             |
-| ----- | ------------------------------- | -------------------------------------------------------------- | -------------------------------------- |
-| 0     | Complete                        | Workflow contract and repository rules                         | [Report](docs/evaluations/phase-00.md) |
-| 1     | Awaiting client schema approval | [PostgreSQL schema proposal](docs/database/schema-proposal.md) | [Report](docs/evaluations/phase-01.md) |
-| 2     | Not started                     | Bun and Turborepo foundation                                   | Not created                            |
-| 3     | Not started                     | Zod contracts and synthetic scenarios                          | Not created                            |
-| 4     | Not started                     | Approved PostgreSQL schema and seed                            | Not created                            |
-| 5     | Not started                     | Repositories and read-only commerce boundary                   | Not created                            |
-| 6     | Not started                     | Evidence collection and normalization                          | Not created                            |
-| 7     | Not started                     | Evidence readiness and conflict gate                           | Not created                            |
-| 8     | Not started                     | Deterministic diagnosis and suggested action                   | Not created                            |
-| 9     | Not started                     | Persistent investigation and escalation workflow               | Not created                            |
-| 10    | Not started                     | Standard remote MCP server                                     | Not created                            |
-| 11    | Not started                     | Agent behavior and LLM evaluations                             | Not created                            |
-| 12    | Not started                     | Trace APIs and minimal Tailwind viewer                         | Not created                            |
-| 13    | Not started                     | Hardening, deployment, and submission evidence                 | Not created                            |
+| Phase | Status      | Main output                                                    | Evaluation                             |
+| ----- | ----------- | -------------------------------------------------------------- | -------------------------------------- |
+| 0     | Complete    | Workflow contract and repository rules                         | [Report](docs/evaluations/phase-00.md) |
+| 1     | Complete    | [Approved PostgreSQL schema](docs/database/schema-proposal.md) | [Report](docs/evaluations/phase-01.md) |
+| 2     | Not started | Bun and Turborepo foundation                                   | Not created                            |
+| 3     | Not started | Zod contracts and synthetic scenarios                          | Not created                            |
+| 4     | Not started | Approved PostgreSQL schema and seed                            | Not created                            |
+| 5     | Not started | Repositories and read-only commerce boundary                   | Not created                            |
+| 6     | Not started | Evidence collection and normalization                          | Not created                            |
+| 7     | Not started | Evidence readiness and conflict gate                           | Not created                            |
+| 8     | Not started | Deterministic diagnosis and suggested action                   | Not created                            |
+| 9     | Not started | Persistent investigation and escalation workflow               | Not created                            |
+| 10    | Not started | Standard remote MCP server                                     | Not created                            |
+| 11    | Not started | Agent behavior and LLM evaluations                             | Not created                            |
+| 12    | Not started | Trace APIs and minimal Tailwind viewer                         | Not created                            |
+| 13    | Not started | Hardening, deployment, and submission evidence                 | Not created                            |
 
 ## Verified commands
 

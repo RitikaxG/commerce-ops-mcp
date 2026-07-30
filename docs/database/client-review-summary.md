@@ -1,8 +1,8 @@
-# PostgreSQL Schema Client Review Summary
+# PostgreSQL Schema Acceptance Summary
 
-## Decision requested
+## Acceptance
 
-Approve or revise the scoped PostgreSQL design for the commerce operations investigator. No application, Prisma migration, AI, or MCP work starts until approval.
+The scoped PostgreSQL design for the commerce operations investigator was accepted on 2026-07-30. This document records the client decisions; [schema-proposal.md](schema-proposal.md) is the approved implementation source of truth.
 
 ## Product boundary
 
@@ -16,7 +16,7 @@ The workflow answers:
 - Forbidden: order, payment, inventory, fulfilment, event, or shipment mutation.
 - Every investigation/escalation result states `commerceStateChanged=false`.
 
-## Proposed entities
+## Approved entities
 
 ### `commerce` - runtime read-only
 
@@ -43,7 +43,8 @@ The workflow answers:
 - One order has at most one current payment, fulfilment, and shipment. Absence remains representable as evidence.
 - One order can have many investigations.
 - A terminal investigation has exactly one immutable evidence snapshot.
-- An investigation has at most one human-review case in the scoped model.
+- An investigation has at most one human-review case. Retries reuse it and reopening a closed case is out of scope.
+- Cases are limited to outcomes requiring human action, including missing/conflicting evidence; `WITHIN_EXPECTED_PROCESSING_TIME` alone is not eligible.
 - Investigations and cases have ordered append-only audit events.
 - Idempotency records point logically to either an investigation or case.
 
@@ -78,6 +79,7 @@ Diagnosis codes:
 - Missing/conflicting evidence cannot produce a next step that relies on the uncertain fact.
 - Evidence snapshots are immutable and audit events are append-only.
 - Escalation fields are derived from the stored investigation, not supplied by the LLM.
+- Escalation requires a server-derived human-action outcome, queue, and next step.
 - Idempotency is unique per tool/key; the same key with a different request hash conflicts.
 - One investigation/dedupe key cannot create duplicate cases.
 - Runtime permissions deny every commerce mutation.
@@ -113,16 +115,19 @@ The assigned warehouse has zero stock, another active warehouse has sufficient s
 
 ### Missing assigned-warehouse inventory
 
-The missing inventory row is recorded in the immutable snapshot and `missing_fields`. The investigation is `NEEDS_MORE_INFO`/`MISSING`, with no diagnosis and only an evidence-verification next step. A case may be routed to `OPERATIONS_DATA_REVIEW`.
+The missing inventory row is recorded in the immutable snapshot and `missing_fields`. The investigation is `NEEDS_MORE_INFO`/`MISSING`, with no diagnosis and only an evidence-verification next step. A human-action case can be routed to `OPERATIONS_DATA_REVIEW`.
 
-## Confirm these decisions
+## Accepted decisions
 
-1. Use at most one current payment, fulfilment, and shipment per order.
-2. Use readable `text` IDs for the prototype.
-3. Use native PostgreSQL enums.
-4. Permit only one case over an investigation's lifetime, or request reopen-as-new-case behavior.
-5. Keep cross-schema foreign keys because both schemas share one PostgreSQL database.
-6. Use separate runtime, seed/reset, migration, and reviewer roles.
-7. Store versioned immutable evidence in JSONB with relational searchable outcomes.
+1. Keep `commerce` runtime-read-only; allow synthetic writes only through explicit seed/reset.
+2. Persist only approved `operations` workflow records and never mutate commerce state.
+3. Use at most one current payment, fulfilment, and shipment per order; distinguish absent records from source-read failures.
+4. Use readable PostgreSQL `text` IDs, represented as Prisma `String` fields when implemented.
+5. Use native PostgreSQL enums.
+6. Use one case per investigation and reuse it on retries; reopening is out of scope. Create cases for outcomes requiring human action, including missing/conflicting evidence, but not merely because processing is within the expected window.
+7. Keep cross-schema foreign keys because both schemas share one PostgreSQL database.
+8. Separate migration, seed/reset, and workflow-runtime roles. A separate reviewer interface/workflow is optional and must not broaden scope.
+9. Store versioned immutable JSONB evidence with relational searchable outcome and trace fields.
+10. Return `NEEDS_MORE_INFO`, with no guessed diagnosis, for missing or conflicting evidence.
 
 Full columns, nullability, constraints, ERD, permissions, indexes, and walkthroughs are in [schema-proposal.md](schema-proposal.md).
