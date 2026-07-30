@@ -14,6 +14,7 @@ The workflow answers:
 - `operations`: investigations and human-review workflow records; minimum scoped writes.
 - Allowed: create investigations, immutable evidence snapshots, review cases, idempotency records, and append-only audit events.
 - Forbidden: order, payment, inventory, fulfilment, event, or shipment mutation.
+- Every investigation/escalation result states `commerceStateChanged=false`.
 
 ## Proposed entities
 

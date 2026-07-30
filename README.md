@@ -56,7 +56,9 @@ The desktop shell required `/Users/ritikagupta/.bun/bin` on `PATH`. The first ro
 
 See the [Phase 0 evaluation report](docs/evaluations/phase-00.md) for expected and actual results. No migrate, seed, reset, development, evaluation-harness, or runtime workflow command exists or was claimed for this documentation-only phase.
 
-Phase 1 documentation checks are recorded in the [Phase 1 evaluation report](docs/evaluations/phase-01.md). No Prisma model, generation, validation, migration, or database command was run.
+Phase 1 checks passed for required schema tokens/ER references, client-summary consistency, Markdown formatting, whitespace, unchanged `packages/db`, and absence of migrations. Mermaid CLI was unavailable, so the ERD received manual syntax review. Full results are in the [Phase 1 evaluation report](docs/evaluations/phase-01.md).
+
+No Prisma model, generation, validation, migration, or database command was run.
 
 Plan-intake checks completed:
 

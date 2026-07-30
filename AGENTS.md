@@ -127,7 +127,17 @@ The first root typecheck failed because the starter's `@repo/ui` export map targ
 
 The expected and actual results are recorded in `docs/evaluations/phase-00.md`. No test, migrate, seed, reset, development, or evaluation-harness command was required or claimed for this documentation-only phase.
 
-Phase 1 commands are recorded in `docs/evaluations/phase-01.md`. No Prisma validation, generation, migration, or database command is authorized before client schema approval.
+Phase 1 commands:
+
+- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun -e '<schema-document consistency assertions>'`
+- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bun -e '<client-summary consistency assertions>'`
+- `PATH=/Users/ritikagupta/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin bunx prettier --check AGENTS.md README.md docs/**/*.md`
+- `/usr/bin/git diff --check`
+- `/usr/bin/git diff -- packages/db`
+- Prisma migration-directory absence check
+- Mermaid CLI availability check followed by manual ER syntax review
+
+Expected and actual results are recorded in `docs/evaluations/phase-01.md`. No Prisma validation, generation, migration, or database command is authorized before client schema approval.
 
 ## Phase status
 
