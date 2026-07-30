@@ -138,14 +138,19 @@ export {
 } from "./workflow.js";
 export {
   MCP_SAFE_ERROR_MESSAGES,
+  CreateHumanReviewEscalationToolOutputSchema,
   CreateHumanReviewEscalationToolSuccessSchema,
   DemoCaseCategorySchema,
   DemoCaseSchema,
+  GetInvestigationTraceToolOutputSchema,
   GetInvestigationTraceToolSuccessSchema,
+  GetReviewCaseToolOutputSchema,
   GetReviewCaseToolSuccessSchema,
+  InvestigateOrderExceptionToolOutputSchema,
   InvestigateOrderExceptionToolSuccessSchema,
   ListDemoCasesInputSchema,
   ListDemoCasesResultSchema,
+  ListDemoCasesToolOutputSchema,
   ListDemoCasesToolSuccessSchema,
   McpToolErrorCodeSchema,
   McpToolErrorMessageSchema,
@@ -157,5 +162,6 @@ export {
   type ListDemoCasesResult,
   type McpToolErrorCode,
   type McpToolFailure,
+  type McpToolOutput,
   type McpToolSuccess,
 } from "./mcp.js";
