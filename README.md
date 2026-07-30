@@ -4,9 +4,9 @@ This repository will implement a bounded operations workflow that explains why a
 
 ## Current state
 
-Phases 0 through 6 are complete. Phase 7 has implemented and verified evidence readiness and inventory-conflict evaluation on `phase/07-evidence-readiness`; it is awaiting review.
+Phases 0 through 7 are complete. Phase 8 has implemented and verified deterministic diagnosis and suggested human-review guidance on `phase/08-diagnosis-engine`; it is awaiting review.
 
-The existing Bun/Turborepo and Prisma setup was reused rather than reinitialized. PostgreSQL contains the validated nine-order commerce seed and empty workflow tables. Separate owner, demo, and workflow roles enforce the database boundary. `EvidenceCollector` reads all eight scoped sources, and `EvidenceReadinessEvaluator` now applies the accepted conditional gates to return `COMPLETE`, `MISSING`, or `CONFLICTING` with canonical details. Investigation persistence, diagnosis, AI behavior, and MCP remain unimplemented.
+The existing Bun/Turborepo and Prisma setup was reused rather than reinitialized. PostgreSQL contains the validated nine-order commerce seed and empty workflow tables. Separate owner, demo, and workflow roles enforce the database boundary. `EvidenceCollector` reads all eight scoped sources, `EvidenceReadinessEvaluator` returns `COMPLETE`, `MISSING`, or `CONFLICTING`, and `DiagnosisEngine` applies the frozen deterministic rule order to return a safe structured decision. Investigation persistence, AI behavior, and MCP remain unimplemented.
 
 Local prerequisites are Bun 1.3.2 and Node.js 20.9.0 or newer.
 
@@ -34,8 +34,8 @@ The final Phase 3 prompt moved the minimum Prisma schema, migration, and seed/re
 | 4     | Complete        | Roles, grants, immutable records, cross-table invariants       | [Report](docs/evaluations/phase-04-database-hardening.md)             |
 | 5     | Complete        | Repositories and read-only commerce boundary                   | [Report](docs/evaluations/phase-05-readonly-commerce-repositories.md) |
 | 6     | Complete        | Evidence collection and normalization                          | [Report](docs/evaluations/phase-06-evidence-collector.md)             |
-| 7     | Awaiting review | Evidence readiness and conflict gate                           | [Report](docs/evaluations/phase-07-evidence-readiness.md)             |
-| 8     | Not started     | Deterministic diagnosis and suggested action                   | Not created                                                           |
+| 7     | Complete        | Evidence readiness and conflict gate                           | [Report](docs/evaluations/phase-07-evidence-readiness.md)             |
+| 8     | Awaiting review | Deterministic diagnosis and suggested action                   | [Report](docs/evaluations/phase-08-diagnosis-engine.md)               |
 | 9     | Not started     | Persistent investigation and escalation workflow               | Not created                                                           |
 | 10    | Not started     | Standard remote MCP server                                     | Not created                                                           |
 | 11    | Not started     | Agent behavior and LLM evaluations                             | Not created                                                           |
@@ -161,6 +161,26 @@ Phase 7 verification passed:
 - Root build 14/14, typecheck 14/14, test 20/20, and lint 2/2 Turbo tasks
 - Final demo counts unchanged and all operations tables empty
 
+Phase 8 adds:
+
+- `InvestigationDecisionSchema` with finite versioned rule IDs, confirmed
+  confidence, selected ordered facts, escalation guidance, and
+  `commerceStateChanged=false`
+- `DiagnosisEngine` with payment, shipment, decisive failure, assigned-stock,
+  four-hour processing, and safe fallback precedence
+- Deterministic alternative-warehouse eligibility without reservation,
+  reassignment, retry, or any other commerce action
+- Processing chronology based only on `evidence.collectedAt`; no real-time
+  clock or wall-clock freshness threshold
+
+Phase 8 verification passed:
+
+- Diagnosis package: 18 tests, 147 assertions, including all nine approved
+  orders through `WORKFLOW_DATABASE_URL`
+- Evidence package: 6 tests, 94 assertions; database package: 7 tests, 104
+  assertions; access checks: 6 tests, 68 assertions
+- Final demo counts unchanged and all operations tables empty
+
 ## Demo database commands
 
 ```bash
@@ -212,4 +232,4 @@ Plan-intake checks completed:
 
 The intended runtime exposes no commerce-state mutation capability. Operational commerce data is read-only. Allowed writes are limited to investigations, immutable evidence snapshots, human-review escalations, idempotency records, and append-only audit events.
 
-Phase 4 proves with the actual restricted connection that the workflow role can read commerce data but cannot insert, update, delete, or truncate it. Phase 5 uses that role through a domain-specific read facade with no generic query or mutation methods. Phase 6 collection and Phase 7 evaluation perform no persistence; the live nine-case chain left all workflow tables empty. Operations writes are limited to the approved tables and investigation lifecycle columns, but no operations repository exists yet. The API still exposes no database or commerce-mutation capability.
+Phase 4 proves with the actual restricted connection that the workflow role can read commerce data but cannot insert, update, delete, or truncate it. Phase 5 uses that role through a domain-specific read facade with no generic query or mutation methods. Phase 6 collection, Phase 7 readiness, and Phase 8 diagnosis perform no persistence; the live nine-case chain left all workflow tables empty. Operations writes are limited to the approved tables and investigation lifecycle columns, but no operations repository exists yet. The API still exposes no database or commerce-mutation capability.

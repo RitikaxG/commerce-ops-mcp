@@ -84,3 +84,16 @@ export {
   type EvidenceMissingFieldPath,
   type EvidenceReadinessResult,
 } from "./evidence-readiness.js";
+export {
+  DIAGNOSIS_SUPPORTING_FACT_CODES,
+  DiagnosisConfidenceSchema,
+  DiagnosisRuleIdSchema,
+  DiagnosisSupportingFactCodeSchema,
+  DiagnosisSupportingFactSchema,
+  InvestigationDecisionSchema,
+  type DiagnosisConfidence,
+  type DiagnosisRuleId,
+  type DiagnosisSupportingFact,
+  type DiagnosisSupportingFactCode,
+  type InvestigationDecision,
+} from "./investigation-decision.js";
