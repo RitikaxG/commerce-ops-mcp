@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-This Phase 0 document freezes dependency direction and ownership. Phase 2 scaffolded every listed application/package boundary. Phase 3 added shared scenario/fixture schemas, typed fixtures, pure validation, and a Prisma-private transactional demo-data boundary. Phase 5 added plain commerce source-record contracts and a restricted read-only repository facade. Phase 6 adds normalized evidence contracts and the collector. Evidence readiness, diagnosis, workflow persistence, MCP, agent, and trace signatures remain deferred.
+This Phase 0 document freezes dependency direction and ownership. Phase 2 scaffolded every listed application/package boundary. Phase 3 added shared scenario/fixture schemas, typed fixtures, pure validation, and a Prisma-private transactional demo-data boundary. Phase 5 added plain commerce source-record contracts and a restricted read-only repository facade. Phase 6 added normalized evidence contracts and the collector. Phase 7 adds the pure readiness/conflict evaluator. Diagnosis rules, workflow persistence, MCP, agent, and trace signatures remain deferred.
 
 ## Dependency direction
 
@@ -69,19 +69,19 @@ The diagram shows the primary allowed relationships. The ownership table below i
 
 ## Planned public surfaces
 
-These names describe ownership and dependency seams. Phase 6 implements the evidence-related surfaces listed below; later runtime signatures remain conceptual.
+These names describe ownership and dependency seams. Phase 7 implements the readiness-related surfaces listed below; later runtime signatures remain conceptual.
 
-| Owner           | Conceptual public surface                                                                                                           |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `schemas`       | Zod scenario, fixture, JSON-value, commerce source-record, source-read, and normalized-evidence contracts; workflow contracts later |
-| `db`            | Transactional demo operations plus `CommerceReadRepository` and the workflow repository context; workflow-write repositories later  |
-| `fixtures`      | Frozen scenario manifest, typed commerce evidence, fixed clock, pure validation, and explicit seed/reset composition                |
-| `evidence`      | `EvidenceCollector`, `EvidenceClock`, and `createEvidenceCollector({ commerce, clock? })`                                           |
-| `diagnosis`     | `EvidenceReadinessEvaluator` and `DiagnosisEngine`                                                                                  |
-| `observability` | Safe trace event writer contract and read-only trace queries                                                                        |
-| `workflow`      | `InvestigationWorkflow` and `HumanReviewWorkflow`                                                                                   |
-| `mcp`           | Registration for the five approved domain tools                                                                                     |
-| `agent`         | Host-neutral instructions and evaluation case adapters                                                                              |
+| Owner           | Conceptual public surface                                                                                                          |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `schemas`       | Zod scenario, fixture, source-record, normalized-evidence, conflict, and readiness contracts; workflow contracts later             |
+| `db`            | Transactional demo operations plus `CommerceReadRepository` and the workflow repository context; workflow-write repositories later |
+| `fixtures`      | Frozen scenario manifest, typed commerce evidence, fixed clock, pure validation, and explicit seed/reset composition               |
+| `evidence`      | `EvidenceCollector`, `EvidenceClock`, and `createEvidenceCollector({ commerce, clock? })`                                          |
+| `diagnosis`     | `EvidenceReadinessEvaluator` now; `DiagnosisEngine` later                                                                          |
+| `observability` | Safe trace event writer contract and read-only trace queries                                                                       |
+| `workflow`      | `InvestigationWorkflow` and `HumanReviewWorkflow`                                                                                  |
+| `mcp`           | Registration for the five approved domain tools                                                                                    |
+| `agent`         | Host-neutral instructions and evaluation case adapters                                                                             |
 
 Rules for later public APIs:
 
@@ -124,6 +124,7 @@ No lower layer imports a higher layer. In particular:
 | `packages/schemas` owns source, fixture, and evidence Zod contracts | Later workflow contracts must extend this package without infrastructure imports.                 |
 | `packages/fixtures` depends on `schemas` and `db`                   | It validates before invoking the explicit seed/reset boundary; `db` never imports `fixtures`.     |
 | `packages/evidence` depends on `schemas` and `db`                   | It consumes only the repository interface from `db`; no Prisma or database client is imported.    |
+| `packages/diagnosis` depends only on `schemas` at runtime           | Readiness is deterministic and pure; test-only packages exercise the live composed chain.         |
 | Remaining target package roots exist                                | They deliberately export nothing until the phase that owns their contracts and behavior.          |
 | `@repo/config` exports API/database environment parsing             | Database URL validation is shared, while credentials remain local and ignored.                    |
 | Internal workspace packages export TypeScript source                | Bun resolves package-root source directly; generated `dist` files are not workspace entry points. |

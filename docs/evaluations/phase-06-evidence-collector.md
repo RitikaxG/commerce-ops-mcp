@@ -163,6 +163,15 @@ deferred.
 
 No commit or push was performed.
 
+## Phase 7 review correction
+
+Phase 7 review found that warehouse collection skipped still-available evidence
+unless both fulfilment and inventory reads succeeded. The collector now derives
+IDs from either successful dependency, calls the warehouse repository when at
+least one dependency can provide identifiers, and skips only when neither can.
+Focused regressions cover both partial-success directions and the both-unavailable
+case. No other Phase 6 behavior was redesigned.
+
 ## Exit decision
 
-Awaiting review.
+Accepted and merged to `main` as commit `1fd7887` on 2026-07-30.
