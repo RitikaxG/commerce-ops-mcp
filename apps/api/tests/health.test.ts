@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import type { Server } from "node:http";
+import { request as httpRequest, type Server } from "node:http";
 import { test } from "node:test";
 
 import type {
@@ -27,6 +27,42 @@ const unusedWorkflow: CommerceOperationsWorkflow = {
     throw new Error("not called");
   },
 };
+
+async function postWithHost(
+  port: number,
+  hostHeader: string,
+): Promise<{ status: number; body: unknown }> {
+  return new Promise((resolve, reject) => {
+    const request = httpRequest(
+      {
+        hostname: "127.0.0.1",
+        port,
+        path: "/mcp",
+        method: "POST",
+        headers: {
+          accept: "application/json, text/event-stream",
+          "content-type": "application/json",
+          host: hostHeader,
+        },
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        response.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf8");
+          resolve({
+            status: response.statusCode ?? 0,
+            body: JSON.parse(text) as unknown,
+          });
+        });
+      },
+    );
+    request.on("error", reject);
+    request.end("{}");
+  });
+}
 
 test("API preserves health and safely mounts stateless Streamable HTTP MCP", async () => {
   let disconnects = 0;
@@ -93,16 +129,12 @@ test("API preserves health and safely mounts stateless Streamable HTTP MCP", asy
       });
     }
 
-    const invalidHost = await fetch(`${baseUrl}/mcp`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        host: "disallowed.example",
-      },
-      body: "{}",
-    });
+    const invalidHost = await postWithHost(
+      address.port,
+      "disallowed.example",
+    );
     assert.equal(invalidHost.status, 403);
-    assert.deepEqual(await invalidHost.json(), {
+    assert.deepEqual(invalidHost.body, {
       error: "MCP_HOST_NOT_ALLOWED",
     });
 
