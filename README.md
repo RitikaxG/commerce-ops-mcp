@@ -4,7 +4,7 @@ This repository implements a bounded operations workflow that explains why a pai
 
 ## Current state
 
-Phases 0 through 9 are complete. Phase 10 has a standard remote MCP server on `/mcp` with five approved tools, strict Zod contracts, Streamable HTTP transport, Host-header protection, safe error mapping, and direct MCP-client evaluation coverage. The Phase 10 completion branch is awaiting review and a live serial run against the configured PostgreSQL roles.
+Phases 0 through 10 are complete. Phase 10 provides a standard remote MCP server on `/mcp` with five approved tools, strict Zod contracts, Streamable HTTP transport, Host-header protection, safe error mapping, and a passing direct MCP-client evaluation across all nine approved scenarios.
 
 The deterministic workflow remains authoritative for evidence readiness, diagnosis, escalation policy, persistence, and audit behavior. The MCP layer only validates and adapts approved workflow capabilities. Actual LLM/AI-host integration and model-backed evaluations remain Phase 11 work.
 
@@ -34,7 +34,7 @@ Local prerequisites are Bun 1.3.2 and Node.js 20.9.0 or newer.
 | 7 | Complete | Evidence readiness and conflict gate | [Report](docs/evaluations/phase-07-evidence-readiness.md) |
 | 8 | Complete | Deterministic diagnosis and suggested action | [Report](docs/evaluations/phase-08-diagnosis-engine.md) |
 | 9 | Complete | Persistent investigation and escalation workflow | [Report](docs/evaluations/phase-09-persistence-escalation.md) |
-| 10 | Awaiting review | Remote MCP server and direct tool evaluations | [Report](docs/evaluations/phase-10-remote-mcp.md) |
+| 10 | Complete | Remote MCP server and direct tool evaluations | [Report](docs/evaluations/phase-10-remote-mcp.md) |
 | 11 | Not started | Actual AI-host integration and model evaluations | Not created |
 | 12 | Not started | Trace APIs and minimal Tailwind viewer | Not created |
 | 13 | Not started | Hardening, deployment, and submission evidence | Not created |
