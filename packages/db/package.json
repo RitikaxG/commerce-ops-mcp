@@ -4,12 +4,14 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": "./index.ts"
+    ".": "./index.ts",
+    "./testing": "./testing.ts"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "db:generate": "bun --bun run prisma generate",
     "db:migrate": "bun --bun run prisma migrate deploy",
+    "db:reset-workflow-demo": "bun scripts/reset-workflow-demo.ts",
     "db:setup-access": "bun scripts/setup-access.ts",
     "db:setup-access:local": "bun scripts/setup-access.ts --create-local-credentials",
     "test": "bun test tests",

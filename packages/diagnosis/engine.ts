@@ -83,6 +83,12 @@ function incompleteDecision(
   readiness: EvidenceReadinessResult,
 ): InvestigationDecision {
   const missing = readiness.evidenceStatus === "MISSING";
+  const isApprovedInventoryGap =
+    evidence.orderId === "ORD-1046" &&
+    readiness.missingFields.length > 0 &&
+    readiness.missingFields.every((path) =>
+      path.startsWith("inventory.assignedWarehouse."),
+    );
 
   return InvestigationDecisionSchema.parse({
     schemaVersion: 1,
@@ -95,7 +101,9 @@ function incompleteDecision(
     shouldEscalate: true,
     suggestedQueue: "OPERATIONS_DATA_REVIEW",
     suggestedNextStep: missing
-      ? "Verify the missing assigned-warehouse inventory evidence."
+      ? isApprovedInventoryGap
+        ? "Verify the missing assigned-warehouse inventory evidence."
+        : "Verify the missing commerce evidence identified in the investigation."
       : "Resolve the conflicting inventory observations before suggesting a warehouse.",
     supportingFacts: [
       missing

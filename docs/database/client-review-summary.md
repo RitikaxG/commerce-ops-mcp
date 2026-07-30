@@ -157,3 +157,13 @@ This policy does not change the approved `commerce` read-only workflow boundary
 or the scoped `operations` persistence and escalation boundary.
 
 Full columns, nullability, constraints, ERD, permissions, indexes, and walkthroughs are in [schema-proposal.md](schema-proposal.md).
+
+## Phase 9 demo workflow cleanup
+
+`db:reset-workflow-demo` is an explicit non-production, schema-owner-only test
+and demo cleanup command. It truncates all five related `operations` tables
+together and resets only the audit identity sequence. It never modifies
+`commerce`, is not imported by runtime workflow code, and does not disable or
+weaken the immutable-evidence or append-only-audit triggers. Runtime
+connections continue to use `WORKFLOW_DATABASE_URL` and cannot invoke this
+cleanup path.

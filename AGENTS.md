@@ -14,11 +14,15 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 - Phase 5 was accepted and merged to `main` in commit `1ad80d2` on 2026-07-30.
 - Phase 6 was accepted and merged to `main` in commit `1fd7887` on 2026-07-30.
 - Phase 7 was accepted and merged to `main` in commit `d7999c7` on 2026-07-30.
-- Phase 8 deterministic diagnosis and suggested action are implemented on `phase/08-diagnosis-engine` and awaiting review.
-- The next permitted action is Phase 8 review or revision.
-- Phase 9 and later phases remain blocked until Phase 8 is explicitly accepted.
+- Phase 8 was accepted and merged to `main` as
+  `8f76a0c8a750db6f006635a7f843b34de6944bec` on 2026-07-30.
+- Phase 9 persistent investigation and escalation workflows are implemented on
+  `phase/09-persistence-escalation` and awaiting review.
+- The next permitted action is Phase 9 review or revision.
+- Phase 10 and later phases remain blocked until Phase 9 is explicitly
+  accepted.
 - Use one phase prompt in one coding session and stop at its review gate.
-- Do not start Phase 9 automatically.
+- Do not start Phase 10 automatically.
 
 ## Permanent safety boundary
 
@@ -105,7 +109,7 @@ Target conventions from the final plan:
 - A small Tailwind trace viewer in `apps/web`, built after core MCP correctness
 - No speculative Redis, queues, Kafka, RAG, multi-agent orchestration, event sourcing, or complex production authentication
 
-Phase 2 reused the existing Bun/Turborepo and Prisma foundation. Phase 3 implemented the approved two-schema Prisma model, typed scenario contracts, validated fixtures, and explicit non-production seed/reset commands. Phase 4 added live role separation, reviewed grants, and database-enforced cross-table invariants. Phase 5 added a read-only commerce repository facade over the restricted workflow connection. Phase 6 added normalized, source-aware evidence collection. Phase 7 added a pure conditional readiness/conflict gate. Phase 8 adds a pure deterministic diagnosis engine with versioned rules, selected supporting facts, fixed processing chronology, and safe human-review guidance. The API remains disconnected from PostgreSQL, and `apps/docs` remains intentionally absent.
+Phase 2 reused the existing Bun/Turborepo and Prisma foundation. Phase 3 implemented the approved two-schema Prisma model, typed scenario contracts, validated fixtures, and explicit non-production seed/reset commands. Phase 4 added live role separation, reviewed grants, and database-enforced cross-table invariants. Phase 5 added a read-only commerce repository facade over the restricted workflow connection. Phase 6 added normalized, source-aware evidence collection. Phase 7 added a pure conditional readiness/conflict gate. Phase 8 added a pure deterministic diagnosis engine with versioned rules, selected supporting facts, fixed processing chronology, and safe human-review guidance. Phase 9 adds atomic operations persistence, exact idempotency, explicit case creation/reuse, safe audit events, and read-only case/trace queries. The API remains disconnected from PostgreSQL, and `apps/docs` remains intentionally absent.
 
 ## Package graph and ownership
 
@@ -126,21 +130,33 @@ The planned dependency direction is:
 - `packages/observability` owns the internal trace event vocabulary, safe summaries, and trace queries; public Zod trace contracts live in `packages/schemas`.
 - `packages/config` owns shared TypeScript, environment, and test configuration.
 
-Concrete public surfaces through Phase 8:
+Concrete public surfaces through Phase 9:
 
 - `@repo/config` exports API parsing plus separate schema-owner, demo, and workflow PostgreSQL URL validation.
 - `apps/api/app.ts` exports the composed Express application for startup and smoke testing.
 - `GET /health` returns `{"status":"ok"}`.
-- `@repo/schemas` exports the approved scenario, fixture, JSON-value, plain commerce source-record, source-read metadata, normalized-evidence, structured conflict, and readiness-result Zod schemas and inferred types.
+- `@repo/schemas` exports the approved scenario, fixture, evidence, readiness,
+  decision, workflow, escalation, persisted-record, audit, trace, and workflow
+  error Zod schemas and inferred types.
 - `@repo/fixtures` exports the frozen scenario manifest, typed commerce fixtures, fixed-clock helper, pure validation, and explicit seed/reset/verify composition.
-- `@repo/db` exports the Phase 3 transactional demo operations plus `CommerceReadRepository`, `CommerceRepositoryContext`, and `createWorkflowRepositoryContext`.
+- `@repo/db` exports the Phase 3 transactional demo operations,
+  `CommerceReadRepository`, `OperationsWorkflowRepository`, and
+  `createWorkflowRepositoryContext`; Prisma and transactions remain private.
 - The commerce facade reads order, items, current payment/fulfilment/shipment, ordered events, inventory observations, and warehouses through `WORKFLOW_DATABASE_URL`; its public types contain no Prisma types.
 - `@repo/evidence` exports `EvidenceCollector`, `EvidenceClock`, and `createEvidenceCollector({ commerce, clock? })`; runtime code depends only on the injected `CommerceReadRepository` and public schemas.
 - `@repo/diagnosis` exports `EvidenceReadinessEvaluator`, `DiagnosisEngine`, and their factories; its runtime dependency is only `@repo/schemas`.
 - The diagnosis engine consumes validated normalized evidence plus readiness, applies the frozen rule precedence without a runtime clock, and returns a Zod-validated `InvestigationDecision` with `commerceStateChanged=false`.
-- Workflow, MCP, agent, evaluation, and observability packages still export no behavior.
+- `@repo/observability` exports pure safe audit builders and a read-only
+  investigation trace reader over the operations repository contract.
+- `@repo/workflow` exports `CommerceOperationsWorkflow`, its
+  dependency-injected factory, its restricted runtime context factory, and
+  finite safe `WorkflowError`.
+- MCP, agent, and evaluation packages still export no behavior.
 
-The remaining planned conceptual public surfaces are `InvestigationWorkflow`, `HumanReviewWorkflow`, workflow-write repositories, trace queries, and the five MCP tool contracts below. Concrete TypeScript signatures for those later surfaces remain deferred to their owning phases and must use types from `packages/schemas`.
+The remaining planned conceptual public surfaces are the five MCP tool
+adapters, agent behavior, evaluations, HTTP trace routes, and web trace viewer.
+Concrete signatures remain deferred to their owning phases and must use types
+from `packages/schemas`.
 
 Keep public APIs small and export them through package roots. A phase may refine this graph, but it must document and review any changed direction. The complete acyclic graph is in `docs/architecture/package-graph.md`.
 
@@ -353,24 +369,54 @@ Phase 8 commands:
 Final Phase 8 results are recorded in
 `docs/evaluations/phase-08-diagnosis-engine.md`.
 
+Phase 9 commands:
+
+- `bun install --frozen-lockfile`
+- `bun run db:verify-demo`
+- `bun run db:verify-access`
+- `bun run db:reset-workflow-demo`
+- `bun run --filter @repo/db test`
+- `bun run --filter @repo/evidence test`
+- `bun run --filter @repo/diagnosis test`
+- `bun run --filter @repo/observability test`
+- `bun run --filter @repo/workflow test`
+- `bun run --filter @repo/workflow typecheck`
+- `bun run build`
+- `bun run typecheck`
+- `bun run test`
+- `bun run lint`
+- Formatting, import-boundary, runtime-cleanup, commerce-mutation, migration,
+  generated-file, environment-file, and whitespace checks
+
+Final Phase 9 checks: build 14/14, typecheck 14/14, test 22/22 Turbo tasks,
+and lint 2/2. Database tests passed 10/10, evidence 6/6, diagnosis 19/19,
+observability 2/2, and workflow 12/12. The live workflow persisted nine
+investigations, created seven explicitly requested eligible cases, rejected
+the two non-actionable cases, and passed same-key/client-request/case
+concurrency checks. Final approved commerce counts were unchanged and all five
+operations tables were empty after owner-only cleanup.
+
+Full expected and actual output is recorded in
+`docs/evaluations/phase-09-persistence-escalation.md`.
+
 ## Phase status
 
-| Phase | Status          | Evaluation report                                             | Notes                                   |
-| ----- | --------------- | ------------------------------------------------------------- | --------------------------------------- |
-| 0     | Complete        | `docs/evaluations/phase-00.md`                                | Accepted 2026-07-30                     |
-| 1     | Complete        | `docs/evaluations/phase-01.md`                                | Accepted 2026-07-30                     |
-| 2     | Complete        | `docs/evaluations/phase-02.md`                                | Accepted 2026-07-30                     |
-| 3     | Complete        | `docs/evaluations/phase-03-synthetic-scenarios.md`            | Accepted and merged 2026-07-30          |
-| 4     | Complete        | `docs/evaluations/phase-04-database-hardening.md`             | Accepted and merged 2026-07-30          |
-| 5     | Complete        | `docs/evaluations/phase-05-readonly-commerce-repositories.md` | Accepted and merged as `1ad80d2`        |
-| 6     | Complete        | `docs/evaluations/phase-06-evidence-collector.md`             | Accepted and merged as `1fd7887`        |
-| 7     | Complete        | `docs/evaluations/phase-07-evidence-readiness.md`             | Accepted and merged as `d7999c7`        |
-| 8     | Awaiting review | `docs/evaluations/phase-08-diagnosis-engine.md`               | Deterministic diagnosis engine verified |
-| 9     | Not started     | Not created                                                   | Blocked by phase sequence               |
-| 10    | Not started     | Not created                                                   | Blocked by phase sequence               |
-| 11    | Not started     | Not created                                                   | Blocked by phase sequence               |
-| 12    | Not started     | Not created                                                   | Blocked by phase sequence               |
-| 13    | Not started     | Not created                                                   | Blocked by phase sequence               |
+| Phase | Status          | Evaluation report                                             | Notes                            |
+| ----- | --------------- | ------------------------------------------------------------- | -------------------------------- |
+| 0     | Complete        | `docs/evaluations/phase-00.md`                                | Accepted 2026-07-30              |
+| 1     | Complete        | `docs/evaluations/phase-01.md`                                | Accepted 2026-07-30              |
+| 2     | Complete        | `docs/evaluations/phase-02.md`                                | Accepted 2026-07-30              |
+| 3     | Complete        | `docs/evaluations/phase-03-synthetic-scenarios.md`            | Accepted and merged 2026-07-30   |
+| 4     | Complete        | `docs/evaluations/phase-04-database-hardening.md`             | Accepted and merged 2026-07-30   |
+| 5     | Complete        | `docs/evaluations/phase-05-readonly-commerce-repositories.md` | Accepted and merged as `1ad80d2` |
+| 6     | Complete        | `docs/evaluations/phase-06-evidence-collector.md`             | Accepted and merged as `1fd7887` |
+| 7     | Complete        | `docs/evaluations/phase-07-evidence-readiness.md`             | Accepted and merged as `d7999c7` |
+| 8     | Complete        | `docs/evaluations/phase-08-diagnosis-engine.md`               | Accepted and merged as `8f76a0c` |
+| 9     | Awaiting review | `docs/evaluations/phase-09-persistence-escalation.md`         | Persistent workflow verified     |
+| 10    | Not started     | Not created                                                   | Blocked by phase sequence        |
+| 11    | Not started     | Not created                                                   | Blocked by phase sequence        |
+| 12    | Not started     | Not created                                                   | Blocked by phase sequence        |
+| 13    | Not started     | Not created                                                   | Blocked by phase sequence        |
 
 ## Decisions and trade-offs
 
@@ -432,19 +478,46 @@ Final Phase 8 results are recorded in
 - 2026-07-30: Use `evidence.collectedAt` and internally valid event chronology for the inclusive four-hour processing rule; diagnosis has no real-time clock dependency.
 - 2026-07-30: Apply the frozen diagnosis precedence: payment, shipment, latest decisive failed event, assigned-warehouse shortage, expected processing window, then cause not determined.
 - 2026-07-30: Return only selected, ordered supporting facts and human-review guidance; diagnosis never persists, mutates commerce, or claims a suggested action occurred.
+- 2026-07-30: Accept and merge Phase 8 as
+  `8f76a0c8a750db6f006635a7f843b34de6944bec`; Phase 9 starts from that clean
+  deterministic-diagnosis baseline.
+- 2026-07-30: Preserve the exact `ORD-1046` inventory-verification guidance,
+  but use generic commerce-evidence guidance for every other valid missing
+  evidence result.
+- 2026-07-30: Implement Phase 9 without a migration or grant change; the
+  accepted operations schema, deferred triggers, and runtime permissions were
+  sufficient.
+- 2026-07-30: Investigation persists its terminal result, immutable evidence,
+  safe audits, and idempotency response atomically; it never creates a review
+  case automatically.
+- 2026-07-30: Human-review escalation accepts only investigation ID and
+  idempotency key, derives every case field from the stored terminal outcome,
+  and reuses one case per investigation.
+- 2026-07-30: Store and replay the exact response per idempotency key; a second
+  key for the same client request or case receives an explicitly stored reuse
+  response without duplicating the logical resource.
+- 2026-07-30: Keep demo workflow cleanup in an owner-only, non-production
+  testing entry point that truncates only the five operations tables together;
+  runtime packages cannot invoke it.
 
 ## Known limitations
 
-- `apps/api` exposes only the health endpoint; MCP transport, trace routes, workflow composition, and database access are intentionally absent.
+- `apps/api` exposes only the health endpoint; MCP transport, trace routes,
+  workflow composition, and database access are intentionally absent.
 - `apps/web` is a static non-functional trace-viewer shell and has no API or database integration.
-- `packages/workflow`, `mcp`, `agent`, `evaluations`, and `observability` remain empty package roots.
-- Phase 8 returns a deterministic in-memory decision only. Operations repositories, investigation/evidence/audit persistence, idempotency, and case creation remain deferred to Phase 9.
+- `packages/mcp`, `agent`, and `evaluations` remain empty package roots.
+- The persistent workflow is a package API only; no MCP, Express, scheduled,
+  startup, or browser entry point invokes it yet.
 - No wall-clock source-age expiry policy exists; source timestamps remain trace metadata and processing chronology uses only `evidence.collectedAt`.
-- The workflow Prisma client is constructed only inside `packages/db` from `WORKFLOW_DATABASE_URL`; the API does not import the repository factory or load any database URL.
+- The workflow Prisma client is constructed only inside `packages/db` from
+  `WORKFLOW_DATABASE_URL`; the API does not import the workflow factory or load
+  any database URL.
 - Neon does not allow the configured schema owner to rotate the passwords of existing child roles. Idempotent access setup therefore reapplies grants and verifies existing credentials instead of altering existing roles.
 - `db:seed` expects an empty migrated demo data set; use the explicit `db:reset-demo` helper for repeatable restoration.
 - Demo reset is intentionally commerce-only and will fail rather than delete persisted workflow evidence that references an approved order.
-- The diagnosis engine has no persistence or transport composition; callers must supply separately collected and evaluated evidence/readiness.
+- `db:reset-workflow-demo` is intentionally destructive to the five operations
+  demo tables, schema-owner-only, blocked in production, and separate from
+  commerce reset/runtime behavior.
 - Local development requires Bun 1.3.2 and Node.js 20.9.0 or newer.
 - Local TCP smoke tests and the Next.js production build require an environment that permits loopback listeners and worker creation.
 - Full copy-paste prompts for Phases 0-13 are not stored here. The repository currently stores the final plan and the prompt-use protocol only.

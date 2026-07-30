@@ -20,6 +20,10 @@ import { z } from "zod";
 
 import { createWorkflowDatabaseClient } from "./client.js";
 import { type Prisma, type PrismaClient } from "./generated/prisma/client.js";
+import {
+  createOperationsWorkflowRepository,
+  type OperationsWorkflowRepository,
+} from "./operations-repository.js";
 
 const IdentifierSchema = z.string().trim().min(1);
 const IdentifierListSchema = z.array(IdentifierSchema);
@@ -212,10 +216,16 @@ export interface CommerceReadRepository {
   ): Promise<CommerceWarehouseRecord[]>;
 }
 
-export interface CommerceRepositoryContext {
+export interface WorkflowRepositoryContext {
   readonly commerce: CommerceReadRepository;
+  readonly operations: OperationsWorkflowRepository;
   disconnect(): Promise<void>;
 }
+
+export type CommerceRepositoryContext = Pick<
+  WorkflowRepositoryContext,
+  "commerce" | "disconnect"
+>;
 
 class PrismaCommerceReadRepository implements CommerceReadRepository {
   constructor(private readonly database: PrismaClient) {}
@@ -331,11 +341,12 @@ class PrismaCommerceReadRepository implements CommerceReadRepository {
   }
 }
 
-export function createWorkflowRepositoryContext(): CommerceRepositoryContext {
+export function createWorkflowRepositoryContext(): WorkflowRepositoryContext {
   const database = createWorkflowDatabaseClient();
 
   return {
     commerce: new PrismaCommerceReadRepository(database),
+    operations: createOperationsWorkflowRepository(database),
     disconnect: () => database.$disconnect(),
   };
 }

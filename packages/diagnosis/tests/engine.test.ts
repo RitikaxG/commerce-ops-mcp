@@ -217,6 +217,40 @@ describe("diagnosis engine", () => {
     expect(decisions[1]?.supportingFacts[0]?.code).toBe("CONFLICTING_EVIDENCE");
   });
 
+  test("uses generic missing-evidence guidance for a non-scenario source failure", () => {
+    const input = buildEvidence();
+    const paymentReadIndex = input.sourceReads.findIndex(
+      ({ source }) => source === "PAYMENT",
+    );
+    const evidence = NormalizedOrderEvidenceSchema.parse({
+      ...input,
+      payment: null,
+      sourceReads: input.sourceReads.map((read, index) =>
+        index === paymentReadIndex
+          ? {
+              ...read,
+              status: "FAILED",
+              latestSourceTimestamp: null,
+              recordCount: 0,
+              errorCode: "SOURCE_READ_FAILED",
+            }
+          : read,
+      ),
+    });
+    const readiness = createEvidenceReadinessEvaluator().evaluate(evidence);
+    const decision = engine.decide({ evidence, readiness });
+
+    expect(readiness.missingFields).toContain("sources.PAYMENT");
+    expect(decision.suggestedNextStep).toBe(
+      "Verify the missing commerce evidence identified in the investigation.",
+    );
+    expect(decision.supportingFacts).toContainEqual({
+      code: "MISSING_EVIDENCE",
+      path: "readiness.missingFields",
+      value: readiness.missingFields,
+    });
+  });
+
   test("payment and shipment precedence outrank downstream history", () => {
     const historicalFailure = event({
       id: "EVENT-FAILED",
