@@ -4,6 +4,8 @@
 
 The scoped PostgreSQL design for the commerce operations investigator was accepted on 2026-07-30. This document records the client decisions; [schema-proposal.md](schema-proposal.md) is the approved implementation source of truth.
 
+The final approved Phase 3 scenario matrix amends inventory identity to `(warehouse_id, sku, source_system)` so `ORD-1050` persists two independent observations. It also moves the minimum Prisma migration and explicit demo seed/reset into Phase 3. This amendment preserves the original safety boundary and missing-versus-zero rule.
+
 ## Product boundary
 
 The workflow answers:
@@ -24,7 +26,7 @@ The workflow answers:
 2. `order_items`
 3. `payments`
 4. `warehouses`
-5. `inventory_levels`
+5. `inventory_levels` (source-specific observations)
 6. `fulfilments`
 7. `fulfilment_events`
 8. `shipments`
@@ -72,6 +74,7 @@ Diagnosis codes:
 ## Core invariants
 
 - Order-item quantity is positive; inventory is non-negative.
+- Inventory observation identity includes its source system so disagreements remain persisted separately.
 - Source references are unique when present and all foreign keys are valid.
 - An investigation references an existing order.
 - `COMPLETED` requires `COMPLETE` evidence, a diagnosis, confidence, and matched deterministic rule.
@@ -116,6 +119,10 @@ The assigned warehouse has zero stock, another active warehouse has sufficient s
 ### Missing assigned-warehouse inventory
 
 The missing inventory row is recorded in the immutable snapshot and `missing_fields`. The investigation is `NEEDS_MORE_INFO`/`MISSING`, with no diagnosis and only an evidence-verification next step. A human-action case can be routed to `OPERATIONS_DATA_REVIEW`.
+
+### Conflicting assigned-warehouse inventory
+
+`ORD-1050` stores both `WH-A/SKU-1050/WAREHOUSE_SYSTEM = 0` and `WH-A/SKU-1050/COMMERCE_SYSTEM = 4`. The later investigation is expected to become `NEEDS_MORE_INFO`/`CONFLICTING`, with no diagnosis and an `OPERATIONS_DATA_REVIEW` handoff.
 
 ## Accepted decisions
 

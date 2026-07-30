@@ -6,6 +6,8 @@ This Phase 0 contract for the AI-First Commerce Operations Investigator was acce
 
 It freezes the user, bounded question, evidence expectations, safety boundary, outcomes, and planned MCP capabilities. It does not approve the detailed PostgreSQL schema or authorize application, database, AI, or MCP implementation.
 
+The later approved scenario-level evidence, escalation, and queue expectations are frozen in `docs/scenarios/approved-synthetic-scenarios.md`. They refine but do not broaden this workflow contract.
+
 ## Selected user
 
 The primary user is a commerce operations specialist investigating an order exception through an MCP-compatible AI host.
@@ -103,7 +105,7 @@ Only deterministic TypeScript rules may produce these codes:
 
 `NEEDS_MORE_INFO` is an investigation status, not a diagnosis code. Missing or conflicting evidence must not fall through to `CAUSE_NOT_DETERMINED`.
 
-Rule precedence, exact predicates, processing windows, confidence values, and queue mappings belong to later reviewed phases.
+Rule precedence and exact diagnosis predicates belong to later reviewed phases. The approved fixtures now use a fixed four-hour processing window, and their scenario-specific escalation/queue expectations are frozen in the scenario contract.
 
 ## Allowed reads and writes
 

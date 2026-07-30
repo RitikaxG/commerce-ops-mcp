@@ -121,4 +121,8 @@ Do not link to an evaluation report until that report exists. Do not mark a phas
 
 ## Current handoff
 
-Phases 0 and 1 are accepted. `docs/database/schema-proposal.md` is the approved database source of truth. Phase 2 is the next authorized phase and must begin in a separate coding session using only the Phase 2 prompt. Do not add Prisma models/migrations or work from Phase 3 and later during Phase 2.
+Phases 0, 1, and 2 are accepted. Phase 3 uses the client-approved scenario contract in `docs/scenarios/approved-synthetic-scenarios.md` and is implemented on `phase/03-approved-synthetic-scenarios`.
+
+The latest Phase 3 prompt supersedes the original plan split by requiring PostgreSQL seed/reset now. Phase 3 therefore includes the minimum approved Prisma schema and migration, with the documented source-specific inventory amendment required by `ORD-1050`. Before using a Phase 4 prompt, reconcile it so it does not recreate the migration or seed and instead addresses only remaining reviewed database hardening.
+
+Review `docs/evaluations/phase-03-synthetic-scenarios.md`, `AGENTS.md`, the README status table, the persisted row counts, the empty workflow-table counts, and all nine fixture cases. Phase 4 remains blocked until explicit Phase 3 acceptance.

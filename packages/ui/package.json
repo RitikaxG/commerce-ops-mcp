@@ -4,21 +4,20 @@
   "sideEffects": [
     "**/*.css"
   ],
-  "files": [
-    "dist"
-  ],
   "exports": {
-    "./styles.css": "./dist/index.css",
-    "./*": "./dist/*.js"
+    "./styles.css": "./styles.css",
+    "./*": "./components/*.tsx"
   },
   "license": "MIT",
   "scripts": {
-    "build:styles": "tailwindcss -i ./src/styles.css -o ./dist/index.css",
+    "build": "bun run build:styles && bun run build:components",
+    "build:styles": "tailwindcss -i ./styles.css -o ./dist/styles.css",
     "build:components": "tsc",
-    "check-types": "tsc --noEmit",
-    "dev:styles": "tailwindcss -i ./src/styles.css -o ./dist/index.css --watch",
+    "typecheck": "tsc --noEmit",
+    "check-types": "bun run typecheck",
+    "dev:styles": "tailwindcss -i ./styles.css -o ./dist/styles.css --watch",
     "dev:components": "tsc --watch",
-    "lint": "eslint src --max-warnings 0"
+    "lint": "eslint components --max-warnings 0"
   },
   "peerDependencies": {
     "react": "^19"

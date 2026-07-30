@@ -1,0 +1,25 @@
+{
+  "name": "@repo/api",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "bun build server.ts --target node --format esm --outfile dist/server.js",
+    "dev": "bun --watch server.ts",
+    "start": "node dist/server.js",
+    "test": "node --import tsx --test tests/health.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/config": "*",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/bun": "latest",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.15.30",
+    "tsx": "^4.23.1",
+    "typescript": "5.9.2"
+  }
+}
