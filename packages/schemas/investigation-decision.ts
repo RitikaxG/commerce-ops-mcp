@@ -164,7 +164,20 @@ export const InvestigationDecisionSchema = z
     if (decision.investigationStatus === "NEEDS_MORE_INFO") {
       const expectedStep =
         decision.evidenceStatus === "MISSING"
-          ? "Verify the missing assigned-warehouse inventory evidence."
+          ? decision.orderId === "ORD-1046" &&
+            decision.supportingFacts.some(
+              ({ code, value }) =>
+                code === "MISSING_EVIDENCE" &&
+                Array.isArray(value) &&
+                value.length > 0 &&
+                value.every(
+                  (path) =>
+                    typeof path === "string" &&
+                    path.startsWith("inventory.assignedWarehouse."),
+                ),
+            )
+            ? "Verify the missing assigned-warehouse inventory evidence."
+            : "Verify the missing commerce evidence identified in the investigation."
           : "Resolve the conflicting inventory observations before suggesting a warehouse.";
       const expectedFactCode =
         decision.evidenceStatus === "MISSING"

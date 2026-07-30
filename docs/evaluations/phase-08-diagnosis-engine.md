@@ -339,6 +339,8 @@ part of the review diff.
 ## Decisions changed during review
 
 - Phase 7 was accepted and merged as `d7999c7`.
+- Phase 8 was accepted and merged to `main` as
+  `8f76a0c8a750db6f006635a7f843b34de6944bec`.
 - The client-approved synthetic-data/time policy was recorded without changing
   the commerce read-only or escalation boundary.
 - The Phase 7 decisive-event predicate was corrected to require both an
@@ -364,4 +366,4 @@ No commit or push was performed.
 
 ## Exit decision
 
-Awaiting review.
+Accepted.

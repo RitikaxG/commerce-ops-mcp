@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-This Phase 0 document freezes dependency direction and ownership. Phase 2 scaffolded every listed application/package boundary. Phase 3 added shared scenario/fixture schemas, typed fixtures, pure validation, and a Prisma-private transactional demo-data boundary. Phase 5 added plain commerce source-record contracts and a restricted read-only repository facade. Phase 6 added normalized evidence contracts and the collector. Phase 7 added the pure readiness/conflict evaluator. Phase 8 adds the pure deterministic diagnosis engine. Workflow persistence, MCP, agent, and trace signatures remain deferred.
+This Phase 0 document freezes dependency direction and ownership. Phase 2 scaffolded every listed application/package boundary. Phase 3 added shared scenario/fixture schemas, typed fixtures, pure validation, and a Prisma-private transactional demo-data boundary. Phase 5 added plain commerce source-record contracts and a restricted read-only repository facade. Phase 6 added normalized evidence contracts and the collector. Phase 7 added the pure readiness/conflict evaluator. Phase 8 added the pure deterministic diagnosis engine. Phase 9 adds the persistent workflow, scoped operations repository, safe audit builders, and read-only case/trace queries. MCP, agent behavior, HTTP routes, and the web viewer remain deferred.
 
 ## Dependency direction
 
@@ -69,19 +69,21 @@ The diagram shows the primary allowed relationships. The ownership table below i
 
 ## Planned public surfaces
 
-These names describe ownership and dependency seams. Phase 8 implements the readiness and diagnosis surfaces listed below; later runtime signatures remain conceptual.
+These names describe ownership and dependency seams. Phase 9 implements the
+workflow, operations persistence, audit, and trace surfaces listed below;
+later MCP, agent, HTTP, and viewer signatures remain conceptual.
 
-| Owner           | Conceptual public surface                                                                                                          |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `schemas`       | Zod scenario, fixture, source-record, normalized-evidence, conflict, and readiness contracts; workflow contracts later             |
-| `db`            | Transactional demo operations plus `CommerceReadRepository` and the workflow repository context; workflow-write repositories later |
-| `fixtures`      | Frozen scenario manifest, typed commerce evidence, fixed clock, pure validation, and explicit seed/reset composition               |
-| `evidence`      | `EvidenceCollector`, `EvidenceClock`, and `createEvidenceCollector({ commerce, clock? })`                                          |
-| `diagnosis`     | `EvidenceReadinessEvaluator`, `DiagnosisEngine`, and their factories                                                               |
-| `observability` | Safe trace event writer contract and read-only trace queries                                                                       |
-| `workflow`      | `InvestigationWorkflow` and `HumanReviewWorkflow`                                                                                  |
-| `mcp`           | Registration for the five approved domain tools                                                                                    |
-| `agent`         | Host-neutral instructions and evaluation case adapters                                                                             |
+| Owner           | Conceptual public surface                                                                                            |
+| --------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `schemas`       | Zod scenario, fixture, evidence, decision, workflow, escalation, case, audit, and trace contracts                    |
+| `db`            | Transactional demo operations, read-only commerce access, and narrow atomic operations-workflow persistence          |
+| `fixtures`      | Frozen scenario manifest, typed commerce evidence, fixed clock, pure validation, and explicit seed/reset composition |
+| `evidence`      | `EvidenceCollector`, `EvidenceClock`, and `createEvidenceCollector({ commerce, clock? })`                            |
+| `diagnosis`     | `EvidenceReadinessEvaluator`, `DiagnosisEngine`, and their factories                                                 |
+| `observability` | Pure safe audit-event builders and the read-only investigation trace reader                                          |
+| `workflow`      | `CommerceOperationsWorkflow` and its dependency-injected/runtime factories                                           |
+| `mcp`           | Registration for the five approved domain tools                                                                      |
+| `agent`         | Host-neutral instructions and evaluation case adapters                                                               |
 
 Rules for later public APIs:
 
@@ -115,20 +117,20 @@ No lower layer imports a higher layer. In particular:
 
 ## Current repository differences
 
-| Current state                                                       | Contract treatment                                                                                |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `apps/api` provides Express composition/health                      | MCP, trace routes, workflow composition, and database access remain deferred.                     |
-| `apps/web` is a static Tailwind shell                               | It remains secondary and has no API/database integration before the trace phase.                  |
-| `packages/ui` has no `src/` directory                               | Starter components are retained but are not part of the product-domain graph.                     |
-| `packages/db` owns Prisma, demo data, and commerce reads            | Prisma stays private; the public read facade uses only the restricted workflow connection.        |
-| `packages/schemas` owns source, fixture, and evidence Zod contracts | Later workflow contracts must extend this package without infrastructure imports.                 |
-| `packages/fixtures` depends on `schemas` and `db`                   | It validates before invoking the explicit seed/reset boundary; `db` never imports `fixtures`.     |
-| `packages/evidence` depends on `schemas` and `db`                   | It consumes only the repository interface from `db`; no Prisma or database client is imported.    |
-| `packages/diagnosis` depends only on `schemas` at runtime           | Readiness and diagnosis are deterministic and pure; test-only packages exercise the live chain.   |
-| Remaining target package roots exist                                | They deliberately export nothing until the phase that owns their contracts and behavior.          |
-| `@repo/config` exports API/database environment parsing             | Database URL validation is shared, while credentials remain local and ignored.                    |
-| Internal workspace packages export TypeScript source                | Bun resolves package-root source directly; generated `dist` files are not workspace entry points. |
-| `apps/api` produces a bundled Node-targeted artifact                | Bun performs the build, while Node.js remains the Express production runtime.                     |
+| Current state                                                                    | Contract treatment                                                                                |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `apps/api` provides Express composition/health                                   | MCP, trace routes, workflow composition, and database access remain deferred.                     |
+| `apps/web` is a static Tailwind shell                                            | It remains secondary and has no API/database integration before the trace phase.                  |
+| `packages/ui` has no `src/` directory                                            | Starter components are retained but are not part of the product-domain graph.                     |
+| `packages/db` owns Prisma, demo data, commerce reads, and operations persistence | Prisma stays private; runtime repositories use only the restricted workflow connection.           |
+| `packages/schemas` owns all public workflow Zod contracts                        | Public contracts remain infrastructure-independent and expose no Prisma types.                    |
+| `packages/fixtures` depends on `schemas` and `db`                                | It validates before invoking the explicit seed/reset boundary; `db` never imports `fixtures`.     |
+| `packages/evidence` depends on `schemas` and `db`                                | It consumes only the repository interface from `db`; no Prisma or database client is imported.    |
+| `packages/diagnosis` depends only on `schemas` at runtime                        | Readiness and diagnosis are deterministic and pure; test-only packages exercise the live chain.   |
+| MCP, agent, and evaluation package roots remain empty                            | They deliberately export nothing until the phase that owns their contracts and behavior.          |
+| `@repo/config` exports API/database environment parsing                          | Database URL validation is shared, while credentials remain local and ignored.                    |
+| Internal workspace packages export TypeScript source                             | Bun resolves package-root source directly; generated `dist` files are not workspace entry points. |
+| `apps/api` produces a bundled Node-targeted artifact                             | Bun performs the build, while Node.js remains the Express production runtime.                     |
 
 `apps/docs` was removed by the user after Phase 0 review because it has no product responsibility.
 

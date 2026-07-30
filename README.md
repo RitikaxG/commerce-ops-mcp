@@ -4,9 +4,11 @@ This repository will implement a bounded operations workflow that explains why a
 
 ## Current state
 
-Phases 0 through 7 are complete. Phase 8 has implemented and verified deterministic diagnosis and suggested human-review guidance on `phase/08-diagnosis-engine`; it is awaiting review.
+Phases 0 through 8 are complete. Phase 9 has implemented and verified the
+persistent investigation and explicit human-review escalation workflow on
+`phase/09-persistence-escalation`; it is awaiting review.
 
-The existing Bun/Turborepo and Prisma setup was reused rather than reinitialized. PostgreSQL contains the validated nine-order commerce seed and empty workflow tables. Separate owner, demo, and workflow roles enforce the database boundary. `EvidenceCollector` reads all eight scoped sources, `EvidenceReadinessEvaluator` returns `COMPLETE`, `MISSING`, or `CONFLICTING`, and `DiagnosisEngine` applies the frozen deterministic rule order to return a safe structured decision. Investigation persistence, AI behavior, and MCP remain unimplemented.
+The existing Bun/Turborepo and Prisma setup was reused rather than reinitialized. PostgreSQL contains the validated nine-order commerce seed. Separate owner, demo, and workflow roles enforce the database boundary. The Phase 9 workflow composes evidence collection, readiness, deterministic diagnosis, atomic operations persistence, exact idempotency, safe audit events, explicit escalation, and read-only case/trace queries. AI behavior, MCP, HTTP workflow routes, and the trace viewer remain unimplemented.
 
 Local prerequisites are Bun 1.3.2 and Node.js 20.9.0 or newer.
 
@@ -35,8 +37,8 @@ The final Phase 3 prompt moved the minimum Prisma schema, migration, and seed/re
 | 5     | Complete        | Repositories and read-only commerce boundary                   | [Report](docs/evaluations/phase-05-readonly-commerce-repositories.md) |
 | 6     | Complete        | Evidence collection and normalization                          | [Report](docs/evaluations/phase-06-evidence-collector.md)             |
 | 7     | Complete        | Evidence readiness and conflict gate                           | [Report](docs/evaluations/phase-07-evidence-readiness.md)             |
-| 8     | Awaiting review | Deterministic diagnosis and suggested action                   | [Report](docs/evaluations/phase-08-diagnosis-engine.md)               |
-| 9     | Not started     | Persistent investigation and escalation workflow               | Not created                                                           |
+| 8     | Complete        | Deterministic diagnosis and suggested action                   | [Report](docs/evaluations/phase-08-diagnosis-engine.md)               |
+| 9     | Awaiting review | Persistent investigation and escalation workflow               | [Report](docs/evaluations/phase-09-persistence-escalation.md)         |
 | 10    | Not started     | Standard remote MCP server                                     | Not created                                                           |
 | 11    | Not started     | Agent behavior and LLM evaluations                             | Not created                                                           |
 | 12    | Not started     | Trace APIs and minimal Tailwind viewer                         | Not created                                                           |
@@ -181,6 +183,26 @@ Phase 8 verification passed:
   assertions; access checks: 6 tests, 68 assertions
 - Final demo counts unchanged and all operations tables empty
 
+Phase 9 adds:
+
+- public Zod contracts for investigation, escalation, persisted evidence,
+  review cases, safe audit events, traces, and finite workflow errors;
+- narrow operations repository reads and atomic investigation, idempotency,
+  audit, and case persistence through `WORKFLOW_DATABASE_URL`;
+- `CommerceOperationsWorkflow` with explicit investigation, separate
+  escalation, case lookup, and trace lookup use cases;
+- exact idempotency replay, client-request reuse, one case per investigation,
+  safe technical-failure persistence, and concurrency recovery; and
+- an explicit schema-owner-only `db:reset-workflow-demo` command that clears
+  only the five operations tables outside runtime code.
+
+Phase 9 verification includes the nine approved investigations, seven eligible
+cases, rejection of `ORD-1044` and `ORD-1047`, exact retry behavior,
+concurrent retry races, transaction rollback, immutable trace reads, unchanged
+commerce fixtures, and zero operations rows after cleanup. Full command output
+is recorded in the
+[Phase 9 evaluation report](docs/evaluations/phase-09-persistence-escalation.md).
+
 ## Demo database commands
 
 ```bash
@@ -190,6 +212,7 @@ bun run db:verify-access
 bun run db:seed
 bun run db:verify-demo
 bun run db:reset-demo
+bun run db:reset-workflow-demo
 ```
 
 `DATABASE_URL` is the schema-owner/migration connection.
@@ -199,7 +222,12 @@ connection. For local setup with missing role URLs, run
 `bun run db:setup-access:local`; generated credentials are written only to the
 ignored `packages/db/.env`.
 
-Use `db:seed` for an empty migrated demo database. Use the explicit non-production `db:reset-demo` command to restore an existing demo database. API startup never creates roles, seeds, resets, or connects to PostgreSQL.
+Use `db:seed` for an empty migrated demo database. Use the explicit
+non-production `db:reset-demo` command to restore commerce fixtures.
+`db:reset-workflow-demo` is a separate schema-owner-only cleanup for the five
+operations tables; it is blocked when `NODE_ENV=production` and never changes
+commerce. API startup never creates roles, seeds, resets, or connects to
+PostgreSQL.
 
 The fixture validation command is:
 
@@ -207,7 +235,9 @@ The fixture validation command is:
 bun run --filter @repo/fixtures test
 ```
 
-Investigations and escalations are created only when later workflow code runs. The seed contains no operational fixes and no workflow records.
+The commerce seed contains no operational fixes and no workflow records.
+Investigations and escalations are created only by explicit Phase 9 workflow
+calls.
 
 Plan-intake checks completed:
 
@@ -232,4 +262,9 @@ Plan-intake checks completed:
 
 The intended runtime exposes no commerce-state mutation capability. Operational commerce data is read-only. Allowed writes are limited to investigations, immutable evidence snapshots, human-review escalations, idempotency records, and append-only audit events.
 
-Phase 4 proves with the actual restricted connection that the workflow role can read commerce data but cannot insert, update, delete, or truncate it. Phase 5 uses that role through a domain-specific read facade with no generic query or mutation methods. Phase 6 collection, Phase 7 readiness, and Phase 8 diagnosis perform no persistence; the live nine-case chain left all workflow tables empty. Operations writes are limited to the approved tables and investigation lifecycle columns, but no operations repository exists yet. The API still exposes no database or commerce-mutation capability.
+Phase 4 proves with the actual restricted connection that the workflow role can
+read commerce data but cannot insert, update, delete, or truncate it. Phase 9
+uses narrow atomic commands to write only the five approved operations tables.
+The live nine-case test confirmed unchanged commerce fixtures and created seven
+cases only after explicit escalation calls. The API still exposes no workflow,
+database, MCP, or commerce-mutation capability.
