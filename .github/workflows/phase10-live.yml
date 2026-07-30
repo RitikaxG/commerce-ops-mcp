@@ -89,9 +89,8 @@ jobs:
       - name: Run direct Streamable HTTP MCP evaluation
         run: bun run eval:mcp:direct
 
-      - name: Verify cleanup and immutable commerce data
+      - name: Restore clean workflow-demo state
         if: always()
         run: |
-          bun run db:verify-demo
-          test "$(bun run --silent --filter @repo/db db:reset-workflow-demo >/dev/null 2>&1; echo $?)" = "0"
+          bun run db:reset-workflow-demo
           bun run db:verify-demo
