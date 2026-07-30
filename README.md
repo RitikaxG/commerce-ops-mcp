@@ -1,58 +1,86 @@
-# Turborepo Tailwind CSS starter
+# AI-First Commerce Operations Investigator
 
-This Turborepo starter is maintained by the Turborepo core team.
+This repository will implement a bounded operations workflow that explains why a paid order has not reached shipment creation and can create a persistent human-review escalation.
 
-## Using this example
+## Current state
 
-Run the following command:
+Phase 0 is complete. Phase 1 schema documents are ready and awaiting client schema approval.
 
-```sh
-npx create-turbo@latest -e with-tailwind
-```
+The user removed `apps/docs` and initialized a Prisma skeleton in `packages/db`. The Prisma schema remains empty. No proposed Phase 1 entity, migration, application workflow, AI behavior, or MCP implementation exists in code.
 
-## What's inside?
+## Plan and working instructions
 
-This Turborepo includes the following packages/apps:
+- [Final plan](docs/plans/Diligence_AI_Commerce_Operations_Final_Plan_Updated.pdf)
+- [Workflow contract](docs/workflow-contract.md)
+- [Package graph](docs/architecture/package-graph.md)
+- [PostgreSQL schema proposal](docs/database/schema-proposal.md)
+- [Client review summary](docs/database/client-review-summary.md)
+- [How to use the phase prompts](docs/plans/how-to-use-phase-prompts.md)
+- [Coding-agent instructions](AGENTS.md)
 
-### Apps and Packages
+Review the Phase 1 proposal, client summary, [evaluation report](docs/evaluations/phase-01.md), `AGENTS.md`, and this status table. Approve the schema or request revisions.
 
-- `docs`: a [Next.js](https://nextjs.org/) app with [Tailwind CSS](https://tailwindcss.com/)
-- `web`: another [Next.js](https://nextjs.org/) app with [Tailwind CSS](https://tailwindcss.com/)
-- `ui`: a stub React component library with [Tailwind CSS](https://tailwindcss.com/) shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+Phase 1 is a client-review gate. It may design and document the scoped PostgreSQL schema, but application scaffolding, Prisma migrations, AI behavior, and MCP implementation must wait until the schema is accepted.
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+## Implementation status
 
-### Building packages/ui
+| Phase | Status                          | Main output                                                    | Evaluation                             |
+| ----- | ------------------------------- | -------------------------------------------------------------- | -------------------------------------- |
+| 0     | Complete                        | Workflow contract and repository rules                         | [Report](docs/evaluations/phase-00.md) |
+| 1     | Awaiting client schema approval | [PostgreSQL schema proposal](docs/database/schema-proposal.md) | [Report](docs/evaluations/phase-01.md) |
+| 2     | Not started                     | Bun and Turborepo foundation                                   | Not created                            |
+| 3     | Not started                     | Zod contracts and synthetic scenarios                          | Not created                            |
+| 4     | Not started                     | Approved PostgreSQL schema and seed                            | Not created                            |
+| 5     | Not started                     | Repositories and read-only commerce boundary                   | Not created                            |
+| 6     | Not started                     | Evidence collection and normalization                          | Not created                            |
+| 7     | Not started                     | Evidence readiness and conflict gate                           | Not created                            |
+| 8     | Not started                     | Deterministic diagnosis and suggested action                   | Not created                            |
+| 9     | Not started                     | Persistent investigation and escalation workflow               | Not created                            |
+| 10    | Not started                     | Standard remote MCP server                                     | Not created                            |
+| 11    | Not started                     | Agent behavior and LLM evaluations                             | Not created                            |
+| 12    | Not started                     | Trace APIs and minimal Tailwind viewer                         | Not created                            |
+| 13    | Not started                     | Hardening, deployment, and submission evidence                 | Not created                            |
 
-This example is set up to produce compiled styles for `ui` components into the `dist` directory. The component `.tsx` files are consumed by the Next.js apps directly using `transpilePackages` in `next.config.ts`. This was chosen for several reasons:
+## Verified commands
 
-- Make sharing one `tailwind.config.ts` to apps and packages as easy as possible.
-- Make package compilation simple by only depending on the Next.js Compiler and `tailwindcss`.
-- Ensure Tailwind classes do not overwrite each other. The `ui` package uses a `ui-` prefix for it's classes.
-- Maintain clear package export boundaries.
+Phase 0 verified the current workspace with:
 
-Another option is to consume `packages/ui` directly from source without building. If using this option, you will need to update the `tailwind.config.ts` in your apps to be aware of your package locations, so it can find all usages of the `tailwindcss` class names for CSS compilation.
+- `bunx prettier --check AGENTS.md README.md docs/**/*.md`
+- `bun run --filter @repo/ui check-types`
+- `bun run --filter @repo/ui build:components`
+- `bun run check-types`
+- `bun run --filter @repo/ui lint`
+- `bun run lint`
 
-For example, in [tailwind.config.ts](packages/tailwind-config/tailwind.config.ts):
+The desktop shell required `/Users/ritikagupta/.bun/bin` on `PATH`. The first root typecheck exposed a starter prerequisite: `@repo/ui` must be built before the apps can resolve its generated `dist` exports. The typecheck passed after that package-level build.
 
-```js
-  content: [
-    // app content
-    `src/**/*.{js,ts,jsx,tsx}`,
-    // include packages if not transpiling
-    "../../packages/ui/*.{js,ts,jsx,tsx}",
-  ],
-```
+See the [Phase 0 evaluation report](docs/evaluations/phase-00.md) for expected and actual results. No migrate, seed, reset, development, evaluation-harness, or runtime workflow command exists or was claimed for this documentation-only phase.
 
-If you choose this strategy, you can remove the `tailwindcss` and `autoprefixer` dependencies from the `ui` package.
+Phase 1 documentation checks are recorded in the [Phase 1 evaluation report](docs/evaluations/phase-01.md). No Prisma model, generation, validation, migration, or database command was run.
 
-### Utilities
+Plan-intake checks completed:
 
-This Turborepo has some additional tools already setup for you:
+- `pdfinfo docs/plans/Diligence_AI_Commerce_Operations_Final_Plan_Updated.pdf` - 13 pages, PDF 1.7, unencrypted.
+- `shasum -a 256 docs/plans/Diligence_AI_Commerce_Operations_Final_Plan_Updated.pdf` - `cccc22a5bf3ffae29364c5be78c8b26ed9a2f89c6501fb9cc3abffcbb741d802`, matching the supplied source file.
 
-- [Tailwind CSS](https://tailwindcss.com/) for styles
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+## Demo cases
+
+These are planned synthetic scenarios, not implemented fixtures.
+
+| Order      | Scenario                          | Expected result                   |
+| ---------- | --------------------------------- | --------------------------------- |
+| `ORD-1042` | Assigned warehouse out of stock   | `ASSIGNED_WAREHOUSE_OUT_OF_STOCK` |
+| `ORD-1043` | Fulfilment creation failed        | `FULFILMENT_CREATION_FAILED`      |
+| `ORD-1044` | Within expected processing window | `WITHIN_EXPECTED_PROCESSING_TIME` |
+| `ORD-1045` | Shipment label creation failed    | `SHIPMENT_LABEL_CREATION_FAILED`  |
+| `ORD-1046` | Missing inventory evidence        | `NEEDS_MORE_INFO`                 |
+| `ORD-1047` | Shipment already exists           | `SHIPMENT_ALREADY_EXISTS`         |
+| `ORD-1048` | Cause not determined              | `CAUSE_NOT_DETERMINED`            |
+| `ORD-1049` | Source does not confirm payment   | `PAYMENT_NOT_CONFIRMED`           |
+| `ORD-1050` | Conflicting inventory evidence    | `NEEDS_MORE_INFO`                 |
+
+## Safety guarantee for this prototype
+
+The intended runtime exposes no commerce-state mutation capability. Operational commerce data is read-only. Allowed writes are limited to investigations, immutable evidence snapshots, human-review escalations, idempotency records, and append-only audit events.
+
+This is currently a documented boundary, not yet an implemented or tested guarantee. Phase reports and guardrail tests must provide the evidence as implementation proceeds.
