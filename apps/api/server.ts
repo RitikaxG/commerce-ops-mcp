@@ -1,11 +1,43 @@
 import { parseApiEnvironment } from "@repo/config";
+import type { Server } from "node:http";
 
-import { app } from "./app.js";
+import { createApiApplication } from "./app.js";
 
 const environment = parseApiEnvironment(process.env);
+const application = createApiApplication({
+  allowedHosts: environment.mcpAllowedHosts,
+});
 
-app.listen(environment.port, () => {
+const server: Server = application.app.listen(environment.port, () => {
   console.info(
     `Commerce operations API listening on port ${environment.port} (${environment.nodeEnv})`,
   );
 });
+
+let shutdownPromise: Promise<void> | undefined;
+
+function shutdown(): Promise<void> {
+  shutdownPromise ??= new Promise<void>((resolve, reject) => {
+    server.close((error) => {
+      void application
+        .close()
+        .then(() => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        })
+        .catch(reject);
+    });
+  });
+  return shutdownPromise;
+}
+
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.once(signal, () => {
+    void shutdown()
+      .then(() => process.exit(0))
+      .catch(() => process.exit(1));
+  });
+}

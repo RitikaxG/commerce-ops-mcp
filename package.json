@@ -15,6 +15,7 @@
     "db:verify-access": "bun run --filter @repo/db test:access",
     "db:verify-demo": "bun run --filter @repo/fixtures verify",
     "dev": "turbo run dev",
+    "eval:mcp:direct": "bun run --filter @repo/evaluations eval:mcp:direct",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",

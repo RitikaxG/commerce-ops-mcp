@@ -1,10 +1,12 @@
 export {
   ApiEnvironmentSchema,
+  DEFAULT_LOCAL_MCP_ALLOWED_HOSTS,
   DatabaseAccessEnvironmentSchema,
   DatabaseEnvironmentSchema,
   DemoDatabaseEnvironmentSchema,
   SchemaOwnerDatabaseEnvironmentSchema,
   WorkflowDatabaseEnvironmentSchema,
+  normalizeMcpHost,
   parseApiEnvironment,
   parseDatabaseAccessEnvironment,
   parseDatabaseEnvironment,

@@ -1,11 +1,61 @@
 import { z } from "zod";
 
-export const ApiEnvironmentSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "test", "production"])
-    .default("development"),
-  PORT: z.coerce.number().int().min(1).max(65_535).default(3_000),
-});
+export const DEFAULT_LOCAL_MCP_ALLOWED_HOSTS = [
+  "localhost",
+  "127.0.0.1",
+  "::1",
+] as const;
+
+export function normalizeMcpHost(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (normalized.startsWith("[")) {
+    const closingBracket = normalized.indexOf("]");
+    return closingBracket === -1
+      ? normalized
+      : normalized.slice(1, closingBracket);
+  }
+  const colon = normalized.lastIndexOf(":");
+  return colon > -1 && normalized.indexOf(":") === colon
+    ? normalized.slice(0, colon)
+    : normalized;
+}
+
+function parseAllowedHosts(value: string | undefined): string[] {
+  const hosts = (value ?? DEFAULT_LOCAL_MCP_ALLOWED_HOSTS.join(","))
+    .split(",")
+    .map(normalizeMcpHost)
+    .filter(Boolean);
+  return [...new Set(hosts)];
+}
+
+export const ApiEnvironmentSchema = z
+  .object({
+    NODE_ENV: z
+      .enum(["development", "test", "production"])
+      .default("development"),
+    PORT: z.coerce.number().int().min(1).max(65_535).default(3_000),
+    MCP_ALLOWED_HOSTS: z.string().optional(),
+  })
+  .superRefine((environment, context) => {
+    const hosts = parseAllowedHosts(environment.MCP_ALLOWED_HOSTS);
+    if (
+      environment.NODE_ENV === "production" &&
+      (environment.MCP_ALLOWED_HOSTS === undefined || hosts.length === 0)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "MCP_ALLOWED_HOSTS is required in production",
+        path: ["MCP_ALLOWED_HOSTS"],
+      });
+    }
+    if (hosts.some((host) => host.includes("*"))) {
+      context.addIssue({
+        code: "custom",
+        message: "MCP_ALLOWED_HOSTS does not accept wildcards",
+        path: ["MCP_ALLOWED_HOSTS"],
+      });
+    }
+  });
 
 const PostgreSqlUrlSchema = z
   .url()
@@ -37,6 +87,7 @@ export const DatabaseEnvironmentSchema = SchemaOwnerDatabaseEnvironmentSchema;
 export interface ApiEnvironment {
   nodeEnv: z.infer<typeof ApiEnvironmentSchema>["NODE_ENV"];
   port: number;
+  mcpAllowedHosts: readonly string[];
 }
 
 export interface SchemaOwnerDatabaseEnvironment {
@@ -67,6 +118,7 @@ export function parseApiEnvironment(
   return {
     nodeEnv: parsed.NODE_ENV,
     port: parsed.PORT,
+    mcpAllowedHosts: parseAllowedHosts(parsed.MCP_ALLOWED_HOSTS),
   };
 }
 

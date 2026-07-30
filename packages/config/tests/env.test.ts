@@ -13,11 +13,37 @@ describe("parseApiEnvironment", () => {
     expect(parseApiEnvironment({})).toEqual({
       nodeEnv: "development",
       port: 3000,
+      mcpAllowedHosts: ["localhost", "127.0.0.1", "::1"],
     });
   });
 
   test("rejects an invalid API port", () => {
     expect(() => parseApiEnvironment({ PORT: "70000" })).toThrow();
+  });
+
+  test("normalizes an explicit MCP host allowlist", () => {
+    expect(
+      parseApiEnvironment({
+        NODE_ENV: "test",
+        MCP_ALLOWED_HOSTS: " LOCALHOST:43120, api.example.test,localhost ",
+      }).mcpAllowedHosts,
+    ).toEqual(["localhost", "api.example.test"]);
+  });
+
+  test("requires explicit non-wildcard MCP hosts in production", () => {
+    expect(() => parseApiEnvironment({ NODE_ENV: "production" })).toThrow();
+    expect(() =>
+      parseApiEnvironment({
+        NODE_ENV: "production",
+        MCP_ALLOWED_HOSTS: "*",
+      }),
+    ).toThrow();
+    expect(
+      parseApiEnvironment({
+        NODE_ENV: "production",
+        MCP_ALLOWED_HOSTS: "mcp.example.com",
+      }).mcpAllowedHosts,
+    ).toEqual(["mcp.example.com"]);
   });
 });
 
