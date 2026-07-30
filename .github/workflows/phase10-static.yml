@@ -17,6 +17,7 @@ jobs:
         with:
           bun-version: 1.3.2
       - run: bun install --frozen-lockfile
+      - run: bun run db:generate
       - run: bun run --filter @repo/mcp typecheck
       - run: bun run --filter @repo/mcp test
       - run: bun run --filter @repo/api typecheck
