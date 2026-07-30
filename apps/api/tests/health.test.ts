@@ -53,6 +53,7 @@ test("API preserves health and safely mounts stateless Streamable HTTP MCP", asy
 
     const health = await fetch(`${baseUrl}/health`);
     assert.equal(health.status, 200);
+    assert.equal(health.headers.get("x-powered-by"), null);
     assert.deepEqual(await health.json(), { status: "ok" });
 
     const initialized = await fetch(`${baseUrl}/mcp`, {
@@ -80,6 +81,17 @@ test("API preserves health and safely mounts stateless Streamable HTTP MCP", asy
       initializeBody.result?.serverInfo?.name,
       "commerce-operations-investigator",
     );
+
+    for (const method of ["GET", "DELETE"] as const) {
+      const unsupported = await fetch(`${baseUrl}/mcp`, { method });
+      assert.equal(unsupported.status, 405);
+      assert.equal(unsupported.headers.get("allow"), "POST");
+      assert.deepEqual(await unsupported.json(), {
+        jsonrpc: "2.0",
+        error: { code: -32_000, message: "Method not allowed." },
+        id: null,
+      });
+    }
 
     const invalidHost = await fetch(`${baseUrl}/mcp`, {
       method: "POST",
