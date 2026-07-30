@@ -6,12 +6,12 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 
 ## Current gate
 
-- Phases 0 through 9 are accepted and merged.
+- Phases 0 through 10 are accepted and merged.
 - Phase 9 was merged to `main` as `d11b589fabe9e16222953bb251e39ba79c73887a`.
 - The initial Phase 10 MCP implementation was merged to `main` as `355960c2a3441a05430de8cbf87234bb8285ff18`.
-- `phase/10-remote-mcp-completion` completes the missing direct MCP evaluation, documentation, and validation work.
-- Do not begin Phase 11 until Phase 10 has been reviewed and the explicit live direct evaluation has passed.
-- Do not add an LLM provider, model SDK, model name, or API key during Phase 10.
+- The Phase 10 completion work was merged through PR #9 as `ef80769506bcb3b78b03cbc6a5333d153d2919e1`.
+- The direct Streamable HTTP MCP evaluation and combined Phase 9/10 verification passed.
+- Phase 11 may add one concrete LLM provider only after `MODEL_PROVIDER`, `MODEL_NAME`, and `MODEL_API_KEY` are selected.
 
 ## Permanent safety boundary
 
@@ -141,17 +141,18 @@ The model must use MCP tools and explain server-produced structured outcomes. It
 - Do not introduce Redis, queues, Kafka, RAG, multi-agent orchestration, event sourcing, or complex production authentication.
 - Never commit `.env`, credentials, production data, local database dumps, generated secrets, or private AI transcripts.
 
-## Required review packet
+## Required Phase 11 review packet
 
-Before Phase 10 is accepted, show:
+Before Phase 11 is accepted, show:
 
-- exact five tools, inputs, outputs, annotations, and side effects;
-- stable SDK version and transport decision;
-- Host validation and lifecycle behavior;
-- all nine direct MCP results;
-- operations count progression;
-- retry, reuse, read, invalid-input, forbidden-tool, and missing-ID results;
-- commerce before/after proof and final cleanup;
-- static checks and live evaluation command results;
-- confirmation that no LLM SDK/key/provider was added;
-- files changed, lockfile/migration/grant/env changes, and proposed merge details.
+- selected model provider, model name, and environment contract;
+- provider-neutral model boundary and one concrete provider implementation;
+- natural-language intent and order-ID extraction results;
+- correct MCP tool selection and ordering;
+- grounded explanation results against server-produced structured output;
+- no invented evidence, diagnosis, queue, reason, or state changes;
+- refusal of mutation requests and forbidden-tool attempts;
+- prompt-injection and adversarial evaluation results;
+- token/cost and deterministic evaluation settings;
+- confirmation that commerce remains unchanged;
+- files changed, lockfile/env changes, and proposed merge details.
