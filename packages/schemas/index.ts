@@ -60,3 +60,16 @@ export {
   type CommerceWarehouseRecord,
   type JsonValue,
 } from "./commerce-records.js";
+export {
+  EVIDENCE_SOURCE_NAMES,
+  EvidenceSourceNameSchema,
+  EvidenceSourceReadErrorCodeSchema,
+  EvidenceSourceReadSchema,
+  EvidenceSourceReadStatusSchema,
+  NormalizedOrderEvidenceSchema,
+  type EvidenceSourceName,
+  type EvidenceSourceRead,
+  type EvidenceSourceReadErrorCode,
+  type EvidenceSourceReadStatus,
+  type NormalizedOrderEvidence,
+} from "./normalized-evidence.js";
