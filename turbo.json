@@ -11,7 +11,14 @@
       "dependsOn": ["^lint"]
     },
     "test": {
-      "dependsOn": ["build", "^build", "^test"]
+      "dependsOn": ["build", "^build", "^test"],
+      "env": [
+        "DATABASE_URL",
+        "DEMO_DATABASE_URL",
+        "WORKFLOW_DATABASE_URL",
+        "NODE_ENV",
+        "MCP_ALLOWED_HOSTS"
+      ]
     },
     "typecheck": {
       "dependsOn": ["^typecheck"]
