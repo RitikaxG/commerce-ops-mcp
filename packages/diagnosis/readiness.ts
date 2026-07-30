@@ -188,9 +188,10 @@ class DefaultEvidenceReadinessEvaluator implements EvidenceReadinessEvaluator {
       return result(evidence.orderId, missing, []);
     }
     const hasDecisiveFailureEvent = evidence.fulfilmentEvents.some(
-      ({ type }) =>
-        type === "FULFILMENT_CREATION_FAILED" ||
-        type === "SHIPMENT_LABEL_CREATION_FAILED",
+      ({ type, status }) =>
+        status === "FAILED" &&
+        (type === "FULFILMENT_CREATION_FAILED" ||
+          type === "SHIPMENT_LABEL_CREATION_FAILED"),
     );
     if (hasDecisiveFailureEvent) {
       return result(evidence.orderId, missing, []);

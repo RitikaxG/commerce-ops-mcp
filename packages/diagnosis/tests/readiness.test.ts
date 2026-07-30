@@ -290,6 +290,30 @@ describe("evidence readiness", () => {
     }
   });
 
+  test("does not treat a successful failure-type event as decisive", () => {
+    const result = evaluator.evaluate(
+      buildSnapshot({
+        fulfilmentEvents: [
+          {
+            ...failureEvent("FULFILMENT_CREATION_FAILED"),
+            status: "SUCCEEDED",
+          },
+        ],
+        unavailableSources: {
+          FULFILMENT: "FAILED",
+          INVENTORY: "FAILED",
+          WAREHOUSES: "FAILED",
+        },
+      }),
+    );
+
+    expect(result).toMatchObject({
+      evidenceStatus: "MISSING",
+      missingFields: ["sources.FULFILMENT"],
+      conflicts: [],
+    });
+  });
+
   test("returns the exact assigned-warehouse inventory path when an observation is absent", () => {
     const result = evaluator.evaluate(
       buildSnapshot({ inventoryObservations: [] }),

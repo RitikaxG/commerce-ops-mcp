@@ -1,5 +1,7 @@
 # Phase 07 Evaluation Report - Evidence Readiness and Conflict Gate
 
+Accepted and merged to `main` as `d7999c7` on 2026-07-30.
+
 ## Goal
 
 Evaluate a valid normalized evidence snapshot deterministically as `COMPLETE`,
@@ -254,4 +256,4 @@ No commit or push was performed.
 
 ## Exit decision
 
-Awaiting review.
+Accepted.

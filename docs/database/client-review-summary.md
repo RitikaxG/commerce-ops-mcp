@@ -137,4 +137,23 @@ The missing inventory row is recorded in the immutable snapshot and `missing_fie
 9. Store versioned immutable JSONB evidence with relational searchable outcome and trace fields.
 10. Return `NEEDS_MORE_INFO`, with no guessed diagnosis, for missing or conflicting evidence.
 
+## Accepted synthetic-data and time policy
+
+The client approved the current synthetic PostgreSQL records and deterministic
+evaluation policy for the bounded prototype:
+
+- live scenario evaluation uses the fixed collector reference
+  `2026-07-30T12:00:00.000Z`;
+- processing decisions use `evidence.collectedAt`, never the current machine
+  time;
+- the accepted processing window is exactly four hours, inclusive;
+- a relevant event must not be later than `evidence.collectedAt`;
+- source timestamps remain trace metadata and are not rejected merely because
+  the demo is reviewed later; and
+- synthetic commerce writes remain confined to explicit demo seed/reset
+  commands, never diagnosis or runtime startup.
+
+This policy does not change the approved `commerce` read-only workflow boundary
+or the scoped `operations` persistence and escalation boundary.
+
 Full columns, nullability, constraints, ERD, permissions, indexes, and walkthroughs are in [schema-proposal.md](schema-proposal.md).
