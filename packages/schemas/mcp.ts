@@ -110,6 +110,31 @@ export const GetReviewCaseToolSuccessSchema =
 export const GetInvestigationTraceToolSuccessSchema =
   createMcpToolSuccessSchema(InvestigationTraceSchema);
 
+// The MCP SDK validates structuredContent against outputSchema even when a
+// tool returns isError=true. Each registered tool therefore advertises the
+// complete discriminated envelope rather than only its success shape.
+export const ListDemoCasesToolOutputSchema = z.discriminatedUnion("ok", [
+  ListDemoCasesToolSuccessSchema,
+  McpToolFailureSchema,
+]);
+export const InvestigateOrderExceptionToolOutputSchema = z.discriminatedUnion(
+  "ok",
+  [InvestigateOrderExceptionToolSuccessSchema, McpToolFailureSchema],
+);
+export const CreateHumanReviewEscalationToolOutputSchema =
+  z.discriminatedUnion("ok", [
+    CreateHumanReviewEscalationToolSuccessSchema,
+    McpToolFailureSchema,
+  ]);
+export const GetReviewCaseToolOutputSchema = z.discriminatedUnion("ok", [
+  GetReviewCaseToolSuccessSchema,
+  McpToolFailureSchema,
+]);
+export const GetInvestigationTraceToolOutputSchema = z.discriminatedUnion(
+  "ok",
+  [GetInvestigationTraceToolSuccessSchema, McpToolFailureSchema],
+);
+
 export type McpToolErrorCode = z.infer<typeof McpToolErrorCodeSchema>;
 export type McpToolFailure = z.infer<typeof McpToolFailureSchema>;
 export type DemoCaseCategory = z.infer<typeof DemoCaseCategorySchema>;
@@ -121,3 +146,4 @@ export type McpToolSuccess<Result> = {
   ok: true;
   result: Result;
 };
+export type McpToolOutput<Result> = McpToolSuccess<Result> | McpToolFailure;
