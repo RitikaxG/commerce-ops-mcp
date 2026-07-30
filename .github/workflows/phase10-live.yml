@@ -1,0 +1,97 @@
+name: Phase 9 and 10 live verification
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_ENV: test
+  DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/commerce_ops
+  DEMO_DATABASE_URL: postgresql://commerce_demo:demo_password@127.0.0.1:5432/commerce_ops
+  WORKFLOW_DATABASE_URL: postgresql://commerce_workflow:workflow_password@127.0.0.1:5432/commerce_ops
+  MCP_ALLOWED_HOSTS: 127.0.0.1
+
+jobs:
+  phase9-phase10-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: commerce_ops
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d commerce_ops"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: bun run db:generate
+
+      - name: Apply migrations
+        run: bun run db:migrate
+
+      - name: Configure restricted database roles
+        run: bun run db:setup-access
+
+      - name: Restore approved synthetic commerce data
+        run: bun run db:reset-demo
+
+      - name: Verify approved fixtures and access boundary
+        run: |
+          bun run db:verify-demo
+          bun run db:verify-access
+
+      - name: Run Phase 9 package regressions
+        run: |
+          bun run --filter @repo/db test
+          bun run --filter @repo/evidence test
+          bun run --filter @repo/diagnosis test
+          bun run --filter @repo/observability test
+          bun run --filter @repo/workflow test
+
+      - name: Run Phase 10 package checks
+        run: |
+          bun run --filter @repo/mcp typecheck
+          bun run --filter @repo/mcp test
+          bun run --filter @repo/api typecheck
+          bun run --filter @repo/api test
+          bun run --filter @repo/evaluations typecheck
+          bun run --filter @repo/evaluations test
+
+      - name: Run repository checks
+        run: |
+          bun run build
+          bun run typecheck
+          bun run test
+          bun run lint
+
+      - name: Run direct Streamable HTTP MCP evaluation
+        run: bun run eval:mcp:direct
+
+      - name: Verify cleanup and immutable commerce data
+        if: always()
+        run: |
+          bun run db:verify-demo
+          test "$(bun run --silent --filter @repo/db db:reset-workflow-demo >/dev/null 2>&1; echo $?)" = "0"
+          bun run db:verify-demo
