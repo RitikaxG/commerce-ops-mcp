@@ -1,0 +1,26 @@
+{
+  "name": "@repo/config",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "bun": "./index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/bun": "latest",
+    "typescript": "5.9.2"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}

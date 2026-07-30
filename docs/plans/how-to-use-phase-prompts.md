@@ -121,4 +121,4 @@ Do not link to an evaluation report until that report exists. Do not mark a phas
 
 ## Current handoff
 
-Phases 0 and 1 are accepted. `docs/database/schema-proposal.md` is the approved database source of truth. Phase 2 is the next authorized phase and must begin in a separate coding session using only the Phase 2 prompt. Do not add Prisma models/migrations or work from Phase 3 and later during Phase 2.
+Phases 0 and 1 are accepted. Phase 2 is implemented on `phase/02-turborepo-foundation` and is awaiting review. Review `docs/evaluations/phase-02.md`, `AGENTS.md`, the README status table, the `/health` output, package names, dependency direction, and no-`src/` compliance. Phase 3 remains blocked until explicit Phase 2 acceptance and a new session with only the Phase 3 prompt.

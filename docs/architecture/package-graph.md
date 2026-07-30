@@ -2,9 +2,7 @@
 
 ## Status and scope
 
-This Phase 0 document freezes dependency direction and ownership. It defines planned boundaries, not implemented packages or concrete TypeScript signatures.
-
-The current starter does not match this graph. Phase 0 does not rename, delete, move, or scaffold application/package code.
+This Phase 0 document freezes dependency direction and ownership. Phase 2 has now scaffolded every listed application/package boundary, but only the health API and environment parser have concrete public behavior. Domain signatures remain deferred to their owning phases.
 
 ## Dependency direction
 
@@ -116,14 +114,14 @@ No lower layer imports a higher layer. In particular:
 
 ## Current repository differences
 
-| Current starter state                                | Contract treatment                                                                                         |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `apps/api` is absent                                 | Do not scaffold it before Phase 2 and Phase 1 schema acceptance.                                           |
-| `apps/web` is a generic Next.js starter              | Preserve it until the later scaffold phase; the target remains a secondary read-only trace viewer.         |
-| `packages/ui/src/` exists                            | It violates the no-`src/` convention; do not fix it in Phase 0.                                            |
-| `packages/db` contains a Prisma skeleton             | Preserve it, but do not add models/migrations before schema acceptance; its public API remains unapproved. |
-| Most target domain packages are absent               | Target domain behavior remains unimplemented.                                                              |
-| `@repo/ui` exports wildcard compiled component paths | This is a starter API, not an approved target domain API.                                                  |
+| Phase 2 state                                     | Contract treatment                                                                                                   |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `apps/api` provides Express composition/health    | MCP, trace routes, workflow composition, and database access remain deferred.                                        |
+| `apps/web` is a static Tailwind shell             | It remains secondary and has no API/database integration before the trace phase.                                     |
+| `packages/ui` has no `src/` directory             | Starter components are retained but are not part of the product-domain graph.                                        |
+| `packages/db` contains the Prisma skeleton        | Its Prisma schema/config are unchanged; models, migrations, repositories, and generated-client exports are deferred. |
+| All target domain package roots exist             | They deliberately export nothing until the phase that owns their contracts and behavior.                             |
+| `@repo/config` exports API environment validation | This is the only Phase 2 package-level runtime API.                                                                  |
 
 `apps/docs` was removed by the user after Phase 0 review because it has no product responsibility.
 

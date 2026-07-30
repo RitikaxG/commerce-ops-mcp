@@ -8,10 +8,11 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 
 - Phase 0 was reviewed and accepted on 2026-07-30.
 - Phase 1 was reviewed and accepted on 2026-07-30.
-- The next permitted implementation phase is Phase 2, in a separate coding session using only the Phase 2 prompt.
-- Phase 3 and later phases remain blocked by the phase sequence.
+- Phase 2 implementation and its review packet are complete and awaiting reviewer acceptance.
+- The next permitted action is Phase 2 review or revision on `phase/02-turborepo-foundation`.
+- Phase 3 and later phases remain blocked until Phase 2 is explicitly accepted.
 - Use one phase prompt in one coding session and stop at its review gate.
-- Do not start Phase 2 without its explicit prompt, and do not implement work from later phases during Phase 2.
+- Do not start Phase 3 without its explicit prompt in a later coding session.
 - The existing Prisma skeleton in `packages/db` remains unchanged and model-free; schema implementation belongs to Phase 4.
 
 ## Permanent safety boundary
@@ -69,12 +70,13 @@ Target conventions from the final plan:
 - TypeScript strict mode and ESM
 - No `src/` directories
 - Node.js and Express API
+- Node.js 20.9.0 or newer, matching the Next.js 16 runtime requirement
 - PostgreSQL and Prisma in `packages/db`, following the accepted `commerce` / `operations` schema boundary
 - Zod schemas in `packages/schemas` validate every untrusted/external input and shared protocol contract
 - A small Tailwind trace viewer in `apps/web`, built after core MCP correctness
 - No speculative Redis, queues, Kafka, RAG, multi-agent orchestration, event sourcing, or complex production authentication
 
-The current repository contains the remaining `apps/web` starter and a user-initialized Prisma skeleton in `packages/db`. `apps/docs` was removed because it is not part of the product. Existing scaffold choices are not automatically approved; reconcile them only in the appropriate accepted phase.
+Phase 2 reuses the existing Bun/Turborepo and user-initialized Prisma foundation. It adds the Express health API, a static Tailwind trace-viewer shell, and empty package roots for later phases. `apps/docs` remains intentionally absent. The Prisma schema is still model-free and unchanged.
 
 ## Package graph and ownership
 
@@ -95,7 +97,14 @@ The planned dependency direction is:
 - `packages/observability` owns the internal trace event vocabulary, safe summaries, and trace queries; public Zod trace contracts live in `packages/schemas`.
 - `packages/config` owns shared TypeScript, environment, and test configuration.
 
-The planned conceptual public surfaces are `EvidenceCollector`, `EvidenceReadinessEvaluator`, `DiagnosisEngine`, `InvestigationWorkflow`, `HumanReviewWorkflow`, repository contracts, trace queries, and the five MCP tool contracts below. Concrete TypeScript signatures are intentionally deferred to their owning phases and must use types from `packages/schemas`.
+Phase 2 introduces only these concrete public surfaces:
+
+- `@repo/config` exports `ApiEnvironmentSchema`, `ApiEnvironment`, and `parseApiEnvironment`.
+- `apps/api/app.ts` exports the composed Express application for startup and smoke testing.
+- `GET /health` returns `{"status":"ok"}`.
+- `packages/db` and every domain package root export nothing while their owning phases remain blocked.
+
+The planned conceptual public surfaces are `EvidenceCollector`, `EvidenceReadinessEvaluator`, `DiagnosisEngine`, `InvestigationWorkflow`, `HumanReviewWorkflow`, repository contracts, trace queries, and the five MCP tool contracts below. Concrete TypeScript signatures remain deferred to their owning phases and must use types from `packages/schemas`.
 
 Keep public APIs small and export them through package roots. A phase may refine this graph, but it must document and review any changed direction. The complete acyclic graph is in `docs/architecture/package-graph.md`.
 
@@ -142,24 +151,41 @@ Phase 1 commands:
 
 Expected and actual results are recorded in `docs/evaluations/phase-01.md`. No Prisma validation, generation, migration, or database command was run during Phase 1; schema implementation remains assigned to Phase 4.
 
+Phase 2 commands:
+
+- `bun install`
+- `bun run --filter @repo/config typecheck`
+- `bun run --filter @repo/api typecheck`
+- `bun run --filter @repo/config test`
+- `bun run --filter @repo/api test`
+- `bun run build`
+- `bun run typecheck`
+- `bun run test`
+- `bun run lint`
+- `PORT=43120 NODE_ENV=test node apps/api/dist/server.js` followed by `curl -i http://127.0.0.1:43120/health`
+- Browser verification of the production web shell at `http://127.0.0.1:43121`
+- Package-name, dependency-direction, cycle, no-`src/`, schema-diff, migration-absence, ignored-file, and whitespace checks
+
+The final package and Turbo checks passed. The API smoke test passed with one focused test, and the compiled API returned HTTP 200 with `{"status":"ok"}`. Local TCP listeners and the Next.js build worker required execution outside the managed sandbox because loopback binding and worker creation were restricted there; the application checks themselves passed. Full expected and actual results, including the failed diagnostic attempts, are recorded in `docs/evaluations/phase-02.md`.
+
 ## Phase status
 
-| Phase | Status      | Evaluation report              | Notes                     |
-| ----- | ----------- | ------------------------------ | ------------------------- |
-| 0     | Complete    | `docs/evaluations/phase-00.md` | Accepted 2026-07-30       |
-| 1     | Complete    | `docs/evaluations/phase-01.md` | Accepted 2026-07-30       |
-| 2     | Not started | Not created                    | Next permitted phase      |
-| 3     | Not started | Not created                    | Blocked by phase sequence |
-| 4     | Not started | Not created                    | Blocked by phase sequence |
-| 5     | Not started | Not created                    | Blocked by phase sequence |
-| 6     | Not started | Not created                    | Blocked by phase sequence |
-| 7     | Not started | Not created                    | Blocked by phase sequence |
-| 8     | Not started | Not created                    | Blocked by phase sequence |
-| 9     | Not started | Not created                    | Blocked by phase sequence |
-| 10    | Not started | Not created                    | Blocked by phase sequence |
-| 11    | Not started | Not created                    | Blocked by phase sequence |
-| 12    | Not started | Not created                    | Blocked by phase sequence |
-| 13    | Not started | Not created                    | Blocked by phase sequence |
+| Phase | Status          | Evaluation report              | Notes                            |
+| ----- | --------------- | ------------------------------ | -------------------------------- |
+| 0     | Complete        | `docs/evaluations/phase-00.md` | Accepted 2026-07-30              |
+| 1     | Complete        | `docs/evaluations/phase-01.md` | Accepted 2026-07-30              |
+| 2     | Awaiting review | `docs/evaluations/phase-02.md` | Foundation implemented           |
+| 3     | Not started     | Not created                    | Blocked until Phase 2 acceptance |
+| 4     | Not started     | Not created                    | Blocked by phase sequence        |
+| 5     | Not started     | Not created                    | Blocked by phase sequence        |
+| 6     | Not started     | Not created                    | Blocked by phase sequence        |
+| 7     | Not started     | Not created                    | Blocked by phase sequence        |
+| 8     | Not started     | Not created                    | Blocked by phase sequence        |
+| 9     | Not started     | Not created                    | Blocked by phase sequence        |
+| 10    | Not started     | Not created                    | Blocked by phase sequence        |
+| 11    | Not started     | Not created                    | Blocked by phase sequence        |
+| 12    | Not started     | Not created                    | Blocked by phase sequence        |
+| 13    | Not started     | Not created                    | Blocked by phase sequence        |
 
 ## Decisions and trade-offs
 
@@ -182,15 +208,24 @@ Expected and actual results are recorded in `docs/evaluations/phase-01.md`. No P
 - 2026-07-30: Approve separate schema-owner/migration, demo seed/reset, and workflow-runtime roles; a separate reviewer interface/role remains optional.
 - 2026-07-30: Accept `docs/database/schema-proposal.md` as the database implementation source of truth.
 - 2026-07-30: Reject schema additions for histories, multi-tenancy, event sourcing, partitioning, archival, or external synchronization without a scoped need.
+- 2026-07-30: Reuse the initialized Bun/Turborepo workspace and `packages/db` Prisma setup instead of reinitializing either foundation.
+- 2026-07-30: Standardize application and product-package names under the existing `@repo/*` scope; keep package roots intentionally empty until their owning phases.
+- 2026-07-30: Move `packages/ui` source files from `src/` to `components/` and the package root to satisfy the no-`src/` convention without deleting the starter package.
+- 2026-07-30: Use the Node built-in test runner with the `tsx` loader for the Express smoke test because Bun's Node HTTP compatibility path could not bind an ephemeral port in this environment.
+- 2026-07-30: Make Next.js run TypeScript validation during builds and set the Turbopack root explicitly to the repository root; do not suppress build type errors.
+- 2026-07-30: Require Node.js 20.9.0 or newer because the retained Next.js 16 workspace requires that minimum runtime.
+- 2026-07-30: Keep Phase 2 free of Prisma models, migrations, repositories, domain contracts, MCP tools, AI behavior, and speculative infrastructure.
+- 2026-07-30: Reject reinitializing the repository, replacing the existing web framework, adding a second package manager, or introducing domain behavior before its phase gate.
 
 ## Known limitations
 
-- The repository still contains starter application/package code that has not been evaluated against the final plan.
-- `packages/ui/src/` conflicts with the target no-`src/` convention; it has deliberately not been changed during plan intake.
-- `apps/api` and most target domain packages do not exist; Phase 2 must reconcile the starter only after schema acceptance.
-- `packages/db` is initialized with Prisma 7.9.1, but its Prisma schema has no models or migrations and its scaffold API has not been reviewed against the approved package boundary.
-- The current root scripts do not yet expose the full planned command set.
-- The starter root typecheck is not clean-clone standalone: `@repo/ui` must run `build:components` first because its export map resolves generated `dist` files and Turbo does not encode that dependency.
+- `apps/api` exposes only the health endpoint; MCP transport, trace routes, workflow composition, and database access are intentionally absent.
+- `apps/web` is a static non-functional trace-viewer shell and has no API or database integration.
+- `packages/schemas`, `fixtures`, `evidence`, `diagnosis`, `workflow`, `mcp`, `agent`, `evaluations`, and `observability` are compileable empty package roots; their contracts and behavior begin in later phases.
+- `packages/db` is initialized with Prisma 7.9.1, but its Prisma schema remains model-free and has no generated domain client, migrations, repositories, or runtime constructor.
+- The full planned migrate, seed, reset, development, and evaluation command set does not exist yet.
+- Local development requires Bun 1.3.2 and Node.js 20.9.0 or newer.
+- Local TCP smoke tests and the Next.js production build require an environment that permits loopback listeners and worker creation.
 - Full copy-paste prompts for Phases 0-13 are not stored here. The repository currently stores the final plan and the prompt-use protocol only.
 - The safety boundary and package graph are documentation contracts only; no database permission or runtime guardrail exists yet.
 - The Phase 1 schema is accepted but none of its entities, enums, triggers, grants, or indexes is implemented yet.

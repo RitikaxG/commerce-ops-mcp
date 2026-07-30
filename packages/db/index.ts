@@ -1,10 +1,3 @@
-import { PrismaClient } from "./generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
-});
-
-export const prisma = new PrismaClient({
-  adapter,
-});
+// Prisma configuration remains in this package. Models, generated clients,
+// repositories, and runtime constructors begin only after their phase gates.
+export {};

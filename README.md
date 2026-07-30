@@ -4,9 +4,11 @@ This repository will implement a bounded operations workflow that explains why a
 
 ## Current state
 
-Phases 0 and 1 are complete. The PostgreSQL schema proposal was accepted on 2026-07-30 and is now the database implementation source of truth. Phase 2 is the next permitted phase and must start in a separate coding session with its own prompt.
+Phases 0 and 1 are complete. Phase 2 has scaffolded the Bun/Turborepo foundation and is awaiting review on `phase/02-turborepo-foundation`. Phase 3 remains blocked until Phase 2 is accepted.
 
-The user removed `apps/docs` and initialized a Prisma skeleton in `packages/db`. The Prisma schema remains empty. No accepted Phase 1 entity, migration, application workflow, AI behavior, or MCP implementation exists in code yet.
+The existing Bun/Turborepo and Prisma setup was reused rather than reinitialized. The repository now builds and typechecks, the Express API returns `{"status":"ok"}` from `GET /health`, and the web application is a static Tailwind trace-viewer shell. The Prisma schema remains empty, and no accepted Phase 1 entity, migration, application workflow, AI behavior, or MCP implementation exists in code yet.
+
+Local prerequisites are Bun 1.3.2 and Node.js 20.9.0 or newer.
 
 ## Plan and working instructions
 
@@ -18,26 +20,26 @@ The user removed `apps/docs` and initialized a Prisma skeleton in `packages/db`.
 - [How to use the phase prompts](docs/plans/how-to-use-phase-prompts.md)
 - [Coding-agent instructions](AGENTS.md)
 
-Phase 1 was a documentation-only client-review gate. Its schema is accepted; no Prisma model or migration was created. Use only the Phase 2 prompt in the next coding session and stop at its review gate.
+Phase 1 was a documentation-only client-review gate. Its schema is accepted; no Prisma model or migration was created. Phase 2 also leaves the schema untouched and stops at its review gate.
 
 ## Implementation status
 
-| Phase | Status      | Main output                                                    | Evaluation                             |
-| ----- | ----------- | -------------------------------------------------------------- | -------------------------------------- |
-| 0     | Complete    | Workflow contract and repository rules                         | [Report](docs/evaluations/phase-00.md) |
-| 1     | Complete    | [Approved PostgreSQL schema](docs/database/schema-proposal.md) | [Report](docs/evaluations/phase-01.md) |
-| 2     | Not started | Bun and Turborepo foundation                                   | Not created                            |
-| 3     | Not started | Zod contracts and synthetic scenarios                          | Not created                            |
-| 4     | Not started | Approved PostgreSQL schema and seed                            | Not created                            |
-| 5     | Not started | Repositories and read-only commerce boundary                   | Not created                            |
-| 6     | Not started | Evidence collection and normalization                          | Not created                            |
-| 7     | Not started | Evidence readiness and conflict gate                           | Not created                            |
-| 8     | Not started | Deterministic diagnosis and suggested action                   | Not created                            |
-| 9     | Not started | Persistent investigation and escalation workflow               | Not created                            |
-| 10    | Not started | Standard remote MCP server                                     | Not created                            |
-| 11    | Not started | Agent behavior and LLM evaluations                             | Not created                            |
-| 12    | Not started | Trace APIs and minimal Tailwind viewer                         | Not created                            |
-| 13    | Not started | Hardening, deployment, and submission evidence                 | Not created                            |
+| Phase | Status          | Main output                                                    | Evaluation                             |
+| ----- | --------------- | -------------------------------------------------------------- | -------------------------------------- |
+| 0     | Complete        | Workflow contract and repository rules                         | [Report](docs/evaluations/phase-00.md) |
+| 1     | Complete        | [Approved PostgreSQL schema](docs/database/schema-proposal.md) | [Report](docs/evaluations/phase-01.md) |
+| 2     | Awaiting review | Bun and Turborepo foundation                                   | [Report](docs/evaluations/phase-02.md) |
+| 3     | Not started     | Zod contracts and synthetic scenarios                          | Not created                            |
+| 4     | Not started     | Approved PostgreSQL schema and seed                            | Not created                            |
+| 5     | Not started     | Repositories and read-only commerce boundary                   | Not created                            |
+| 6     | Not started     | Evidence collection and normalization                          | Not created                            |
+| 7     | Not started     | Evidence readiness and conflict gate                           | Not created                            |
+| 8     | Not started     | Deterministic diagnosis and suggested action                   | Not created                            |
+| 9     | Not started     | Persistent investigation and escalation workflow               | Not created                            |
+| 10    | Not started     | Standard remote MCP server                                     | Not created                            |
+| 11    | Not started     | Agent behavior and LLM evaluations                             | Not created                            |
+| 12    | Not started     | Trace APIs and minimal Tailwind viewer                         | Not created                            |
+| 13    | Not started     | Hardening, deployment, and submission evidence                 | Not created                            |
 
 ## Verified commands
 
@@ -57,6 +59,18 @@ See the [Phase 0 evaluation report](docs/evaluations/phase-00.md) for expected a
 Phase 1 checks passed for required schema tokens/ER references, client-summary consistency, Markdown formatting, whitespace, unchanged `packages/db`, and absence of migrations. Mermaid CLI was unavailable, so the ERD received manual syntax review. Full results are in the [Phase 1 evaluation report](docs/evaluations/phase-01.md).
 
 No Prisma model, generation, validation, migration, or database command was run.
+
+Phase 2 verified:
+
+- `bun install`
+- `bun run build` — 14 successful Turbo tasks
+- `bun run typecheck` — 14 successful Turbo tasks
+- `bun run test` — 16 successful Turbo tasks; environment tests 2/2 and API smoke test 1/1 passed
+- `bun run lint` — 2 successful Turbo tasks
+- Compiled API request — HTTP 200 with `{"status":"ok"}`
+- Static web-shell browser check — expected layout with no console warnings/errors
+
+The final build and listener-based tests were run outside the managed sandbox because its worker and loopback restrictions blocked those processes. The application checks passed in the normal local environment. Full commands, diagnostic attempts, guardrails, and actual output are in the [Phase 2 evaluation report](docs/evaluations/phase-02.md).
 
 Plan-intake checks completed:
 
@@ -83,4 +97,4 @@ These are planned synthetic scenarios, not implemented fixtures.
 
 The intended runtime exposes no commerce-state mutation capability. Operational commerce data is read-only. Allowed writes are limited to investigations, immutable evidence snapshots, human-review escalations, idempotency records, and append-only audit events.
 
-This is currently a documented boundary, not yet an implemented or tested guarantee. Phase reports and guardrail tests must provide the evidence as implementation proceeds.
+This remains a documented boundary rather than a database-enforced runtime guarantee. Phase 2 exposes no commerce mutation or domain capability, but later database and guardrail phases must prove the read/write boundary.
