@@ -4,9 +4,9 @@ This repository will implement a bounded operations workflow that explains why a
 
 ## Current state
 
-Phases 0 through 3 are complete. Phase 4 has implemented and verified the PostgreSQL safety boundary on `phase/04-database-hardening`; it is awaiting review.
+Phases 0 through 4 are complete. Phase 5 has implemented and verified the read-only commerce repository boundary on `phase/05-readonly-commerce-repositories`; it is awaiting review.
 
-The existing Bun/Turborepo and Prisma setup was reused rather than reinitialized. PostgreSQL contains the validated nine-order commerce seed and empty workflow tables. Separate owner, demo, and workflow roles now enforce the database boundary, while the Express API remains database-free. No repository layer, investigation workflow, diagnosis engine, AI behavior, or MCP implementation exists yet.
+The existing Bun/Turborepo and Prisma setup was reused rather than reinitialized. PostgreSQL contains the validated nine-order commerce seed and empty workflow tables. Separate owner, demo, and workflow roles enforce the database boundary. A small `CommerceReadRepository` now exposes the source reads needed by Phase 6 using only `WORKFLOW_DATABASE_URL`, while the Express API remains database-free. Evidence collection, investigation workflow, diagnosis, AI behavior, and MCP remain unimplemented.
 
 Local prerequisites are Bun 1.3.2 and Node.js 20.9.0 or newer.
 
@@ -25,22 +25,22 @@ The final Phase 3 prompt moved the minimum Prisma schema, migration, and seed/re
 
 ## Implementation status
 
-| Phase | Status          | Main output                                                    | Evaluation                                                 |
-| ----- | --------------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
-| 0     | Complete        | Workflow contract and repository rules                         | [Report](docs/evaluations/phase-00.md)                     |
-| 1     | Complete        | [Approved PostgreSQL schema](docs/database/schema-proposal.md) | [Report](docs/evaluations/phase-01.md)                     |
-| 2     | Complete        | Bun and Turborepo foundation                                   | [Report](docs/evaluations/phase-02.md)                     |
-| 3     | Complete        | Approved scenarios, validation, PostgreSQL seed/reset          | [Report](docs/evaluations/phase-03-synthetic-scenarios.md) |
-| 4     | Awaiting review | Roles, grants, immutable records, cross-table invariants       | [Report](docs/evaluations/phase-04-database-hardening.md)  |
-| 5     | Not started     | Repositories and read-only commerce boundary                   | Not created                                                |
-| 6     | Not started     | Evidence collection and normalization                          | Not created                                                |
-| 7     | Not started     | Evidence readiness and conflict gate                           | Not created                                                |
-| 8     | Not started     | Deterministic diagnosis and suggested action                   | Not created                                                |
-| 9     | Not started     | Persistent investigation and escalation workflow               | Not created                                                |
-| 10    | Not started     | Standard remote MCP server                                     | Not created                                                |
-| 11    | Not started     | Agent behavior and LLM evaluations                             | Not created                                                |
-| 12    | Not started     | Trace APIs and minimal Tailwind viewer                         | Not created                                                |
-| 13    | Not started     | Hardening, deployment, and submission evidence                 | Not created                                                |
+| Phase | Status          | Main output                                                    | Evaluation                                                            |
+| ----- | --------------- | -------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 0     | Complete        | Workflow contract and repository rules                         | [Report](docs/evaluations/phase-00.md)                                |
+| 1     | Complete        | [Approved PostgreSQL schema](docs/database/schema-proposal.md) | [Report](docs/evaluations/phase-01.md)                                |
+| 2     | Complete        | Bun and Turborepo foundation                                   | [Report](docs/evaluations/phase-02.md)                                |
+| 3     | Complete        | Approved scenarios, validation, PostgreSQL seed/reset          | [Report](docs/evaluations/phase-03-synthetic-scenarios.md)            |
+| 4     | Complete        | Roles, grants, immutable records, cross-table invariants       | [Report](docs/evaluations/phase-04-database-hardening.md)             |
+| 5     | Awaiting review | Repositories and read-only commerce boundary                   | [Report](docs/evaluations/phase-05-readonly-commerce-repositories.md) |
+| 6     | Not started     | Evidence collection and normalization                          | Not created                                                           |
+| 7     | Not started     | Evidence readiness and conflict gate                           | Not created                                                           |
+| 8     | Not started     | Deterministic diagnosis and suggested action                   | Not created                                                           |
+| 9     | Not started     | Persistent investigation and escalation workflow               | Not created                                                           |
+| 10    | Not started     | Standard remote MCP server                                     | Not created                                                           |
+| 11    | Not started     | Agent behavior and LLM evaluations                             | Not created                                                           |
+| 12    | Not started     | Trace APIs and minimal Tailwind viewer                         | Not created                                                           |
+| 13    | Not started     | Hardening, deployment, and submission evidence                 | Not created                                                           |
 
 ## Verified commands
 
@@ -104,6 +104,24 @@ Phase 4 verified:
 - Immutable evidence, append-only audit, derived escalations, and valid idempotency resources
 - Build 14/14, typecheck 14/14, test 18/18, lint 2/2
 
+Phase 5 adds:
+
+- `CommerceReadRepository` for order, item, payment, fulfilment, event, shipment, inventory, and warehouse reads
+- `CommerceRepositoryContext` and `createWorkflowRepositoryContext()` with explicit cleanup
+- Plain Zod-validated records with ISO timestamps, decimal strings, JSON-safe details, null singulars, and empty collections
+- Deterministic source ordering without evidence aggregation, conflict classification, or diagnosis logic
+
+The repository factory reads only `WORKFLOW_DATABASE_URL`. Prisma remains
+private to `packages/db`, and `apps/api` does not import or construct a
+repository context.
+
+Phase 5 verification passed:
+
+- Focused restricted-role repository integration: 1 test, 36 assertions
+- Full database package: 7 tests, 104 assertions
+- Root build 14/14, typecheck 14/14, test 18/18, and lint 2/2 Turbo tasks
+- Final demo counts unchanged and all operations tables empty
+
 ## Demo database commands
 
 ```bash
@@ -117,7 +135,7 @@ bun run db:reset-demo
 
 `DATABASE_URL` is the schema-owner/migration connection.
 `DEMO_DATABASE_URL` is the explicit non-production commerce seed/reset
-connection. `WORKFLOW_DATABASE_URL` is the restricted future runtime
+connection. `WORKFLOW_DATABASE_URL` is the restricted runtime repository
 connection. For local setup with missing role URLs, run
 `bun run db:setup-access:local`; generated credentials are written only to the
 ignored `packages/db/.env`.
@@ -155,4 +173,4 @@ Plan-intake checks completed:
 
 The intended runtime exposes no commerce-state mutation capability. Operational commerce data is read-only. Allowed writes are limited to investigations, immutable evidence snapshots, human-review escalations, idempotency records, and append-only audit events.
 
-Phase 4 proves with the actual restricted connection that the workflow role can read commerce data but cannot insert, update, delete, or truncate it. Operations writes are limited to the approved tables and investigation lifecycle columns. The runtime application still exposes no database or commerce-mutation capability.
+Phase 4 proves with the actual restricted connection that the workflow role can read commerce data but cannot insert, update, delete, or truncate it. Phase 5 uses that role through a domain-specific read facade with no generic query or mutation methods. Operations writes are limited to the approved tables and investigation lifecycle columns, but no operations repository exists yet. The API still exposes no database or commerce-mutation capability.

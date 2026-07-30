@@ -40,3 +40,23 @@ export {
   type ShipmentFixture,
   type WarehouseFixture,
 } from "./commerce-fixtures.js";
+export {
+  CommerceFulfilmentEventRecordSchema,
+  CommerceFulfilmentRecordSchema,
+  CommerceInventoryObservationRecordSchema,
+  CommerceOrderItemRecordSchema,
+  CommerceOrderRecordSchema,
+  CommercePaymentRecordSchema,
+  CommerceShipmentRecordSchema,
+  CommerceWarehouseRecordSchema,
+  JsonValueSchema,
+  type CommerceFulfilmentEventRecord,
+  type CommerceFulfilmentRecord,
+  type CommerceInventoryObservationRecord,
+  type CommerceOrderItemRecord,
+  type CommerceOrderRecord,
+  type CommercePaymentRecord,
+  type CommerceShipmentRecord,
+  type CommerceWarehouseRecord,
+  type JsonValue,
+} from "./commerce-records.js";

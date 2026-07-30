@@ -2,6 +2,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import {
   parseDemoDatabaseEnvironment,
   parseSchemaOwnerDatabaseEnvironment,
+  parseWorkflowDatabaseEnvironment,
 } from "@repo/config";
 import { config } from "dotenv";
 import path from "node:path";
@@ -59,4 +60,11 @@ export function createDemoDatabaseClient(): PrismaClient {
     maxWait: 15_000,
     timeout: 30_000,
   });
+}
+
+export function createWorkflowDatabaseClient(): PrismaClient {
+  loadDatabaseEnvironment();
+  const { workflowDatabaseUrl } = parseWorkflowDatabaseEnvironment(process.env);
+
+  return createClient(workflowDatabaseUrl);
 }
