@@ -63,12 +63,6 @@ jobs:
             "AGENTS.md"
           git diff --check origin/main...HEAD
 
-      - name: Show temporary Prettier diff
-        if: failure()
-        run: |
-          bunx prettier --write "packages/evaluations/agent-gemini.ts"
-          git diff -- "packages/evaluations/agent-gemini.ts"
-
       - name: Generate Prisma client
         run: bun run db:generate
 
