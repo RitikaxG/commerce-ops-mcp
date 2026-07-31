@@ -35,7 +35,7 @@ export function createEmptyAuthoritativeState(): AuthoritativeAgentState {
     suggestedQueue: null,
     suggestedNextStep: null,
     eligibleAlternativeWarehouseIds: [],
-  } as AuthoritativeAgentState;
+  } as unknown as AuthoritativeAgentState;
 
   Object.defineProperty(state, "authoritativeWarehouseIds", {
     value: [],
