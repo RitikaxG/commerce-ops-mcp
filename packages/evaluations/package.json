@@ -10,6 +10,8 @@
     "build": "tsc",
     "eval:agent:gemini": "bun agent-gemini.ts",
     "eval:mcp:direct": "bun direct-mcp.ts",
+    "verify:hosted:ai": "bun hosted-ai.ts",
+    "verify:hosted:mcp": "bun hosted-mcp.ts",
     "test": "bun test tests",
     "typecheck": "tsc --noEmit"
   },
