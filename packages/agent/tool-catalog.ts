@@ -1,24 +1,35 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import {
+  APPROVED_AGENT_TOOL_NAMES,
   ApprovedAgentToolNameSchema,
   CreateHumanReviewEscalationToolOutputSchema,
   GetInvestigationTraceToolOutputSchema,
   GetReviewCaseToolOutputSchema,
   InvestigateOrderExceptionToolOutputSchema,
   ListDemoCasesToolOutputSchema,
+  WorkflowIdentifierSchema,
   type ApprovedAgentToolName,
 } from "@repo/schemas";
+import { z } from "zod";
 
 import type { AgentToolDefinition, JsonObject } from "./provider.js";
 
-export const APPROVED_MCP_TOOL_NAMES = [
-  "list_demo_cases",
-  "investigate_order_exception",
-  "create_human_review_escalation",
-  "get_review_case",
-  "get_investigation_trace",
-] as const satisfies readonly ApprovedAgentToolName[];
+export const APPROVED_MCP_TOOL_NAMES = APPROVED_AGENT_TOOL_NAMES;
+
+const EmptyArgumentsSchema = z.object({}).strict();
+const InvestigateArgumentsSchema = z
+  .object({ orderId: WorkflowIdentifierSchema })
+  .strict();
+const EscalationArgumentsSchema = z
+  .object({ investigationId: WorkflowIdentifierSchema })
+  .strict();
+const ReviewCaseArgumentsSchema = z
+  .object({ reviewCaseId: WorkflowIdentifierSchema })
+  .strict();
+const TraceArgumentsSchema = z
+  .object({ investigationId: WorkflowIdentifierSchema })
+  .strict();
 
 const MODEL_TOOL_DEFINITIONS: Record<
   ApprovedAgentToolName,
@@ -37,7 +48,7 @@ const MODEL_TOOL_DEFINITIONS: Record<
   investigate_order_exception: {
     name: "investigate_order_exception",
     description:
-      "Investigate why a specified order has not reached shipment creation. The server owns evidence, diagnosis, escalation policy and persistence.",
+      "Investigate why a specified order has not reached shipment creation. Evidence, diagnosis, escalation policy and persistence are server-owned.",
     parametersJsonSchema: {
       type: "object",
       properties: {
@@ -50,7 +61,7 @@ const MODEL_TOOL_DEFINITIONS: Record<
   create_human_review_escalation: {
     name: "create_human_review_escalation",
     description:
-      "Create or reuse a human-review case for a stored investigation only after the user explicitly requests escalation and the investigation requires human action.",
+      "Create or reuse a human-review case for a stored investigation only after explicit user intent and a server result requiring human action.",
     parametersJsonSchema: {
       type: "object",
       properties: {
@@ -75,7 +86,7 @@ const MODEL_TOOL_DEFINITIONS: Record<
   get_investigation_trace: {
     name: "get_investigation_trace",
     description:
-      "Read the persisted investigation, immutable evidence snapshot and safe ordered audit events by investigation ID.",
+      "Read a persisted investigation, immutable evidence snapshot and safe ordered audit events by investigation ID.",
     parametersJsonSchema: {
       type: "object",
       properties: {
@@ -89,6 +100,24 @@ const MODEL_TOOL_DEFINITIONS: Record<
 
 export function getModelToolDefinitions(): readonly AgentToolDefinition[] {
   return APPROVED_MCP_TOOL_NAMES.map((name) => MODEL_TOOL_DEFINITIONS[name]);
+}
+
+export function parseModelToolArguments(
+  name: ApprovedAgentToolName,
+  value: unknown,
+): JsonObject {
+  switch (name) {
+    case "list_demo_cases":
+      return EmptyArgumentsSchema.parse(value);
+    case "investigate_order_exception":
+      return InvestigateArgumentsSchema.parse(value);
+    case "create_human_review_escalation":
+      return EscalationArgumentsSchema.parse(value);
+    case "get_review_case":
+      return ReviewCaseArgumentsSchema.parse(value);
+    case "get_investigation_trace":
+      return TraceArgumentsSchema.parse(value);
+  }
 }
 
 export interface AgentMcpClient {
