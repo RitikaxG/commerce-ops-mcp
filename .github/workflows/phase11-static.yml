@@ -39,6 +39,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -46,6 +48,20 @@ jobs:
 
       - name: Install frozen dependencies
         run: bun install --frozen-lockfile
+
+      - name: Verify Phase 11 formatting and diff hygiene
+        run: |
+          bunx prettier --check \
+            "packages/agent/**/*.ts" \
+            "packages/schemas/agent.ts" \
+            "packages/schemas/index.ts" \
+            "packages/evaluations/agent-gemini.ts" \
+            "docs/evaluations/phase-11-gemini-ai-host.md" \
+            "docs/deployment/post-phase-11-staging-handoff.md" \
+            "docs/architecture/package-graph.md" \
+            "README.md" \
+            "AGENTS.md"
+          git diff --check origin/main...HEAD
 
       - name: Generate Prisma client
         run: bun run db:generate
