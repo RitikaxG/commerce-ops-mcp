@@ -52,7 +52,10 @@ function stringValue(
 
 const WAREHOUSE_PATTERN = /\bWH-[A-Za-z0-9-]+\b/g;
 
-function collectWarehouseIds(value: unknown, target = new Set<string>()): Set<string> {
+function collectWarehouseIds(
+  value: unknown,
+  target = new Set<string>(),
+): Set<string> {
   if (typeof value === "string") {
     for (const warehouseId of value.match(WAREHOUSE_PATTERN) ?? []) {
       target.add(warehouseId);
