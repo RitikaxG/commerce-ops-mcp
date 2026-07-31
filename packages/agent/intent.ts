@@ -5,9 +5,9 @@ export const REVIEW_CASE_ID_PATTERN = /\b(?:CASE|ESC)-[A-Za-z0-9-]+\b/i;
 const MUTATION_PATTERN =
   /\b(reassign|release\s+(?:the\s+)?hold|retry|update|change|create\s+(?:a\s+)?shipment|reserve|run\s+sql|delete|cancel|mark\s+as\s+paid)\b/i;
 const INVESTIGATION_PATTERN =
-  /\b(investigat|diagnos|look into|check|why|blocking|not shipped|shipment gap|current state)\b/i;
+  /\b(investigat\w*|diagnos\w*|look into|check|why|blocking|not shipped|shipment gap|current state)\b/i;
 const ESCALATION_PATTERN =
-  /\b(escalat|human[- ]review|review case|create a case)\b/i;
+  /\b(escalat\w*|human[- ]review|review case|create a case)\b/i;
 const DEMO_PATTERN =
   /\b(demo|examples?|test cases?|orders can i test|available orders)\b/i;
 const TRACE_PATTERN = /\b(trace|audit)\b/i;
