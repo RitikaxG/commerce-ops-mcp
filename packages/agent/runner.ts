@@ -432,15 +432,26 @@ export function createCommerceOperationsAgent(
           );
         }
         if (issues.length > 0) {
-          throw new Error("GROUNDING_FAILED");
+          throw new Error(`GROUNDING_FAILED:${issues.join(",")}`);
         }
 
         return CommerceOperationsAgentResultSchema.parse({
           ...baseResult(),
           outcome: "ANSWERED",
-          message: assembleGroundedMessage(explanationTurn.explanation),
+          message: assembleGroundedMessage(
+            explanationTurn.explanation,
+            state.suggestedNextStep,
+          ),
         });
-      } catch {
+      } catch (error) {
+        if (process.env.AGENT_DEBUG_SAFE_ERRORS === "1") {
+          console.error(
+            JSON.stringify({
+              agentSafeError:
+                error instanceof Error ? error.message : "UNKNOWN_SAFE_ERROR",
+            }),
+          );
+        }
         return CommerceOperationsAgentResultSchema.parse({
           ...baseResult(),
           outcome: "SAFE_ERROR",

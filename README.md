@@ -74,6 +74,8 @@ bun --env-file=.env.local run eval:agent:gemini
 bun run db:verify-demo
 ```
 
+`db:reset-demo` clears owner-only workflow demo rows before resetting the nine commerce fixtures, so persisted investigations cannot block fixture cleanup.
+
 The live evaluator uses the real Gemini API, official MCP client, real Streamable HTTP `/mcp` endpoint, all nine scenarios, tool-order and refusal checks, prompt-injection checks, stability runs, commerce before/after comparison, token/cost reporting, and final workflow cleanup.
 
 ## Phase 10 regression commands

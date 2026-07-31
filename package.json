@@ -9,7 +9,7 @@
     "build": "turbo run build",
     "db:generate": "bun run --filter @repo/db db:generate",
     "db:migrate": "bun run --filter @repo/db db:migrate",
-    "db:reset-demo": "bun run --filter @repo/fixtures reset",
+    "db:reset-demo": "bun run db:reset-workflow-demo && bun run --filter @repo/fixtures reset",
     "db:reset-workflow-demo": "bun run --filter @repo/db db:reset-workflow-demo",
     "db:seed": "bun run --filter @repo/fixtures seed",
     "db:setup-access": "bun run --filter @repo/db db:setup-access",

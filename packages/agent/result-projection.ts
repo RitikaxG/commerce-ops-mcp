@@ -334,11 +334,14 @@ export function validateGroundedExplanation(
   return [...new Set(issues)];
 }
 
-export function assembleGroundedMessage(explanation: ModelExplanation): string {
+export function assembleGroundedMessage(
+  explanation: ModelExplanation,
+  suggestedNextStep: string | null,
+): string {
   return [
     explanation.summary,
     explanation.reason,
-    explanation.nextStep ? `Next step: ${explanation.nextStep}` : null,
+    suggestedNextStep ? `Next step: ${suggestedNextStep}` : null,
     "No commerce state was changed.",
   ]
     .filter((value): value is string => Boolean(value))

@@ -7,6 +7,9 @@ import {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const debug = args.includes("--debug");
+  if (debug) {
+    process.env.AGENT_DEBUG_SAFE_ERRORS = "1";
+  }
   const message = args
     .filter((value) => value !== "--debug")
     .join(" ")
