@@ -228,6 +228,33 @@ const FALSE_REVIEW_CASE =
 const SECRET_LIKE = /\b(?:AIza|AQ\.)[A-Za-z0-9_-]{20,}\b/;
 const IDENTIFIER_PATTERN = /\b(?:ORD|INV|CASE|ESC)-[A-Za-z0-9-]+\b/g;
 const WAREHOUSE_PATTERN = /\bWH-[A-Za-z0-9-]+\b/g;
+const UNCERTAINTY_LANGUAGE =
+  /\b(missing|conflicting|conflict|insufficient|not enough|cannot determine|could not determine|needs more information|verify the evidence|verify the missing|resolve the conflicting)\b/i;
+
+const DIAGNOSIS_LANGUAGE: Record<DiagnosisCode, RegExp> = {
+  ASSIGNED_WAREHOUSE_OUT_OF_STOCK:
+    /\b(assigned warehouse is out of stock|assigned warehouse lacks (?:the )?required stock|inventory hold because .*out of stock)\b/i,
+  FULFILMENT_CREATION_FAILED:
+    /\b(fulfilment creation failed|failed to create (?:the )?fulfilment)\b/i,
+  WITHIN_EXPECTED_PROCESSING_TIME:
+    /\b(within (?:the )?expected processing (?:time|window)|normal processing window)\b/i,
+  SHIPMENT_LABEL_CREATION_FAILED:
+    /\b(shipment[- ]label creation failed|failed to create (?:the )?shipment label)\b/i,
+  SHIPMENT_ALREADY_EXISTS:
+    /\b(shipment already exists|a shipment has already been created)\b/i,
+  PAYMENT_NOT_CONFIRMED:
+    /\b(payment (?:is|was) not confirmed|payment source does not confirm)\b/i,
+  CAUSE_NOT_DETERMINED:
+    /\b(cause (?:is )?not determined|cause cannot be determined|could not determine (?:the )?cause)\b/i,
+};
+
+const QUEUE_LANGUAGE: Record<ReviewQueue, RegExp> = {
+  FULFILMENT_OPERATIONS: /\bfulfilment operations\b/i,
+  SHIPPING_OPERATIONS: /\bshipping operations\b/i,
+  OPERATIONS_DATA_REVIEW: /\boperations data review\b/i,
+  GENERAL_COMMERCE_OPERATIONS: /\bgeneral commerce operations\b/i,
+  PAYMENT_OPERATIONS: /\bpayment operations\b/i,
+};
 
 export function validateGroundedExplanation(
   explanation: ModelExplanation,
@@ -274,8 +301,32 @@ export function validateGroundedExplanation(
       break;
     }
   }
+  for (const [diagnosis, pattern] of Object.entries(
+    DIAGNOSIS_LANGUAGE,
+  ) as Array<[DiagnosisCode, RegExp]>) {
+    if (pattern.test(text) && diagnosis !== state.diagnosisCode) {
+      issues.push("UNSUPPORTED_DIAGNOSIS");
+      break;
+    }
+  }
+  if (
+    (state.evidenceStatus === "MISSING" ||
+      state.evidenceStatus === "CONFLICTING") &&
+    !UNCERTAINTY_LANGUAGE.test(text)
+  ) {
+    issues.push("UNSUPPORTED_DIAGNOSIS");
+  }
+
   for (const queue of ReviewQueueSchema.options) {
     if (text.includes(queue) && queue !== state.suggestedQueue) {
+      issues.push("UNSUPPORTED_QUEUE");
+      break;
+    }
+  }
+  for (const [queue, pattern] of Object.entries(
+    QUEUE_LANGUAGE,
+  ) as Array<[ReviewQueue, RegExp]>) {
+    if (pattern.test(text) && queue !== state.suggestedQueue) {
       issues.push("UNSUPPORTED_QUEUE");
       break;
     }
