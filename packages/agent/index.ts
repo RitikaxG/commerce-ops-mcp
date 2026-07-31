@@ -43,6 +43,7 @@ export {
 } from "./system-instructions.js";
 export {
   APPROVED_MCP_TOOL_NAMES,
+  assertExactDiscoveredTools,
   connectAgentMcpClient,
   getModelToolDefinitions,
   parseModelToolArguments,

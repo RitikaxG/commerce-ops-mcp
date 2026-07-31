@@ -102,6 +102,17 @@ export function getModelToolDefinitions(): readonly AgentToolDefinition[] {
   return APPROVED_MCP_TOOL_NAMES.map((name) => MODEL_TOOL_DEFINITIONS[name]);
 }
 
+export function assertExactDiscoveredTools(names: readonly string[]): void {
+  const discovered = [...names].sort();
+  const approved = [...APPROVED_MCP_TOOL_NAMES].sort();
+  if (
+    discovered.length !== approved.length ||
+    discovered.some((name, index) => name !== approved[index])
+  ) {
+    throw new Error("The MCP server advertised an unexpected tool surface.");
+  }
+}
+
 export function parseModelToolArguments(
   name: ApprovedAgentToolName,
   value: unknown,
@@ -160,14 +171,11 @@ export async function connectAgentMcpClient(input: {
   await client.connect(transport);
 
   const listed = await client.listTools();
-  const discovered = listed.tools.map(({ name }) => name).sort();
-  const approved = [...APPROVED_MCP_TOOL_NAMES].sort();
-  if (
-    discovered.length !== approved.length ||
-    discovered.some((name, index) => name !== approved[index])
-  ) {
+  try {
+    assertExactDiscoveredTools(listed.tools.map(({ name }) => name));
+  } catch (error) {
     await client.close().catch(() => undefined);
-    throw new Error("The MCP server advertised an unexpected tool surface.");
+    throw error;
   }
 
   return {

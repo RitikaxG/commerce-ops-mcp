@@ -168,6 +168,7 @@ export {
   type McpToolSuccess,
 } from "./mcp.js";
 export {
+  APPROVED_AGENT_TOOL_NAMES,
   AgentOutcomeSchema,
   AgentToolTraceEntrySchema,
   AgentUsageSummarySchema,
