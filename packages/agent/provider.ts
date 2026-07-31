@@ -8,11 +8,6 @@ export interface AgentToolDefinition {
   readonly parametersJsonSchema: JsonObject;
 }
 
-export interface AgentMessage {
-  readonly role: "user" | "tool";
-  readonly text: string;
-}
-
 export interface ModelUsage {
   readonly inputTokens: number;
   readonly outputTokens: number;
@@ -20,8 +15,15 @@ export interface ModelUsage {
 }
 
 export interface ModelToolCall {
+  readonly callId: string;
   readonly name: string;
   readonly arguments: JsonObject;
+}
+
+export interface ModelToolResult {
+  readonly callId: string;
+  readonly name: string;
+  readonly result: JsonObject;
 }
 
 export type ModelTurn =
@@ -52,8 +54,10 @@ export interface ModelProvider {
   verifyModel(model: string): Promise<void>;
 
   generateToolTurn(input: {
+    readonly sessionId: string;
     readonly systemInstructions: string;
-    readonly messages: readonly AgentMessage[];
+    readonly userMessage?: string;
+    readonly toolResult?: ModelToolResult;
     readonly tools: readonly AgentToolDefinition[];
     readonly generation: AgentGenerationConfig;
   }): Promise<ModelTurn>;
@@ -65,19 +69,23 @@ export interface ModelProvider {
     readonly generation: AgentGenerationConfig;
     readonly repairIssues?: readonly string[];
   }): Promise<ModelExplanationTurn>;
+
+  clearSession(sessionId: string): void;
 }
 
+export type SafeModelProviderErrorCode =
+  | "AUTHENTICATION_FAILED"
+  | "MODEL_UNAVAILABLE"
+  | "RATE_LIMITED"
+  | "PROVIDER_TIMEOUT"
+  | "INVALID_PROVIDER_RESPONSE"
+  | "PROVIDER_UNAVAILABLE";
+
 export class SafeModelProviderError extends Error {
-  readonly code:
-    | "AUTHENTICATION_FAILED"
-    | "MODEL_UNAVAILABLE"
-    | "RATE_LIMITED"
-    | "PROVIDER_TIMEOUT"
-    | "INVALID_PROVIDER_RESPONSE"
-    | "PROVIDER_UNAVAILABLE";
+  readonly code: SafeModelProviderErrorCode;
 
   constructor(
-    code: SafeModelProviderError["code"],
+    code: SafeModelProviderErrorCode,
     message = "The model provider could not complete safely.",
   ) {
     super(message);

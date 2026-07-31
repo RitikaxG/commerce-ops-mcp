@@ -7,13 +7,15 @@ import {
 } from "./approved-scenario.js";
 import { WorkflowIdentifierSchema } from "./workflow.js";
 
-export const ApprovedAgentToolNameSchema = z.enum([
+export const APPROVED_AGENT_TOOL_NAMES = [
   "list_demo_cases",
   "investigate_order_exception",
   "create_human_review_escalation",
   "get_review_case",
   "get_investigation_trace",
-]);
+] as const;
+
+export const ApprovedAgentToolNameSchema = z.enum(APPROVED_AGENT_TOOL_NAMES);
 
 export const AgentOutcomeSchema = z.enum([
   "ANSWERED",
@@ -67,6 +69,7 @@ export const GroundingIssueCodeSchema = z.enum([
   "UNSUPPORTED_QUEUE",
   "INVENTED_IDENTIFIER",
   "INVENTED_WAREHOUSE",
+  "FALSE_REVIEW_CASE_CLAIM",
   "FALSE_STATE_CHANGE",
   "SECRET_LIKE_CONTENT",
 ]);
@@ -92,18 +95,47 @@ export const CommerceOperationsAgentResultSchema = z
     shouldEscalate: z.boolean().nullable(),
     suggestedQueue: ReviewQueueSchema.nullable(),
     suggestedNextStep: z.string().trim().min(1).max(1_500).nullable(),
+    eligibleAlternativeWarehouseIds: z.array(WorkflowIdentifierSchema),
     toolTrace: z.array(AgentToolTraceEntrySchema),
     usage: AgentUsageSummarySchema,
     commerceStateChanged: z.literal(false),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    if (
+      (result.outcome === "REFUSED" ||
+        result.outcome === "NEEDS_USER_INPUT") &&
+      result.toolTrace.length > 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["toolTrace"],
+        message: "Refusal and missing-input outcomes cannot execute tools",
+      });
+    }
+    if (result.reviewCaseId !== null && result.investigationId === null) {
+      context.addIssue({
+        code: "custom",
+        path: ["reviewCaseId"],
+        message: "A review case must identify its investigation",
+      });
+    }
+  });
 
-export type ApprovedAgentToolName = z.infer<typeof ApprovedAgentToolNameSchema>;
+export type ApprovedAgentToolName = z.infer<
+  typeof ApprovedAgentToolNameSchema
+>;
 export type AgentOutcome = z.infer<typeof AgentOutcomeSchema>;
-export type CommerceOperationsAgentRequest = z.infer<typeof CommerceOperationsAgentRequestSchema>;
+export type CommerceOperationsAgentRequest = z.infer<
+  typeof CommerceOperationsAgentRequestSchema
+>;
 export type ModelExplanation = z.infer<typeof ModelExplanationSchema>;
 export type AgentToolTraceEntry = z.infer<typeof AgentToolTraceEntrySchema>;
 export type AgentUsageSummary = z.infer<typeof AgentUsageSummarySchema>;
 export type GroundingIssueCode = z.infer<typeof GroundingIssueCodeSchema>;
-export type GroundingValidationResult = z.infer<typeof GroundingValidationResultSchema>;
-export type CommerceOperationsAgentResult = z.infer<typeof CommerceOperationsAgentResultSchema>;
+export type GroundingValidationResult = z.infer<
+  typeof GroundingValidationResultSchema
+>;
+export type CommerceOperationsAgentResult = z.infer<
+  typeof CommerceOperationsAgentResultSchema
+>;
