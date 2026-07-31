@@ -126,12 +126,16 @@ function printScenarioOutput(
   );
 }
 
+const evaluationStartedAt = Date.now();
+
 function printProviderProgress(
   activeStep: string,
   event: GeminiProviderProgressEvent,
 ): void {
   console.error(
     JSON.stringify({
+      at: new Date().toISOString(),
+      elapsedMs: Date.now() - evaluationStartedAt,
       evaluation: EVALUATION_NAME,
       type: "MODEL_PROVIDER_PROGRESS",
       activeStep,

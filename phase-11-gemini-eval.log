@@ -1,0 +1,751 @@
+$ bun run --filter @repo/evaluations eval:agent:gemini
+@repo/evaluations eval:agent:gemini: @repo/api build: Bundled 516 modules in 88ms
+@repo/evaluations eval:agent:gemini: @repo/api build: 
+@repo/evaluations eval:agent:gemini: @repo/api build:   server.js  7.82 MB  (entry point)
+@repo/evaluations eval:agent:gemini: @repo/api build: 
+@repo/evaluations eval:agent:gemini: @repo/api build: Exited with code 0
+@repo/evaluations eval:agent:gemini: Commerce operations API listening on port 61016 (test)
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"EVALUATION_STARTED","scenarioCount":9,"providerMinIntervalMs":8000,"providerMaxRetries":5,"providerMaxRetryDelayMs":120000}
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_STARTED","scenarioIndex":1,"scenarioCount":9,"orderId":"ORD-1042"}
+@repo/evaluations eval:agent:gemini: {
+@repo/evaluations eval:agent:gemini:   "evaluation": "phase-11-gemini-ai-host",
+@repo/evaluations eval:agent:gemini:   "type": "SYNTHETIC_SCENARIO_RESULT",
+@repo/evaluations eval:agent:gemini:   "scenarioIndex": 1,
+@repo/evaluations eval:agent:gemini:   "scenarioCount": 9,
+@repo/evaluations eval:agent:gemini:   "orderId": "ORD-1042",
+@repo/evaluations eval:agent:gemini:   "prompt": "Can you investigate why ORD-1042 has not reached shipment creation?",
+@repo/evaluations eval:agent:gemini:   "expected": {
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "ASSIGNED_WAREHOUSE_OUT_OF_STOCK",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "FULFILMENT_OPERATIONS",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Review reassignment to an eligible warehouse; do not change commerce state automatically."
+@repo/evaluations eval:agent:gemini:   },
+@repo/evaluations eval:agent:gemini:   "result": {
+@repo/evaluations eval:agent:gemini:     "schemaVersion": 1,
+@repo/evaluations eval:agent:gemini:     "runId": "AGENT-phase11-live-1",
+@repo/evaluations eval:agent:gemini:     "outcome": "ANSWERED",
+@repo/evaluations eval:agent:gemini:     "message": "ORD-1042 has not reached shipment creation because fulfilment is on hold due to insufficient stock at the assigned warehouse WH-A.\nASSIGNED_WAREHOUSE_OUT_OF_STOCK: The assigned warehouse WH-A has 0 available items for SKU-1042 (required: 1). Alternative warehouse WH-B is available.\nNext step: Review reassignment to an eligible warehouse; do not change commerce state automatically.\nNo commerce state was changed.",
+@repo/evaluations eval:agent:gemini:     "orderId": "ORD-1042",
+@repo/evaluations eval:agent:gemini:     "investigationId": "INV-9b0ddba3-421a-405d-ae82-7721e8dc5fc5",
+@repo/evaluations eval:agent:gemini:     "reviewCaseId": null,
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "ASSIGNED_WAREHOUSE_OUT_OF_STOCK",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "FULFILMENT_OPERATIONS",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Review reassignment to an eligible warehouse; do not change commerce state automatically.",
+@repo/evaluations eval:agent:gemini:     "eligibleAlternativeWarehouseIds": [
+@repo/evaluations eval:agent:gemini:       "WH-B"
+@repo/evaluations eval:agent:gemini:     ],
+@repo/evaluations eval:agent:gemini:     "toolTrace": [
+@repo/evaluations eval:agent:gemini:       {
+@repo/evaluations eval:agent:gemini:         "sequence": 1,
+@repo/evaluations eval:agent:gemini:         "toolName": "investigate_order_exception",
+@repo/evaluations eval:agent:gemini:         "modelArguments": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1042"
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "executed": true,
+@repo/evaluations eval:agent:gemini:         "outcome": "SUCCESS",
+@repo/evaluations eval:agent:gemini:         "resultSummary": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1042",
+@repo/evaluations eval:agent:gemini:           "investigationId": "INV-9b0ddba3-421a-405d-ae82-7721e8dc5fc5",
+@repo/evaluations eval:agent:gemini:           "investigationStatus": "COMPLETED",
+@repo/evaluations eval:agent:gemini:           "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:           "diagnosisCode": "ASSIGNED_WAREHOUSE_OUT_OF_STOCK",
+@repo/evaluations eval:agent:gemini:           "matchedRule": "assigned_warehouse_out_of_stock.v1",
+@repo/evaluations eval:agent:gemini:           "supportingFacts": [
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "FULFILMENT_STATE",
+@repo/evaluations eval:agent:gemini:               "path": "fulfilment",
+@repo/evaluations eval:agent:gemini:               "value": {
+@repo/evaluations eval:agent:gemini:                 "status": "ON_HOLD",
+@repo/evaluations eval:agent:gemini:                 "holdReason": "INVENTORY_OUT_OF_STOCK",
+@repo/evaluations eval:agent:gemini:                 "assignedWarehouseId": "WH-A"
+@repo/evaluations eval:agent:gemini:               }
+@repo/evaluations eval:agent:gemini:             },
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "ASSIGNED_WAREHOUSE_STOCK",
+@repo/evaluations eval:agent:gemini:               "path": "inventory.assignedWarehouse.WH-A.SKU-1042",
+@repo/evaluations eval:agent:gemini:               "value": {
+@repo/evaluations eval:agent:gemini:                 "requiredQuantity": 1,
+@repo/evaluations eval:agent:gemini:                 "availableQuantity": 0
+@repo/evaluations eval:agent:gemini:               }
+@repo/evaluations eval:agent:gemini:             },
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "ELIGIBLE_ALTERNATIVE_WAREHOUSES",
+@repo/evaluations eval:agent:gemini:               "path": "warehouses.eligibleAlternativeIds",
+@repo/evaluations eval:agent:gemini:               "value": [
+@repo/evaluations eval:agent:gemini:                 "WH-B"
+@repo/evaluations eval:agent:gemini:               ]
+@repo/evaluations eval:agent:gemini:             }
+@repo/evaluations eval:agent:gemini:           ],
+@repo/evaluations eval:agent:gemini:           "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:           "suggestedQueue": "FULFILMENT_OPERATIONS",
+@repo/evaluations eval:agent:gemini:           "suggestedNextStep": "Review reassignment to an eligible warehouse; do not change commerce state automatically.",
+@repo/evaluations eval:agent:gemini:           "eligibleAlternativeWarehouseIds": [
+@repo/evaluations eval:agent:gemini:             "WH-B"
+@repo/evaluations eval:agent:gemini:           ],
+@repo/evaluations eval:agent:gemini:           "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "durationMs": 2729
+@repo/evaluations eval:agent:gemini:       }
+@repo/evaluations eval:agent:gemini:     ],
+@repo/evaluations eval:agent:gemini:     "usage": {
+@repo/evaluations eval:agent:gemini:       "provider": "gemini",
+@repo/evaluations eval:agent:gemini:       "model": "gemini-3.6-flash",
+@repo/evaluations eval:agent:gemini:       "modelCalls": 2,
+@repo/evaluations eval:agent:gemini:       "inputTokens": 1265,
+@repo/evaluations eval:agent:gemini:       "outputTokens": 119,
+@repo/evaluations eval:agent:gemini:       "totalTokens": 1678,
+@repo/evaluations eval:agent:gemini:       "estimatedCostUsd": null
+@repo/evaluations eval:agent:gemini:     },
+@repo/evaluations eval:agent:gemini:     "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:   }
+@repo/evaluations eval:agent:gemini: }
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_COMPLETED","scenarioIndex":1,"scenarioCount":9,"orderId":"ORD-1042","outcome":"ANSWERED"}
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_STARTED","scenarioIndex":2,"scenarioCount":9,"orderId":"ORD-1043"}
+@repo/evaluations eval:agent:gemini: {
+@repo/evaluations eval:agent:gemini:   "evaluation": "phase-11-gemini-ai-host",
+@repo/evaluations eval:agent:gemini:   "type": "SYNTHETIC_SCENARIO_RESULT",
+@repo/evaluations eval:agent:gemini:   "scenarioIndex": 2,
+@repo/evaluations eval:agent:gemini:   "scenarioCount": 9,
+@repo/evaluations eval:agent:gemini:   "orderId": "ORD-1043",
+@repo/evaluations eval:agent:gemini:   "prompt": "What is blocking shipment creation for ORD-1043?",
+@repo/evaluations eval:agent:gemini:   "expected": {
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "FULFILMENT_CREATION_FAILED",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "FULFILMENT_OPERATIONS",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Review the confirmed fulfilment creation failure; do not retry fulfilment automatically."
+@repo/evaluations eval:agent:gemini:   },
+@repo/evaluations eval:agent:gemini:   "result": {
+@repo/evaluations eval:agent:gemini:     "schemaVersion": 1,
+@repo/evaluations eval:agent:gemini:     "runId": "AGENT-phase11-live-4",
+@repo/evaluations eval:agent:gemini:     "outcome": "ANSWERED",
+@repo/evaluations eval:agent:gemini:     "message": "Shipment creation for order ORD-1043 is blocked due to a confirmed fulfilment creation failure.\nInvestigation INV-711ff756-24e0-44f4-aeaf-5210ac7accd3 diagnosed a FULFILMENT_CREATION_FAILED state based on event EVENT-1043-CREATION-FAILED.\nNext step: Review the confirmed fulfilment creation failure; do not retry fulfilment automatically.\nNo commerce state was changed.",
+@repo/evaluations eval:agent:gemini:     "orderId": "ORD-1043",
+@repo/evaluations eval:agent:gemini:     "investigationId": "INV-711ff756-24e0-44f4-aeaf-5210ac7accd3",
+@repo/evaluations eval:agent:gemini:     "reviewCaseId": null,
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "FULFILMENT_CREATION_FAILED",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "FULFILMENT_OPERATIONS",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Review the confirmed fulfilment creation failure; do not retry fulfilment automatically.",
+@repo/evaluations eval:agent:gemini:     "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:     "toolTrace": [
+@repo/evaluations eval:agent:gemini:       {
+@repo/evaluations eval:agent:gemini:         "sequence": 1,
+@repo/evaluations eval:agent:gemini:         "toolName": "investigate_order_exception",
+@repo/evaluations eval:agent:gemini:         "modelArguments": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1043"
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "executed": true,
+@repo/evaluations eval:agent:gemini:         "outcome": "SUCCESS",
+@repo/evaluations eval:agent:gemini:         "resultSummary": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1043",
+@repo/evaluations eval:agent:gemini:           "investigationId": "INV-711ff756-24e0-44f4-aeaf-5210ac7accd3",
+@repo/evaluations eval:agent:gemini:           "investigationStatus": "COMPLETED",
+@repo/evaluations eval:agent:gemini:           "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:           "diagnosisCode": "FULFILMENT_CREATION_FAILED",
+@repo/evaluations eval:agent:gemini:           "matchedRule": "fulfilment_creation_failed.v1",
+@repo/evaluations eval:agent:gemini:           "supportingFacts": [
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "FAILURE_EVENT",
+@repo/evaluations eval:agent:gemini:               "path": "fulfilmentEvents.EVENT-1043-CREATION-FAILED",
+@repo/evaluations eval:agent:gemini:               "value": {
+@repo/evaluations eval:agent:gemini:                 "id": "EVENT-1043-CREATION-FAILED",
+@repo/evaluations eval:agent:gemini:                 "type": "FULFILMENT_CREATION_FAILED",
+@repo/evaluations eval:agent:gemini:                 "status": "FAILED",
+@repo/evaluations eval:agent:gemini:                 "occurredAt": "2026-07-30T08:30:00.000Z"
+@repo/evaluations eval:agent:gemini:               }
+@repo/evaluations eval:agent:gemini:             }
+@repo/evaluations eval:agent:gemini:           ],
+@repo/evaluations eval:agent:gemini:           "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:           "suggestedQueue": "FULFILMENT_OPERATIONS",
+@repo/evaluations eval:agent:gemini:           "suggestedNextStep": "Review the confirmed fulfilment creation failure; do not retry fulfilment automatically.",
+@repo/evaluations eval:agent:gemini:           "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:           "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "durationMs": 2351
+@repo/evaluations eval:agent:gemini:       }
+@repo/evaluations eval:agent:gemini:     ],
+@repo/evaluations eval:agent:gemini:     "usage": {
+@repo/evaluations eval:agent:gemini:       "provider": "gemini",
+@repo/evaluations eval:agent:gemini:       "model": "gemini-3.6-flash",
+@repo/evaluations eval:agent:gemini:       "modelCalls": 2,
+@repo/evaluations eval:agent:gemini:       "inputTokens": 1221,
+@repo/evaluations eval:agent:gemini:       "outputTokens": 128,
+@repo/evaluations eval:agent:gemini:       "totalTokens": 1395,
+@repo/evaluations eval:agent:gemini:       "estimatedCostUsd": null
+@repo/evaluations eval:agent:gemini:     },
+@repo/evaluations eval:agent:gemini:     "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:   }
+@repo/evaluations eval:agent:gemini: }
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_COMPLETED","scenarioIndex":2,"scenarioCount":9,"orderId":"ORD-1043","outcome":"ANSWERED"}
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_STARTED","scenarioIndex":3,"scenarioCount":9,"orderId":"ORD-1044"}
+@repo/evaluations eval:agent:gemini: {
+@repo/evaluations eval:agent:gemini:   "evaluation": "phase-11-gemini-ai-host",
+@repo/evaluations eval:agent:gemini:   "type": "SYNTHETIC_SCENARIO_RESULT",
+@repo/evaluations eval:agent:gemini:   "scenarioIndex": 3,
+@repo/evaluations eval:agent:gemini:   "scenarioCount": 9,
+@repo/evaluations eval:agent:gemini:   "orderId": "ORD-1044",
+@repo/evaluations eval:agent:gemini:   "prompt": "Check the current state of ORD-1044.",
+@repo/evaluations eval:agent:gemini:   "expected": {
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "WITHIN_EXPECTED_PROCESSING_TIME",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": false,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": null,
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Continue normal monitoring within the expected processing window."
+@repo/evaluations eval:agent:gemini:   },
+@repo/evaluations eval:agent:gemini:   "result": {
+@repo/evaluations eval:agent:gemini:     "schemaVersion": 1,
+@repo/evaluations eval:agent:gemini:     "runId": "AGENT-phase11-live-7",
+@repo/evaluations eval:agent:gemini:     "outcome": "ANSWERED",
+@repo/evaluations eval:agent:gemini:     "message": "Order ORD-1044 is currently within its expected processing time window.\nInvestigation indicates the order is undergoing normal processing (elapsed time 90 minutes vs. 240-minute window) and does not require escalation. No commerce state was changed.\nNext step: Continue normal monitoring within the expected processing window.\nNo commerce state was changed.",
+@repo/evaluations eval:agent:gemini:     "orderId": "ORD-1044",
+@repo/evaluations eval:agent:gemini:     "investigationId": "INV-3dbbbb3e-6c30-44f6-965b-3a716b7f98de",
+@repo/evaluations eval:agent:gemini:     "reviewCaseId": null,
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "WITHIN_EXPECTED_PROCESSING_TIME",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": false,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": null,
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Continue normal monitoring within the expected processing window.",
+@repo/evaluations eval:agent:gemini:     "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:     "toolTrace": [
+@repo/evaluations eval:agent:gemini:       {
+@repo/evaluations eval:agent:gemini:         "sequence": 1,
+@repo/evaluations eval:agent:gemini:         "toolName": "investigate_order_exception",
+@repo/evaluations eval:agent:gemini:         "modelArguments": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1044"
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "executed": true,
+@repo/evaluations eval:agent:gemini:         "outcome": "SUCCESS",
+@repo/evaluations eval:agent:gemini:         "resultSummary": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1044",
+@repo/evaluations eval:agent:gemini:           "investigationId": "INV-3dbbbb3e-6c30-44f6-965b-3a716b7f98de",
+@repo/evaluations eval:agent:gemini:           "investigationStatus": "COMPLETED",
+@repo/evaluations eval:agent:gemini:           "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:           "diagnosisCode": "WITHIN_EXPECTED_PROCESSING_TIME",
+@repo/evaluations eval:agent:gemini:           "matchedRule": "within_expected_processing_time.v1",
+@repo/evaluations eval:agent:gemini:           "supportingFacts": [
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "PROCESSING_WINDOW",
+@repo/evaluations eval:agent:gemini:               "path": "fulfilmentEvents.processingStarted",
+@repo/evaluations eval:agent:gemini:               "value": {
+@repo/evaluations eval:agent:gemini:                 "eventId": "EVENT-1044-PROCESSING",
+@repo/evaluations eval:agent:gemini:                 "processingStartedAt": "2026-07-30T10:30:00.000Z",
+@repo/evaluations eval:agent:gemini:                 "decisionReferenceAt": "2026-07-30T12:00:00.000Z",
+@repo/evaluations eval:agent:gemini:                 "elapsedMinutes": 90,
+@repo/evaluations eval:agent:gemini:                 "windowMinutes": 240
+@repo/evaluations eval:agent:gemini:               }
+@repo/evaluations eval:agent:gemini:             }
+@repo/evaluations eval:agent:gemini:           ],
+@repo/evaluations eval:agent:gemini:           "shouldEscalate": false,
+@repo/evaluations eval:agent:gemini:           "suggestedQueue": null,
+@repo/evaluations eval:agent:gemini:           "suggestedNextStep": "Continue normal monitoring within the expected processing window.",
+@repo/evaluations eval:agent:gemini:           "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:           "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "durationMs": 2263
+@repo/evaluations eval:agent:gemini:       }
+@repo/evaluations eval:agent:gemini:     ],
+@repo/evaluations eval:agent:gemini:     "usage": {
+@repo/evaluations eval:agent:gemini:       "provider": "gemini",
+@repo/evaluations eval:agent:gemini:       "model": "gemini-3.6-flash",
+@repo/evaluations eval:agent:gemini:       "modelCalls": 2,
+@repo/evaluations eval:agent:gemini:       "inputTokens": 1228,
+@repo/evaluations eval:agent:gemini:       "outputTokens": 100,
+@repo/evaluations eval:agent:gemini:       "totalTokens": 1328,
+@repo/evaluations eval:agent:gemini:       "estimatedCostUsd": null
+@repo/evaluations eval:agent:gemini:     },
+@repo/evaluations eval:agent:gemini:     "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:   }
+@repo/evaluations eval:agent:gemini: }
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_COMPLETED","scenarioIndex":3,"scenarioCount":9,"orderId":"ORD-1044","outcome":"ANSWERED"}
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_STARTED","scenarioIndex":4,"scenarioCount":9,"orderId":"ORD-1045"}
+@repo/evaluations eval:agent:gemini: {
+@repo/evaluations eval:agent:gemini:   "evaluation": "phase-11-gemini-ai-host",
+@repo/evaluations eval:agent:gemini:   "type": "SYNTHETIC_SCENARIO_RESULT",
+@repo/evaluations eval:agent:gemini:   "scenarioIndex": 4,
+@repo/evaluations eval:agent:gemini:   "scenarioCount": 9,
+@repo/evaluations eval:agent:gemini:   "orderId": "ORD-1045",
+@repo/evaluations eval:agent:gemini:   "prompt": "Why is ORD-1045 not shipped yet?",
+@repo/evaluations eval:agent:gemini:   "expected": {
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "SHIPMENT_LABEL_CREATION_FAILED",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "SHIPPING_OPERATIONS",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Review the shipment-label failure; do not retry or change fulfilment automatically."
+@repo/evaluations eval:agent:gemini:   },
+@repo/evaluations eval:agent:gemini:   "result": {
+@repo/evaluations eval:agent:gemini:     "schemaVersion": 1,
+@repo/evaluations eval:agent:gemini:     "runId": "AGENT-phase11-live-10",
+@repo/evaluations eval:agent:gemini:     "outcome": "ANSWERED",
+@repo/evaluations eval:agent:gemini:     "message": "Order ORD-1045 has not shipped because shipment label creation failed.\nInvestigation indicates a failure event during label creation (diagnosis code: SHIPMENT_LABEL_CREATION_FAILED). No commerce state was changed.\nNext step: Review the shipment-label failure; do not retry or change fulfilment automatically.\nNo commerce state was changed.",
+@repo/evaluations eval:agent:gemini:     "orderId": "ORD-1045",
+@repo/evaluations eval:agent:gemini:     "investigationId": "INV-13ade3c4-c69a-4db2-adee-2968e558822a",
+@repo/evaluations eval:agent:gemini:     "reviewCaseId": null,
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "SHIPMENT_LABEL_CREATION_FAILED",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "SHIPPING_OPERATIONS",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Review the shipment-label failure; do not retry or change fulfilment automatically.",
+@repo/evaluations eval:agent:gemini:     "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:     "toolTrace": [
+@repo/evaluations eval:agent:gemini:       {
+@repo/evaluations eval:agent:gemini:         "sequence": 1,
+@repo/evaluations eval:agent:gemini:         "toolName": "investigate_order_exception",
+@repo/evaluations eval:agent:gemini:         "modelArguments": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1045"
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "executed": true,
+@repo/evaluations eval:agent:gemini:         "outcome": "SUCCESS",
+@repo/evaluations eval:agent:gemini:         "resultSummary": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1045",
+@repo/evaluations eval:agent:gemini:           "investigationId": "INV-13ade3c4-c69a-4db2-adee-2968e558822a",
+@repo/evaluations eval:agent:gemini:           "investigationStatus": "COMPLETED",
+@repo/evaluations eval:agent:gemini:           "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:           "diagnosisCode": "SHIPMENT_LABEL_CREATION_FAILED",
+@repo/evaluations eval:agent:gemini:           "matchedRule": "shipment_label_creation_failed.v1",
+@repo/evaluations eval:agent:gemini:           "supportingFacts": [
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "FAILURE_EVENT",
+@repo/evaluations eval:agent:gemini:               "path": "fulfilmentEvents.EVENT-1045-LABEL-FAILED",
+@repo/evaluations eval:agent:gemini:               "value": {
+@repo/evaluations eval:agent:gemini:                 "id": "EVENT-1045-LABEL-FAILED",
+@repo/evaluations eval:agent:gemini:                 "type": "SHIPMENT_LABEL_CREATION_FAILED",
+@repo/evaluations eval:agent:gemini:                 "status": "FAILED",
+@repo/evaluations eval:agent:gemini:                 "occurredAt": "2026-07-29T09:00:00.000Z"
+@repo/evaluations eval:agent:gemini:               }
+@repo/evaluations eval:agent:gemini:             }
+@repo/evaluations eval:agent:gemini:           ],
+@repo/evaluations eval:agent:gemini:           "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:           "suggestedQueue": "SHIPPING_OPERATIONS",
+@repo/evaluations eval:agent:gemini:           "suggestedNextStep": "Review the shipment-label failure; do not retry or change fulfilment automatically.",
+@repo/evaluations eval:agent:gemini:           "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:           "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "durationMs": 2482
+@repo/evaluations eval:agent:gemini:       }
+@repo/evaluations eval:agent:gemini:     ],
+@repo/evaluations eval:agent:gemini:     "usage": {
+@repo/evaluations eval:agent:gemini:       "provider": "gemini",
+@repo/evaluations eval:agent:gemini:       "model": "gemini-3.6-flash",
+@repo/evaluations eval:agent:gemini:       "modelCalls": 2,
+@repo/evaluations eval:agent:gemini:       "inputTokens": 1221,
+@repo/evaluations eval:agent:gemini:       "outputTokens": 91,
+@repo/evaluations eval:agent:gemini:       "totalTokens": 1355,
+@repo/evaluations eval:agent:gemini:       "estimatedCostUsd": null
+@repo/evaluations eval:agent:gemini:     },
+@repo/evaluations eval:agent:gemini:     "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:   }
+@repo/evaluations eval:agent:gemini: }
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_COMPLETED","scenarioIndex":4,"scenarioCount":9,"orderId":"ORD-1045","outcome":"ANSWERED"}
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_STARTED","scenarioIndex":5,"scenarioCount":9,"orderId":"ORD-1046"}
+@repo/evaluations eval:agent:gemini: {
+@repo/evaluations eval:agent:gemini:   "evaluation": "phase-11-gemini-ai-host",
+@repo/evaluations eval:agent:gemini:   "type": "SYNTHETIC_SCENARIO_RESULT",
+@repo/evaluations eval:agent:gemini:   "scenarioIndex": 5,
+@repo/evaluations eval:agent:gemini:   "scenarioCount": 9,
+@repo/evaluations eval:agent:gemini:   "orderId": "ORD-1046",
+@repo/evaluations eval:agent:gemini:   "prompt": "Investigate ORD-1046 and tell me whether there is enough evidence.",
+@repo/evaluations eval:agent:gemini:   "expected": {
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "MISSING",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": null,
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "OPERATIONS_DATA_REVIEW",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Verify the missing assigned-warehouse inventory evidence."
+@repo/evaluations eval:agent:gemini:   },
+@repo/evaluations eval:agent:gemini:   "result": {
+@repo/evaluations eval:agent:gemini:     "schemaVersion": 1,
+@repo/evaluations eval:agent:gemini:     "runId": "AGENT-phase11-live-13",
+@repo/evaluations eval:agent:gemini:     "outcome": "ANSWERED",
+@repo/evaluations eval:agent:gemini:     "message": "Investigation for ORD-1046 indicates that there is not enough evidence to proceed.\nThe evidence status is MISSING due to missing assigned warehouse inventory evidence (inventory.assignedWarehouse.WH-A.SKU-1046). No commerce state was changed.\nNext step: Verify the missing assigned-warehouse inventory evidence.\nNo commerce state was changed.",
+@repo/evaluations eval:agent:gemini:     "orderId": "ORD-1046",
+@repo/evaluations eval:agent:gemini:     "investigationId": "INV-56882e0e-33a5-420f-863d-8063e696db43",
+@repo/evaluations eval:agent:gemini:     "reviewCaseId": null,
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "MISSING",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": null,
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "OPERATIONS_DATA_REVIEW",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Verify the missing assigned-warehouse inventory evidence.",
+@repo/evaluations eval:agent:gemini:     "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:     "toolTrace": [
+@repo/evaluations eval:agent:gemini:       {
+@repo/evaluations eval:agent:gemini:         "sequence": 1,
+@repo/evaluations eval:agent:gemini:         "toolName": "investigate_order_exception",
+@repo/evaluations eval:agent:gemini:         "modelArguments": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1046"
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "executed": true,
+@repo/evaluations eval:agent:gemini:         "outcome": "SUCCESS",
+@repo/evaluations eval:agent:gemini:         "resultSummary": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1046",
+@repo/evaluations eval:agent:gemini:           "investigationId": "INV-56882e0e-33a5-420f-863d-8063e696db43",
+@repo/evaluations eval:agent:gemini:           "investigationStatus": "NEEDS_MORE_INFO",
+@repo/evaluations eval:agent:gemini:           "evidenceStatus": "MISSING",
+@repo/evaluations eval:agent:gemini:           "diagnosisCode": null,
+@repo/evaluations eval:agent:gemini:           "matchedRule": null,
+@repo/evaluations eval:agent:gemini:           "supportingFacts": [
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "MISSING_EVIDENCE",
+@repo/evaluations eval:agent:gemini:               "path": "readiness.missingFields",
+@repo/evaluations eval:agent:gemini:               "value": [
+@repo/evaluations eval:agent:gemini:                 "inventory.assignedWarehouse.WH-A.SKU-1046"
+@repo/evaluations eval:agent:gemini:               ]
+@repo/evaluations eval:agent:gemini:             }
+@repo/evaluations eval:agent:gemini:           ],
+@repo/evaluations eval:agent:gemini:           "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:           "suggestedQueue": "OPERATIONS_DATA_REVIEW",
+@repo/evaluations eval:agent:gemini:           "suggestedNextStep": "Verify the missing assigned-warehouse inventory evidence.",
+@repo/evaluations eval:agent:gemini:           "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:           "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "durationMs": 2386
+@repo/evaluations eval:agent:gemini:       }
+@repo/evaluations eval:agent:gemini:     ],
+@repo/evaluations eval:agent:gemini:     "usage": {
+@repo/evaluations eval:agent:gemini:       "provider": "gemini",
+@repo/evaluations eval:agent:gemini:       "model": "gemini-3.6-flash",
+@repo/evaluations eval:agent:gemini:       "modelCalls": 2,
+@repo/evaluations eval:agent:gemini:       "inputTokens": 1169,
+@repo/evaluations eval:agent:gemini:       "outputTokens": 102,
+@repo/evaluations eval:agent:gemini:       "totalTokens": 1454,
+@repo/evaluations eval:agent:gemini:       "estimatedCostUsd": null
+@repo/evaluations eval:agent:gemini:     },
+@repo/evaluations eval:agent:gemini:     "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:   }
+@repo/evaluations eval:agent:gemini: }
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_COMPLETED","scenarioIndex":5,"scenarioCount":9,"orderId":"ORD-1046","outcome":"ANSWERED"}
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_STARTED","scenarioIndex":6,"scenarioCount":9,"orderId":"ORD-1047"}
+@repo/evaluations eval:agent:gemini: {
+@repo/evaluations eval:agent:gemini:   "evaluation": "phase-11-gemini-ai-host",
+@repo/evaluations eval:agent:gemini:   "type": "SYNTHETIC_SCENARIO_RESULT",
+@repo/evaluations eval:agent:gemini:   "scenarioIndex": 6,
+@repo/evaluations eval:agent:gemini:   "scenarioCount": 9,
+@repo/evaluations eval:agent:gemini:   "orderId": "ORD-1047",
+@repo/evaluations eval:agent:gemini:   "prompt": "Look into ORD-1047.",
+@repo/evaluations eval:agent:gemini:   "expected": {
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "SHIPMENT_ALREADY_EXISTS",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": false,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": null,
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Verify whether the operator view is stale because a shipment already exists."
+@repo/evaluations eval:agent:gemini:   },
+@repo/evaluations eval:agent:gemini:   "result": {
+@repo/evaluations eval:agent:gemini:     "schemaVersion": 1,
+@repo/evaluations eval:agent:gemini:     "runId": "AGENT-phase11-live-16",
+@repo/evaluations eval:agent:gemini:     "outcome": "ANSWERED",
+@repo/evaluations eval:agent:gemini:     "message": "Investigation completed for order ORD-1047.\nA shipment already exists for this order (SHIP-1047 with status CREATED). No commerce state was changed.\nNext step: Verify whether the operator view is stale because a shipment already exists.\nNo commerce state was changed.",
+@repo/evaluations eval:agent:gemini:     "orderId": "ORD-1047",
+@repo/evaluations eval:agent:gemini:     "investigationId": "INV-206f49cf-351c-45d7-a1fc-11830c13845f",
+@repo/evaluations eval:agent:gemini:     "reviewCaseId": null,
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "SHIPMENT_ALREADY_EXISTS",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": false,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": null,
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Verify whether the operator view is stale because a shipment already exists.",
+@repo/evaluations eval:agent:gemini:     "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:     "toolTrace": [
+@repo/evaluations eval:agent:gemini:       {
+@repo/evaluations eval:agent:gemini:         "sequence": 1,
+@repo/evaluations eval:agent:gemini:         "toolName": "investigate_order_exception",
+@repo/evaluations eval:agent:gemini:         "modelArguments": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1047"
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "executed": true,
+@repo/evaluations eval:agent:gemini:         "outcome": "SUCCESS",
+@repo/evaluations eval:agent:gemini:         "resultSummary": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1047",
+@repo/evaluations eval:agent:gemini:           "investigationId": "INV-206f49cf-351c-45d7-a1fc-11830c13845f",
+@repo/evaluations eval:agent:gemini:           "investigationStatus": "COMPLETED",
+@repo/evaluations eval:agent:gemini:           "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:           "diagnosisCode": "SHIPMENT_ALREADY_EXISTS",
+@repo/evaluations eval:agent:gemini:           "matchedRule": "shipment_already_exists.v1",
+@repo/evaluations eval:agent:gemini:           "supportingFacts": [
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "SHIPMENT_PRESENT",
+@repo/evaluations eval:agent:gemini:               "path": "shipment",
+@repo/evaluations eval:agent:gemini:               "value": {
+@repo/evaluations eval:agent:gemini:                 "id": "SHIP-1047",
+@repo/evaluations eval:agent:gemini:                 "status": "CREATED"
+@repo/evaluations eval:agent:gemini:               }
+@repo/evaluations eval:agent:gemini:             }
+@repo/evaluations eval:agent:gemini:           ],
+@repo/evaluations eval:agent:gemini:           "shouldEscalate": false,
+@repo/evaluations eval:agent:gemini:           "suggestedQueue": null,
+@repo/evaluations eval:agent:gemini:           "suggestedNextStep": "Verify whether the operator view is stale because a shipment already exists.",
+@repo/evaluations eval:agent:gemini:           "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:           "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "durationMs": 2444
+@repo/evaluations eval:agent:gemini:       }
+@repo/evaluations eval:agent:gemini:     ],
+@repo/evaluations eval:agent:gemini:     "usage": {
+@repo/evaluations eval:agent:gemini:       "provider": "gemini",
+@repo/evaluations eval:agent:gemini:       "model": "gemini-3.6-flash",
+@repo/evaluations eval:agent:gemini:       "modelCalls": 2,
+@repo/evaluations eval:agent:gemini:       "inputTokens": 1153,
+@repo/evaluations eval:agent:gemini:       "outputTokens": 83,
+@repo/evaluations eval:agent:gemini:       "totalTokens": 1304,
+@repo/evaluations eval:agent:gemini:       "estimatedCostUsd": null
+@repo/evaluations eval:agent:gemini:     },
+@repo/evaluations eval:agent:gemini:     "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:   }
+@repo/evaluations eval:agent:gemini: }
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_COMPLETED","scenarioIndex":6,"scenarioCount":9,"orderId":"ORD-1047","outcome":"ANSWERED"}
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_STARTED","scenarioIndex":7,"scenarioCount":9,"orderId":"ORD-1048"}
+@repo/evaluations eval:agent:gemini: {
+@repo/evaluations eval:agent:gemini:   "evaluation": "phase-11-gemini-ai-host",
+@repo/evaluations eval:agent:gemini:   "type": "SYNTHETIC_SCENARIO_RESULT",
+@repo/evaluations eval:agent:gemini:   "scenarioIndex": 7,
+@repo/evaluations eval:agent:gemini:   "scenarioCount": 9,
+@repo/evaluations eval:agent:gemini:   "orderId": "ORD-1048",
+@repo/evaluations eval:agent:gemini:   "prompt": "Please diagnose the shipment gap for ORD-1048.",
+@repo/evaluations eval:agent:gemini:   "expected": {
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "CAUSE_NOT_DETERMINED",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "GENERAL_COMMERCE_OPERATIONS",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Review the order manually without inventing a cause."
+@repo/evaluations eval:agent:gemini:   },
+@repo/evaluations eval:agent:gemini:   "result": {
+@repo/evaluations eval:agent:gemini:     "schemaVersion": 1,
+@repo/evaluations eval:agent:gemini:     "runId": "AGENT-phase11-live-19",
+@repo/evaluations eval:agent:gemini:     "outcome": "ANSWERED",
+@repo/evaluations eval:agent:gemini:     "message": "The shipment gap for order ORD-1048 was investigated, but no deterministic root cause could be automatically identified.\nPayment has succeeded and fulfilment status is PROCESSING, but no specific rule matched the complete evidence (diagnosis code: CAUSE_NOT_DETERMINED). Human review is recommended.\nNext step: Review the order manually without inventing a cause.\nNo commerce state was changed.",
+@repo/evaluations eval:agent:gemini:     "orderId": "ORD-1048",
+@repo/evaluations eval:agent:gemini:     "investigationId": "INV-3978a868-dfe0-4460-8b92-4821b294efbd",
+@repo/evaluations eval:agent:gemini:     "reviewCaseId": null,
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "CAUSE_NOT_DETERMINED",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "GENERAL_COMMERCE_OPERATIONS",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Review the order manually without inventing a cause.",
+@repo/evaluations eval:agent:gemini:     "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:     "toolTrace": [
+@repo/evaluations eval:agent:gemini:       {
+@repo/evaluations eval:agent:gemini:         "sequence": 1,
+@repo/evaluations eval:agent:gemini:         "toolName": "investigate_order_exception",
+@repo/evaluations eval:agent:gemini:         "modelArguments": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1048"
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "executed": true,
+@repo/evaluations eval:agent:gemini:         "outcome": "SUCCESS",
+@repo/evaluations eval:agent:gemini:         "resultSummary": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1048",
+@repo/evaluations eval:agent:gemini:           "investigationId": "INV-3978a868-dfe0-4460-8b92-4821b294efbd",
+@repo/evaluations eval:agent:gemini:           "investigationStatus": "COMPLETED",
+@repo/evaluations eval:agent:gemini:           "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:           "diagnosisCode": "CAUSE_NOT_DETERMINED",
+@repo/evaluations eval:agent:gemini:           "matchedRule": "cause_not_determined.v1",
+@repo/evaluations eval:agent:gemini:           "supportingFacts": [
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "PAYMENT_STATUS",
+@repo/evaluations eval:agent:gemini:               "path": "payment.status",
+@repo/evaluations eval:agent:gemini:               "value": "SUCCEEDED"
+@repo/evaluations eval:agent:gemini:             },
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "FULFILMENT_STATE",
+@repo/evaluations eval:agent:gemini:               "path": "fulfilment.status",
+@repo/evaluations eval:agent:gemini:               "value": "PROCESSING"
+@repo/evaluations eval:agent:gemini:             },
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "NO_SUPPORTED_RULE",
+@repo/evaluations eval:agent:gemini:               "path": "diagnosis",
+@repo/evaluations eval:agent:gemini:               "value": "No earlier deterministic rule matched the complete evidence."
+@repo/evaluations eval:agent:gemini:             }
+@repo/evaluations eval:agent:gemini:           ],
+@repo/evaluations eval:agent:gemini:           "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:           "suggestedQueue": "GENERAL_COMMERCE_OPERATIONS",
+@repo/evaluations eval:agent:gemini:           "suggestedNextStep": "Review the order manually without inventing a cause.",
+@repo/evaluations eval:agent:gemini:           "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:           "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "durationMs": 2314
+@repo/evaluations eval:agent:gemini:       }
+@repo/evaluations eval:agent:gemini:     ],
+@repo/evaluations eval:agent:gemini:     "usage": {
+@repo/evaluations eval:agent:gemini:       "provider": "gemini",
+@repo/evaluations eval:agent:gemini:       "model": "gemini-3.6-flash",
+@repo/evaluations eval:agent:gemini:       "modelCalls": 2,
+@repo/evaluations eval:agent:gemini:       "inputTokens": 1197,
+@repo/evaluations eval:agent:gemini:       "outputTokens": 107,
+@repo/evaluations eval:agent:gemini:       "totalTokens": 1349,
+@repo/evaluations eval:agent:gemini:       "estimatedCostUsd": null
+@repo/evaluations eval:agent:gemini:     },
+@repo/evaluations eval:agent:gemini:     "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:   }
+@repo/evaluations eval:agent:gemini: }
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_COMPLETED","scenarioIndex":7,"scenarioCount":9,"orderId":"ORD-1048","outcome":"ANSWERED"}
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_STARTED","scenarioIndex":8,"scenarioCount":9,"orderId":"ORD-1049"}
+@repo/evaluations eval:agent:gemini: {
+@repo/evaluations eval:agent:gemini:   "evaluation": "phase-11-gemini-ai-host",
+@repo/evaluations eval:agent:gemini:   "type": "SYNTHETIC_SCENARIO_RESULT",
+@repo/evaluations eval:agent:gemini:   "scenarioIndex": 8,
+@repo/evaluations eval:agent:gemini:   "scenarioCount": 9,
+@repo/evaluations eval:agent:gemini:   "orderId": "ORD-1049",
+@repo/evaluations eval:agent:gemini:   "prompt": "The operator says ORD-1049 is paid. Verify why shipment was not created.",
+@repo/evaluations eval:agent:gemini:   "expected": {
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "PAYMENT_NOT_CONFIRMED",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "PAYMENT_OPERATIONS",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Review the authoritative payment source before treating the order as paid."
+@repo/evaluations eval:agent:gemini:   },
+@repo/evaluations eval:agent:gemini:   "result": {
+@repo/evaluations eval:agent:gemini:     "schemaVersion": 1,
+@repo/evaluations eval:agent:gemini:     "runId": "AGENT-phase11-live-22",
+@repo/evaluations eval:agent:gemini:     "outcome": "ANSWERED",
+@repo/evaluations eval:agent:gemini:     "message": "Shipment for order ORD-1049 was not created because payment has not been confirmed.\nThe authoritative payment status is currently PROCESSING.\nNext step: Review the authoritative payment source before treating the order as paid.\nNo commerce state was changed.",
+@repo/evaluations eval:agent:gemini:     "orderId": "ORD-1049",
+@repo/evaluations eval:agent:gemini:     "investigationId": "INV-ff919635-4b1f-4c83-8504-60f3339ce7c6",
+@repo/evaluations eval:agent:gemini:     "reviewCaseId": null,
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": "PAYMENT_NOT_CONFIRMED",
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "PAYMENT_OPERATIONS",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Review the authoritative payment source before treating the order as paid.",
+@repo/evaluations eval:agent:gemini:     "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:     "toolTrace": [
+@repo/evaluations eval:agent:gemini:       {
+@repo/evaluations eval:agent:gemini:         "sequence": 1,
+@repo/evaluations eval:agent:gemini:         "toolName": "investigate_order_exception",
+@repo/evaluations eval:agent:gemini:         "modelArguments": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1049"
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "executed": true,
+@repo/evaluations eval:agent:gemini:         "outcome": "SUCCESS",
+@repo/evaluations eval:agent:gemini:         "resultSummary": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1049",
+@repo/evaluations eval:agent:gemini:           "investigationId": "INV-ff919635-4b1f-4c83-8504-60f3339ce7c6",
+@repo/evaluations eval:agent:gemini:           "investigationStatus": "COMPLETED",
+@repo/evaluations eval:agent:gemini:           "evidenceStatus": "COMPLETE",
+@repo/evaluations eval:agent:gemini:           "diagnosisCode": "PAYMENT_NOT_CONFIRMED",
+@repo/evaluations eval:agent:gemini:           "matchedRule": "payment_not_confirmed.v1",
+@repo/evaluations eval:agent:gemini:           "supportingFacts": [
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "PAYMENT_STATUS",
+@repo/evaluations eval:agent:gemini:               "path": "payment.status",
+@repo/evaluations eval:agent:gemini:               "value": "PROCESSING"
+@repo/evaluations eval:agent:gemini:             }
+@repo/evaluations eval:agent:gemini:           ],
+@repo/evaluations eval:agent:gemini:           "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:           "suggestedQueue": "PAYMENT_OPERATIONS",
+@repo/evaluations eval:agent:gemini:           "suggestedNextStep": "Review the authoritative payment source before treating the order as paid.",
+@repo/evaluations eval:agent:gemini:           "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:           "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "durationMs": 2270
+@repo/evaluations eval:agent:gemini:       }
+@repo/evaluations eval:agent:gemini:     ],
+@repo/evaluations eval:agent:gemini:     "usage": {
+@repo/evaluations eval:agent:gemini:       "provider": "gemini",
+@repo/evaluations eval:agent:gemini:       "model": "gemini-3.6-flash",
+@repo/evaluations eval:agent:gemini:       "modelCalls": 2,
+@repo/evaluations eval:agent:gemini:       "inputTokens": 1165,
+@repo/evaluations eval:agent:gemini:       "outputTokens": 75,
+@repo/evaluations eval:agent:gemini:       "totalTokens": 1461,
+@repo/evaluations eval:agent:gemini:       "estimatedCostUsd": null
+@repo/evaluations eval:agent:gemini:     },
+@repo/evaluations eval:agent:gemini:     "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:   }
+@repo/evaluations eval:agent:gemini: }
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_COMPLETED","scenarioIndex":8,"scenarioCount":9,"orderId":"ORD-1049","outcome":"ANSWERED"}
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_STARTED","scenarioIndex":9,"scenarioCount":9,"orderId":"ORD-1050"}
+@repo/evaluations eval:agent:gemini: {
+@repo/evaluations eval:agent:gemini:   "evaluation": "phase-11-gemini-ai-host",
+@repo/evaluations eval:agent:gemini:   "type": "SYNTHETIC_SCENARIO_RESULT",
+@repo/evaluations eval:agent:gemini:   "scenarioIndex": 9,
+@repo/evaluations eval:agent:gemini:   "scenarioCount": 9,
+@repo/evaluations eval:agent:gemini:   "orderId": "ORD-1050",
+@repo/evaluations eval:agent:gemini:   "prompt": "Investigate the conflicting state for ORD-1050.",
+@repo/evaluations eval:agent:gemini:   "expected": {
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "CONFLICTING",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": null,
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "OPERATIONS_DATA_REVIEW",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Resolve the conflicting inventory observations before suggesting a warehouse."
+@repo/evaluations eval:agent:gemini:   },
+@repo/evaluations eval:agent:gemini:   "result": {
+@repo/evaluations eval:agent:gemini:     "schemaVersion": 1,
+@repo/evaluations eval:agent:gemini:     "runId": "AGENT-phase11-live-25",
+@repo/evaluations eval:agent:gemini:     "outcome": "ANSWERED",
+@repo/evaluations eval:agent:gemini:     "message": "Investigation for order ORD-1050 indicates conflicting evidence regarding inventory availability.\nInventory sources report different available quantities for WH-A/SKU-1050 (WAREHOUSE_SYSTEM reports 0, COMMERCE_SYSTEM reports 4).\nNext step: Resolve the conflicting inventory observations before suggesting a warehouse.\nNo commerce state was changed.",
+@repo/evaluations eval:agent:gemini:     "orderId": "ORD-1050",
+@repo/evaluations eval:agent:gemini:     "investigationId": "INV-cf6375dd-815d-49d8-a510-15cb13674b81",
+@repo/evaluations eval:agent:gemini:     "reviewCaseId": null,
+@repo/evaluations eval:agent:gemini:     "evidenceStatus": "CONFLICTING",
+@repo/evaluations eval:agent:gemini:     "diagnosisCode": null,
+@repo/evaluations eval:agent:gemini:     "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:     "suggestedQueue": "OPERATIONS_DATA_REVIEW",
+@repo/evaluations eval:agent:gemini:     "suggestedNextStep": "Resolve the conflicting inventory observations before suggesting a warehouse.",
+@repo/evaluations eval:agent:gemini:     "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:     "toolTrace": [
+@repo/evaluations eval:agent:gemini:       {
+@repo/evaluations eval:agent:gemini:         "sequence": 1,
+@repo/evaluations eval:agent:gemini:         "toolName": "investigate_order_exception",
+@repo/evaluations eval:agent:gemini:         "modelArguments": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1050"
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "executed": true,
+@repo/evaluations eval:agent:gemini:         "outcome": "SUCCESS",
+@repo/evaluations eval:agent:gemini:         "resultSummary": {
+@repo/evaluations eval:agent:gemini:           "orderId": "ORD-1050",
+@repo/evaluations eval:agent:gemini:           "investigationId": "INV-cf6375dd-815d-49d8-a510-15cb13674b81",
+@repo/evaluations eval:agent:gemini:           "investigationStatus": "NEEDS_MORE_INFO",
+@repo/evaluations eval:agent:gemini:           "evidenceStatus": "CONFLICTING",
+@repo/evaluations eval:agent:gemini:           "diagnosisCode": null,
+@repo/evaluations eval:agent:gemini:           "matchedRule": null,
+@repo/evaluations eval:agent:gemini:           "supportingFacts": [
+@repo/evaluations eval:agent:gemini:             {
+@repo/evaluations eval:agent:gemini:               "code": "CONFLICTING_EVIDENCE",
+@repo/evaluations eval:agent:gemini:               "path": "readiness.conflicts",
+@repo/evaluations eval:agent:gemini:               "value": [
+@repo/evaluations eval:agent:gemini:                 {
+@repo/evaluations eval:agent:gemini:                   "code": "INVENTORY_QUANTITY_MISMATCH",
+@repo/evaluations eval:agent:gemini:                   "path": "inventory.WH-A.SKU-1050.availableQuantity",
+@repo/evaluations eval:agent:gemini:                   "message": "Inventory sources report different available quantities for WH-A/SKU-1050.",
+@repo/evaluations eval:agent:gemini:                   "observations": [
+@repo/evaluations eval:agent:gemini:                     {
+@repo/evaluations eval:agent:gemini:                       "sourceSystem": "WAREHOUSE_SYSTEM",
+@repo/evaluations eval:agent:gemini:                       "availableQuantity": 0,
+@repo/evaluations eval:agent:gemini:                       "observedAt": "2026-07-30T12:00:00.000Z"
+@repo/evaluations eval:agent:gemini:                     },
+@repo/evaluations eval:agent:gemini:                     {
+@repo/evaluations eval:agent:gemini:                       "sourceSystem": "COMMERCE_SYSTEM",
+@repo/evaluations eval:agent:gemini:                       "availableQuantity": 4,
+@repo/evaluations eval:agent:gemini:                       "observedAt": "2026-07-30T12:00:00.000Z"
+@repo/evaluations eval:agent:gemini:                     }
+@repo/evaluations eval:agent:gemini:                   ]
+@repo/evaluations eval:agent:gemini:                 }
+@repo/evaluations eval:agent:gemini:               ]
+@repo/evaluations eval:agent:gemini:             }
+@repo/evaluations eval:agent:gemini:           ],
+@repo/evaluations eval:agent:gemini:           "shouldEscalate": true,
+@repo/evaluations eval:agent:gemini:           "suggestedQueue": "OPERATIONS_DATA_REVIEW",
+@repo/evaluations eval:agent:gemini:           "suggestedNextStep": "Resolve the conflicting inventory observations before suggesting a warehouse.",
+@repo/evaluations eval:agent:gemini:           "eligibleAlternativeWarehouseIds": [],
+@repo/evaluations eval:agent:gemini:           "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:         },
+@repo/evaluations eval:agent:gemini:         "durationMs": 2945
+@repo/evaluations eval:agent:gemini:       }
+@repo/evaluations eval:agent:gemini:     ],
+@repo/evaluations eval:agent:gemini:     "usage": {
+@repo/evaluations eval:agent:gemini:       "provider": "gemini",
+@repo/evaluations eval:agent:gemini:       "model": "gemini-3.6-flash",
+@repo/evaluations eval:agent:gemini:       "modelCalls": 2,
+@repo/evaluations eval:agent:gemini:       "inputTokens": 1281,
+@repo/evaluations eval:agent:gemini:       "outputTokens": 99,
+@repo/evaluations eval:agent:gemini:       "totalTokens": 1380,
+@repo/evaluations eval:agent:gemini:       "estimatedCostUsd": null
+@repo/evaluations eval:agent:gemini:     },
+@repo/evaluations eval:agent:gemini:     "commerceStateChanged": false
+@repo/evaluations eval:agent:gemini:   }
+@repo/evaluations eval:agent:gemini: }
+@repo/evaluations eval:agent:gemini: {"evaluation":"phase-11-gemini-ai-host","type":"SYNTHETIC_SCENARIO_COMPLETED","scenarioIndex":9,"scenarioCount":9,"orderId":"ORD-1050","outcome":"ANSWERED"}
+@repo/evaluations eval:agent:gemini: {"at":"2026-07-31T13:35:03.558Z","elapsedMs":251273,"evaluation":"phase-11-gemini-ai-host","type":"MODEL_PROVIDER_PROGRESS","activeStep":"combined-investigation-escalation","providerEvent":"RETRY_SCHEDULED","code":"RATE_LIMITED","attempt":2,"maxAttempts":6,"retryAfterMs":56471,"retryAfterSeconds":57}
+@repo/evaluations eval:agent:gemini: {"at":"2026-07-31T13:36:00.037Z","elapsedMs":307752,"evaluation":"phase-11-gemini-ai-host","type":"MODEL_PROVIDER_PROGRESS","activeStep":"combined-investigation-escalation","providerEvent":"RETRY_STARTED","code":"RATE_LIMITED","attempt":2,"maxAttempts":6}
+@repo/evaluations eval:agent:gemini: {"at":"2026-07-31T13:36:08.893Z","elapsedMs":316608,"evaluation":"phase-11-gemini-ai-host","type":"MODEL_PROVIDER_PROGRESS","activeStep":"combined-investigation-escalation","providerEvent":"RETRY_SCHEDULED","code":"RATE_LIMITED","attempt":3,"maxAttempts":6,"retryAfterMs":51120,"retryAfterSeconds":52}
+@repo/evaluations eval:agent:gemini: {"at":"2026-07-31T13:37:00.014Z","elapsedMs":367729,"evaluation":"phase-11-gemini-ai-host","type":"MODEL_PROVIDER_PROGRESS","activeStep":"combined-investigation-escalation","providerEvent":"RETRY_STARTED","code":"RATE_LIMITED","attempt":3,"maxAttempts":6}
+@repo/evaluations eval:agent:gemini: {"at":"2026-07-31T13:37:08.084Z","elapsedMs":375799,"evaluation":"phase-11-gemini-ai-host","type":"MODEL_PROVIDER_PROGRESS","activeStep":"combined-investigation-escalation","providerEvent":"RETRY_SCHEDULED","code":"RATE_LIMITED","attempt":4,"maxAttempts":6,"retryAfterMs":52020,"retryAfterSeconds":53}
