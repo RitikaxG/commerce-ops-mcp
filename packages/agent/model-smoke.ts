@@ -32,8 +32,26 @@ async function main(): Promise<void> {
       : { maxRetryDelayMs: config.providerMaxRetryDelayMs }),
   });
   const sessionId = "gemini-model-smoke";
+  const startedAt = Date.now();
+
+  console.error(
+    "[smoke] Sending one Gemini function-calling request. The first attempt starts immediately.",
+  );
+
+  const progressTimer = setInterval(() => {
+    const elapsedSeconds = Math.max(
+      1,
+      Math.floor((Date.now() - startedAt) / 1_000),
+    );
+    console.error(
+      `[smoke] Still waiting after ${elapsedSeconds}s. Gemini may be processing the request or the provider may be honoring a retry delay.`,
+    );
+  }, 10_000);
+
   try {
-    await provider.verifyModel(config.model);
+    // A successful function-calling request proves both model access and the
+    // capability needed by the agent. Avoid a separate model-metadata request
+    // so the smoke check consumes only one initial Gemini request.
     const turn = await provider.generateToolTurn({
       sessionId,
       systemInstructions:
@@ -81,6 +99,7 @@ async function main(): Promise<void> {
     );
     process.exitCode = 1;
   } finally {
+    clearInterval(progressTimer);
     provider.clearSession(sessionId);
   }
 }
