@@ -167,3 +167,23 @@ export {
   type McpToolOutput,
   type McpToolSuccess,
 } from "./mcp.js";
+export {
+  AgentOutcomeSchema,
+  AgentToolTraceEntrySchema,
+  AgentUsageSummarySchema,
+  ApprovedAgentToolNameSchema,
+  CommerceOperationsAgentRequestSchema,
+  CommerceOperationsAgentResultSchema,
+  GroundingIssueCodeSchema,
+  GroundingValidationResultSchema,
+  ModelExplanationSchema,
+  type AgentOutcome,
+  type AgentToolTraceEntry,
+  type AgentUsageSummary,
+  type ApprovedAgentToolName,
+  type CommerceOperationsAgentRequest,
+  type CommerceOperationsAgentResult,
+  type GroundingIssueCode,
+  type GroundingValidationResult,
+  type ModelExplanation,
+} from "./agent.js";
