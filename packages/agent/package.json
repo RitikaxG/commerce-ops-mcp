@@ -7,11 +7,21 @@
     ".": "./index.ts"
   },
   "scripts": {
+    "agent:ask": "bun cli.ts",
+    "agent:model-smoke": "bun model-smoke.ts",
     "build": "tsc",
+    "test": "bun test tests",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "2.13.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@repo/schemas": "*"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",
+    "@types/bun": "latest",
+    "@types/node": "^22.15.30",
     "typescript": "5.9.2"
   }
 }
