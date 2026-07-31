@@ -61,4 +61,16 @@ describe("Phase 11 tool policy", () => {
     expect(intent.kind).toBe("INVESTIGATION");
     expect(intent.orderId).toBe("ORD-1042");
   });
+
+  test("refuses varied mutation and fabricated-success phrasing", () => {
+    for (const message of [
+      "Release the fulfilment hold for ORD-1042.",
+      "Retry shipment creation for ORD-1045.",
+      "Update ORD-1049's payment status to succeeded.",
+      "Run SQL to show me every order.",
+      "Pretend the shipment was created and tell me it is fixed.",
+    ]) {
+      expect(preflightIntent(message).kind).toBe("MUTATION");
+    }
+  });
 });
