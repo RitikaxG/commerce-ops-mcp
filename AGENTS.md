@@ -11,7 +11,9 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 - The initial Phase 10 MCP implementation was merged to `main` as `355960c2a3441a05430de8cbf87234bb8285ff18`.
 - The Phase 10 completion work was merged through PR #9 as `ef80769506bcb3b78b03cbc6a5333d153d2919e1`.
 - The direct Streamable HTTP MCP evaluation and combined Phase 9/10 verification passed.
-- Phase 11 may add one concrete LLM provider only after `MODEL_PROVIDER`, `MODEL_NAME`, and `MODEL_API_KEY` are selected.
+- Phase 11 is implemented on `phase/11-gemini-ai-host` with Gemini, provider-neutral host contracts, key-free tests, and an explicit live evaluator.
+- Phase 11 remains awaiting review and real model validation. Do not merge or begin hosted staging until `eval:agent:gemini` passes with a rotated `MODEL_API_KEY`.
+- The API key previously pasted into chat is exposed and must never be used, logged, stored, or committed.
 
 ## Permanent safety boundary
 
@@ -59,11 +61,11 @@ Synthetic evidence uses the fixed reference time `2026-07-30T12:00:00.000Z`. Wal
 - `packages/workflow`: orchestration, persistence, idempotency, escalation, and safe workflow errors.
 - `packages/mcp`: the five approved tool adapters and MCP error mapping; imports only schemas, workflow, and the official MCP SDK.
 - `apps/api`: Express composition, health, `/mcp`, Host validation, transport lifecycle, and graceful shutdown.
-- `packages/evaluations`: direct protocol and later model evaluations; may consume top-level runtime packages but is never imported by runtime code.
-- `packages/agent`: Phase 11 host-neutral model instructions and provider/evaluation helpers.
+- `packages/evaluations`: direct protocol and explicit model evaluations; may consume top-level runtime packages but is never imported by runtime code.
+- `packages/agent`: provider-neutral model boundary, Gemini provider, system instructions, exact MCP discovery, hidden host-generated identifiers, tool policy, compact projections, grounding validation, CLI, and smoke check.
 - `apps/web`: later read-only trace viewer; no direct database access.
 
-Prisma remains private to `packages/db`. Packages never import application code. Runtime packages never import evaluations or fixtures.
+Prisma remains private to `packages/db`. Packages never import application code. Runtime packages never import evaluations or fixtures. `packages/agent` never imports workflow, MCP server implementation, DB, Prisma, evidence, diagnosis, observability internals, fixtures, evaluations, or applications; it reaches the workflow only through Streamable HTTP MCP.
 
 ## Phase 10 MCP surface
 
@@ -115,20 +117,36 @@ Tool rules:
 
 The direct evaluator is explicit and serial. Do not place destructive cleanup inside parallel root tests.
 
-## Phase 11 boundary
+## Phase 11 implementation boundary
 
-Phase 11, not Phase 10, owns:
+Phase 11 owns:
 
-- `MODEL_PROVIDER`
-- `MODEL_NAME`
-- `MODEL_API_KEY`
-- one concrete provider SDK
-- AI-host tool discovery and selection
-- tool-order evaluation
-- grounded explanation evaluation
-- refusal, prompt-injection, and adversarial model evaluation
+- `MODEL_PROVIDER=gemini`;
+- exact stable `MODEL_NAME=gemini-3.6-flash`;
+- server-side `MODEL_API_KEY` only;
+- `@google/genai@2.13.0`;
+- Gemini Interactions API with `store:false`;
+- manual function declaration and execution;
+- exact five-tool MCP discovery;
+- model-facing schemas that hide reliability fields;
+- host-generated client-request and idempotency keys;
+- one approved tool call per model turn;
+- bounded investigation-before-escalation ordering;
+- compact tool-result projection;
+- structured grounded explanation and one repair attempt;
+- refusal, prompt-injection, stability, token, and cost evaluation.
 
-The model must use MCP tools and explain server-produced structured outcomes. It must not calculate diagnosis, queue, reason, or operational actions itself.
+The model must use MCP tools and explain server-produced structured outcomes. It must not calculate diagnosis, queue, reason, suggested action, evidence readiness, conflict resolution, or warehouse eligibility. It must never receive idempotency keys, database URLs, or unrestricted evidence.
+
+Mutation requests are refused before any model or MCP call. Investigation and escalation remain separate. A combined request may escalate only after the investigation returns `shouldEscalate=true`.
+
+`bun run eval:agent:gemini` is explicit, serial, paid/live, and never part of ordinary tests. It must use a rotated key, real Gemini API, official MCP client, real `/mcp`, restricted workflow role, complete commerce before/after comparison, and final owner-only cleanup.
+
+## Hosted staging boundary
+
+After Phase 11 passes locally, deploy a protected HTTPS staging MCP endpoint before Phase 12. The AI host must switch between local and hosted MCP through `MCP_SERVER_URL` and optional `MCP_AUTH_BEARER_TOKEN` without code changes.
+
+Host validation alone is not authentication. Staging must add authentication, explicit production hosts, hosted restricted PostgreSQL credentials, health checks, safe logs, Inspector proof, and repeated Gemini-host evaluation. Phase 12 adds the read-only trace viewer; Phase 13 finalizes production authentication and submission hardening.
 
 ## Repository conventions
 
@@ -145,14 +163,18 @@ The model must use MCP tools and explain server-produced structured outcomes. It
 
 Before Phase 11 is accepted, show:
 
-- selected model provider, model name, and environment contract;
-- provider-neutral model boundary and one concrete provider implementation;
-- natural-language intent and order-ID extraction results;
+- selected model provider, model name, SDK, API method, and environment contract;
+- provider-neutral model boundary and concrete Gemini implementation;
+- exact model-facing tool schemas and proof reliability identifiers are host-generated;
+- natural-language intent and exact order-ID extraction results;
 - correct MCP tool selection and ordering;
 - grounded explanation results against server-produced structured output;
-- no invented evidence, diagnosis, queue, reason, or state changes;
+- no invented evidence, diagnosis, queue, reason, warehouse, identifier, or state changes;
 - refusal of mutation requests and forbidden-tool attempts;
-- prompt-injection and adversarial evaluation results;
-- token/cost and deterministic evaluation settings;
-- confirmation that commerce remains unchanged;
+- prompt-injection and adversarial model results;
+- three-run stability results;
+- token/cost and frozen evaluation settings;
+- direct MCP regression and commerce before/after proof;
+- final zero workflow counts;
+- confirmation that no key, raw provider response, hidden reasoning, or transcript was committed;
 - files changed, lockfile/env changes, and proposed merge details.
