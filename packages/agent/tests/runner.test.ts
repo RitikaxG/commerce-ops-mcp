@@ -160,14 +160,14 @@ function toolTurn(
 }
 
 function explanation(
-  nextStep: string | null,
+  _nextStep: string | null,
   reason = "Grounded in MCP evidence.",
 ): ModelExplanationTurn {
   return {
     explanation: {
       summary: "The order investigation completed.",
       reason,
-      nextStep,
+      nextStep: null,
     },
     usage: ZERO_USAGE,
   };
