@@ -21,9 +21,15 @@ const SMOKE_TOOL: AgentToolDefinition = {
 async function main(): Promise<void> {
   const config = parseModelRuntimeConfig();
   const provider = new GeminiModelProvider(config.modelApiKey, undefined, {
-    minIntervalMs: config.providerMinIntervalMs,
-    maxRetries: config.providerMaxRetries,
-    maxRetryDelayMs: config.providerMaxRetryDelayMs,
+    ...(config.providerMinIntervalMs === undefined
+      ? {}
+      : { minIntervalMs: config.providerMinIntervalMs }),
+    ...(config.providerMaxRetries === undefined
+      ? {}
+      : { maxRetries: config.providerMaxRetries }),
+    ...(config.providerMaxRetryDelayMs === undefined
+      ? {}
+      : { maxRetryDelayMs: config.providerMaxRetryDelayMs }),
   });
   const sessionId = "gemini-model-smoke";
   try {
