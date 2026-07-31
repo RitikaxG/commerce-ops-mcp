@@ -53,9 +53,7 @@ describe("safe model-provider failures", () => {
   test("returns quota exhaustion explicitly without calling MCP", async () => {
     const agent = createCommerceOperationsAgent({
       config: config(),
-      provider: providerFailure(
-        new SafeModelProviderError("QUOTA_EXHAUSTED"),
-      ),
+      provider: providerFailure(new SafeModelProviderError("QUOTA_EXHAUSTED")),
       connectMcp: async () => unusedMcpClient(),
     });
 
