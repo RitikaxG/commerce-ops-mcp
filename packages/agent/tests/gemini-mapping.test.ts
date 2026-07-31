@@ -87,6 +87,18 @@ describe("Gemini provider mapping", () => {
       generation_config: {
         max_output_tokens: 500,
         thinking_level: "low",
+        tool_choice: {
+          allowed_tools: {
+            mode: "any",
+            tools: [
+              "list_demo_cases",
+              "investigate_order_exception",
+              "create_human_review_escalation",
+              "get_review_case",
+              "get_investigation_trace",
+            ],
+          },
+        },
       },
     });
     expect(JSON.stringify(requests[0])).not.toContain("idempotencyKey");
@@ -102,17 +114,25 @@ describe("Gemini provider mapping", () => {
   });
 
   test("parses a structured explanation and usage", async () => {
+    const requests: unknown[] = [];
     const fake = {
       models: { get: async () => ({}) },
       interactions: {
-        create: async () => ({
-          output_text: JSON.stringify({
-            summary: "Investigation complete.",
-            reason: "The MCP result is authoritative.",
-            nextStep: null,
-          }),
-          usage: { total_input_tokens: 8, total_output_tokens: 4, total_tokens: 12 },
-        }),
+        create: async (request: unknown) => {
+          requests.push(request);
+          return {
+            output_text: JSON.stringify({
+              summary: "Investigation complete.",
+              reason: "The MCP result is authoritative.",
+              nextStep: null,
+            }),
+            usage: {
+              total_input_tokens: 8,
+              total_output_tokens: 4,
+              total_tokens: 12,
+            },
+          };
+        },
       },
     };
     const provider = new GeminiModelProvider("not-a-real-key", fake as never);
@@ -124,6 +144,18 @@ describe("Gemini provider mapping", () => {
     });
     expect(result.explanation.summary).toBe("Investigation complete.");
     expect(result.usage.totalTokens).toBe(12);
+    expect(requests[0]).toMatchObject({
+      response_format: {
+        type: "text",
+        mime_type: "application/json",
+        schema: {
+          type: "object",
+          properties: {
+            nextStep: { type: ["string", "null"] },
+          },
+        },
+      },
+    });
   });
 
   test("maps authentication failures without leaking a key", async () => {
