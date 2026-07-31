@@ -31,6 +31,7 @@ export {
 export {
   GeminiModelProvider,
   type GeminiModelProviderOptions,
+  type GeminiProviderProgressEvent,
 } from "./providers/gemini.js";
 export {
   assembleGroundedMessage,
