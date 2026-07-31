@@ -21,6 +21,7 @@ export interface AuthoritativeAgentState {
   suggestedQueue: ReviewQueue | null;
   suggestedNextStep: string | null;
   eligibleAlternativeWarehouseIds: string[];
+  authoritativeWarehouseIds: string[];
 }
 
 export function createEmptyAuthoritativeState(): AuthoritativeAgentState {
@@ -34,6 +35,7 @@ export function createEmptyAuthoritativeState(): AuthoritativeAgentState {
     suggestedQueue: null,
     suggestedNextStep: null,
     eligibleAlternativeWarehouseIds: [],
+    authoritativeWarehouseIds: [],
   };
 }
 
@@ -46,6 +48,42 @@ function stringValue(
   key: string,
 ): string | null {
   return typeof record[key] === "string" ? record[key] : null;
+}
+
+const WAREHOUSE_PATTERN = /\bWH-[A-Za-z0-9-]+\b/g;
+
+function collectWarehouseIds(value: unknown, target = new Set<string>()): Set<string> {
+  if (typeof value === "string") {
+    for (const warehouseId of value.match(WAREHOUSE_PATTERN) ?? []) {
+      target.add(warehouseId);
+    }
+    return target;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectWarehouseIds(item, target);
+    }
+    return target;
+  }
+  if (isRecord(value)) {
+    for (const item of Object.values(value)) {
+      collectWarehouseIds(item, target);
+    }
+  }
+  return target;
+}
+
+function recordAuthoritativeWarehouseIds(
+  state: AuthoritativeAgentState,
+  projection: JsonObject,
+): JsonObject {
+  state.authoritativeWarehouseIds = [
+    ...new Set([
+      ...state.authoritativeWarehouseIds,
+      ...collectWarehouseIds(projection),
+    ]),
+  ].sort();
+  return projection;
 }
 
 export function isSuccessfulMcpOutput(
@@ -105,7 +143,7 @@ export function projectMcpResult(
           (value): value is string => typeof value === "string",
         )
       : [];
-    return {
+    return recordAuthoritativeWarehouseIds(state, {
       orderId: state.orderId,
       investigationId: state.investigationId,
       investigationStatus: result.status ?? null,
@@ -120,7 +158,7 @@ export function projectMcpResult(
       suggestedNextStep: state.suggestedNextStep,
       eligibleAlternativeWarehouseIds: state.eligibleAlternativeWarehouseIds,
       commerceStateChanged: false,
-    };
+    });
   }
 
   if (toolName === "create_human_review_escalation") {
@@ -133,7 +171,7 @@ export function projectMcpResult(
       state.suggestedQueue;
     state.suggestedNextStep =
       stringValue(result, "suggestedNextStep") ?? state.suggestedNextStep;
-    return {
+    return recordAuthoritativeWarehouseIds(state, {
       reviewCaseId: state.reviewCaseId,
       investigationId: state.investigationId,
       orderId: state.orderId,
@@ -142,15 +180,15 @@ export function projectMcpResult(
       reasonCode: result.reasonCode ?? null,
       suggestedNextStep: state.suggestedNextStep,
       commerceStateChanged: false,
-    };
+    });
   }
 
   if (toolName === "list_demo_cases") {
-    return {
+    return recordAuthoritativeWarehouseIds(state, {
       purpose: result.purpose ?? null,
       cases: Array.isArray(result.cases) ? result.cases : [],
       commerceStateChanged: false,
-    };
+    });
   }
 
   if (toolName === "get_review_case") {
@@ -174,7 +212,7 @@ export function projectMcpResult(
       "queue",
     ) as ReviewQueue | null;
     state.suggestedNextStep = stringValue(reviewCase, "suggestedNextStep");
-    return {
+    return recordAuthoritativeWarehouseIds(state, {
       reviewCaseId: state.reviewCaseId,
       investigationId: state.investigationId,
       orderId: state.orderId,
@@ -184,7 +222,7 @@ export function projectMcpResult(
       suggestedNextStep: state.suggestedNextStep,
       diagnosisCode: state.diagnosisCode,
       commerceStateChanged: false,
-    };
+    });
   }
 
   const investigation = isRecord(result.investigation)
@@ -205,7 +243,7 @@ export function projectMcpResult(
     "suggestedQueue",
   ) as ReviewQueue | null;
   state.suggestedNextStep = stringValue(investigation, "suggestedNextStep");
-  return {
+  return recordAuthoritativeWarehouseIds(state, {
     investigationId: state.investigationId,
     orderId: state.orderId,
     status: investigation.status ?? null,
@@ -217,7 +255,7 @@ export function projectMcpResult(
       ? result.auditEvents.length
       : 0,
     commerceStateChanged: false,
-  };
+  });
 }
 
 const FALSE_CHANGE =
@@ -226,7 +264,6 @@ const FALSE_REVIEW_CASE =
   /\b(?:(?:review case|human-review case)|(?:CASE|ESC)-[A-Za-z0-9-]+)\s+(?:was|has been|is)\s+(?:created|opened)\b/i;
 const SECRET_LIKE = /\b(?:AIza|AQ\.)[A-Za-z0-9_-]{20,}\b/;
 const IDENTIFIER_PATTERN = /\b(?:ORD|INV|CASE|ESC)-[A-Za-z0-9-]+\b/g;
-const WAREHOUSE_PATTERN = /\bWH-[A-Za-z0-9-]+\b/g;
 const UNCERTAINTY_LANGUAGE =
   /\b(missing|conflicting|conflict|insufficient|not enough|cannot determine|could not determine|needs more information|verify the evidence|verify the missing|resolve the conflicting)\b/i;
 
@@ -262,7 +299,9 @@ export function validateGroundedExplanation(
   const text = `${explanation.summary}\n${explanation.reason}\n${explanation.nextStep ?? ""}`;
   const issues: GroundingIssueCode[] = [];
 
-  if (explanation.nextStep !== state.suggestedNextStep) {
+  // The host owns and appends the exact server-produced next step. Gemini must
+  // leave this field null so wording drift cannot alter operational guidance.
+  if (explanation.nextStep !== null) {
     issues.push("NEXT_STEP_MISMATCH");
   }
   if (FALSE_CHANGE.test(text)) {
@@ -276,7 +315,7 @@ export function validateGroundedExplanation(
   }
 
   for (const warehouse of text.match(WAREHOUSE_PATTERN) ?? []) {
-    if (!state.eligibleAlternativeWarehouseIds.includes(warehouse)) {
+    if (!state.authoritativeWarehouseIds.includes(warehouse)) {
       issues.push("INVENTED_WAREHOUSE");
       break;
     }
