@@ -19,6 +19,8 @@
     "dev": "turbo run dev",
     "eval:agent:gemini": "bun run --filter @repo/evaluations eval:agent:gemini",
     "eval:mcp:direct": "bun run --filter @repo/evaluations eval:mcp:direct",
+    "verify:hosted:ai": "bun run --filter @repo/evaluations verify:hosted:ai",
+    "verify:hosted:mcp": "bun run --filter @repo/evaluations verify:hosted:mcp",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
