@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   NODE_ENV: test
@@ -44,27 +44,8 @@ jobs:
         with:
           bun-version: 1.3.2
 
-      - name: Resolve Phase 11 dependencies
-        run: bun install
-
-      - name: Commit generated lockfile on the feature-branch push
-        if: github.event_name == 'push' && github.ref_name == 'phase/11-gemini-ai-host'
-        run: |
-          if git diff --quiet -- bun.lock; then
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add bun.lock
-          git commit -m "chore(repo): update Bun lockfile for Phase 11"
-          git push origin HEAD:phase/11-gemini-ai-host
-
-      - name: Upload generated lockfile
-        uses: actions/upload-artifact@v4
-        with:
-          name: phase11-bun-lock
-          path: bun.lock
-          if-no-files-found: error
+      - name: Install frozen dependencies
+        run: bun install --frozen-lockfile
 
       - name: Generate Prisma client
         run: bun run db:generate
