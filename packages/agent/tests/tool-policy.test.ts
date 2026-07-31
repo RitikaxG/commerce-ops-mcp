@@ -11,7 +11,9 @@ import {
 describe("Phase 11 tool policy", () => {
   test("exposes exactly five bounded model-facing tools", () => {
     const tools = getModelToolDefinitions();
-    expect(tools.map(({ name }) => name)).toEqual(APPROVED_MCP_TOOL_NAMES);
+    expect(tools.map(({ name }) => name)).toEqual([
+      ...APPROVED_MCP_TOOL_NAMES,
+    ]);
     const investigation = tools.find(
       ({ name }) => name === "investigate_order_exception",
     );
@@ -44,7 +46,9 @@ describe("Phase 11 tool policy", () => {
   });
 
   test("fails discovery when the MCP surface changes", () => {
-    expect(() => assertExactDiscoveredTools(APPROVED_MCP_TOOL_NAMES)).not.toThrow();
+    expect(() =>
+      assertExactDiscoveredTools(APPROVED_MCP_TOOL_NAMES),
+    ).not.toThrow();
     expect(() =>
       assertExactDiscoveredTools([...APPROVED_MCP_TOOL_NAMES, "update_order"]),
     ).toThrow("unexpected tool surface");
