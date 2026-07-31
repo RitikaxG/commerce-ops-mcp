@@ -16,6 +16,24 @@ const ModelEnvironmentSchema = z
     MODEL_PROVIDER: z.literal("gemini"),
     MODEL_NAME: z.string().trim().min(1).max(200),
     MODEL_API_KEY: z.string().trim().min(1),
+    AGENT_PROVIDER_MIN_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(60_000)
+      .default(3_500),
+    AGENT_PROVIDER_MAX_RETRIES: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(5)
+      .default(2),
+    AGENT_PROVIDER_MAX_RETRY_DELAY_MS: z.coerce
+      .number()
+      .int()
+      .min(1_000)
+      .max(300_000)
+      .default(60_000),
   })
   .passthrough();
 
@@ -41,6 +59,9 @@ export interface ModelRuntimeConfig {
   readonly provider: "gemini";
   readonly model: string;
   readonly modelApiKey: string;
+  readonly providerMinIntervalMs: number;
+  readonly providerMaxRetries: number;
+  readonly providerMaxRetryDelayMs: number;
 }
 
 export interface AgentRuntimeConfig extends ModelRuntimeConfig {
@@ -59,6 +80,9 @@ export function parseModelRuntimeConfig(
     provider: parsed.MODEL_PROVIDER,
     model: parsed.MODEL_NAME,
     modelApiKey: parsed.MODEL_API_KEY,
+    providerMinIntervalMs: parsed.AGENT_PROVIDER_MIN_INTERVAL_MS,
+    providerMaxRetries: parsed.AGENT_PROVIDER_MAX_RETRIES,
+    providerMaxRetryDelayMs: parsed.AGENT_PROVIDER_MAX_RETRY_DELAY_MS,
   };
 }
 
@@ -70,6 +94,9 @@ export function parseAgentRuntimeConfig(
     provider: parsed.MODEL_PROVIDER,
     model: parsed.MODEL_NAME,
     modelApiKey: parsed.MODEL_API_KEY,
+    providerMinIntervalMs: parsed.AGENT_PROVIDER_MIN_INTERVAL_MS,
+    providerMaxRetries: parsed.AGENT_PROVIDER_MAX_RETRIES,
+    providerMaxRetryDelayMs: parsed.AGENT_PROVIDER_MAX_RETRY_DELAY_MS,
     mcpServerUrl: parsed.MCP_SERVER_URL,
     ...(parsed.MCP_AUTH_BEARER_TOKEN
       ? { mcpAuthBearerToken: parsed.MCP_AUTH_BEARER_TOKEN }
