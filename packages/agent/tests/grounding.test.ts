@@ -69,4 +69,62 @@ describe("grounding validation", () => {
       ),
     ).toContain("SECRET_LIKE_CONTENT");
   });
+
+  test("requires uncertainty language when evidence is missing", () => {
+    const missing = createEmptyAuthoritativeState();
+    missing.orderId = "ORD-1046";
+    missing.investigationId = "INV-1046";
+    missing.evidenceStatus = "MISSING";
+    missing.shouldEscalate = true;
+    missing.suggestedQueue = "OPERATIONS_DATA_REVIEW";
+    missing.suggestedNextStep =
+      "Verify the missing assigned-warehouse inventory evidence.";
+
+    expect(
+      validateGroundedExplanation(
+        {
+          summary: "The assigned warehouse is out of stock.",
+          reason: "The confirmed cause should be sent to payment operations.",
+          nextStep: missing.suggestedNextStep,
+        },
+        missing,
+      ),
+    ).toEqual(
+      expect.arrayContaining(["UNSUPPORTED_DIAGNOSIS", "UNSUPPORTED_QUEUE"]),
+    );
+
+    expect(
+      validateGroundedExplanation(
+        {
+          summary: "The evidence is missing, so no cause can be confirmed.",
+          reason:
+            "The investigation needs more information before a diagnosis is possible.",
+          nextStep: missing.suggestedNextStep,
+        },
+        missing,
+      ),
+    ).toEqual([]);
+  });
+
+  test("does not allow conflicting evidence to become a confirmed cause", () => {
+    const conflicting = createEmptyAuthoritativeState();
+    conflicting.orderId = "ORD-1050";
+    conflicting.investigationId = "INV-1050";
+    conflicting.evidenceStatus = "CONFLICTING";
+    conflicting.shouldEscalate = true;
+    conflicting.suggestedQueue = "OPERATIONS_DATA_REVIEW";
+    conflicting.suggestedNextStep =
+      "Resolve the conflicting inventory observations before suggesting a warehouse.";
+
+    expect(
+      validateGroundedExplanation(
+        {
+          summary: "Shipment-label creation failed.",
+          reason: "The cause is confirmed despite the source conflict.",
+          nextStep: conflicting.suggestedNextStep,
+        },
+        conflicting,
+      ),
+    ).toContain("UNSUPPORTED_DIAGNOSIS");
+  });
 });
