@@ -88,6 +88,7 @@ async function waitForHealth(baseUrl: URL, child: ChildProcess): Promise<void> {
 export interface DirectMcpApiRuntime {
   readonly baseUrl: URL;
   readonly endpoint: URL;
+  readonly bearerToken?: string;
   close(): Promise<void>;
 }
 
@@ -100,6 +101,7 @@ export async function startDirectMcpApi(): Promise<DirectMcpApiRuntime> {
 
   const port = await reservePort();
   const baseUrl = new URL(`http://${HOST}:${port}`);
+  const bearerToken = process.env.MCP_API_KEY?.trim() || undefined;
   const child = spawn("node", [API_ENTRYPOINT], {
     cwd: REPOSITORY_ROOT,
     env: {
@@ -116,6 +118,7 @@ export async function startDirectMcpApi(): Promise<DirectMcpApiRuntime> {
   return {
     baseUrl,
     endpoint: new URL("/mcp", baseUrl),
+    ...(bearerToken ? { bearerToken } : {}),
     close() {
       closePromise ??= (async () => {
         if (child.exitCode !== null) {
