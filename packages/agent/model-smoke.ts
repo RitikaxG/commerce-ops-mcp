@@ -1,11 +1,11 @@
 import {
   GeminiModelProvider,
-  parseAgentRuntimeConfig,
+  parseModelRuntimeConfig,
   SafeModelProviderError,
 } from "./index.js";
 
 async function main(): Promise<void> {
-  const config = parseAgentRuntimeConfig();
+  const config = parseModelRuntimeConfig();
   const provider = new GeminiModelProvider(config.modelApiKey);
   try {
     await provider.verifyModel(config.model);
