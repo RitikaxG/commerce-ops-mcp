@@ -11,9 +11,25 @@ import {
   type ModelToolResult,
   type ModelTurn,
   type ModelUsage,
+  type SafeModelProviderErrorCode,
 } from "../provider.js";
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+
+export type GeminiProviderProgressEvent =
+  | {
+      readonly type: "RETRY_SCHEDULED";
+      readonly code: SafeModelProviderErrorCode;
+      readonly attempt: number;
+      readonly maxAttempts: number;
+      readonly retryAfterMs: number;
+    }
+  | {
+      readonly type: "RETRY_STARTED";
+      readonly code: SafeModelProviderErrorCode;
+      readonly attempt: number;
+      readonly maxAttempts: number;
+    };
 
 export interface GeminiModelProviderOptions {
   readonly minIntervalMs?: number;
@@ -21,6 +37,7 @@ export interface GeminiModelProviderOptions {
   readonly maxRetryDelayMs?: number;
   readonly now?: () => number;
   readonly sleep?: (milliseconds: number) => Promise<void>;
+  readonly onProgress?: (event: GeminiProviderProgressEvent) => void;
 }
 
 function numberField(
@@ -275,6 +292,7 @@ export class GeminiModelProvider implements ModelProvider {
   readonly #maxRetryDelayMs: number;
   readonly #now: () => number;
   readonly #sleep: (milliseconds: number) => Promise<void>;
+  readonly #onProgress: (event: GeminiProviderProgressEvent) => void;
   #requestQueue: Promise<void> = Promise.resolve();
   #nextRequestAt = 0;
   #quotaExhausted = false;
@@ -293,9 +311,24 @@ export class GeminiModelProvider implements ModelProvider {
       options.sleep ??
       ((milliseconds) =>
         new Promise((resolve) => setTimeout(resolve, milliseconds)));
+    this.#onProgress =
+      options.onProgress ??
+      ((event) => {
+        if (process.env.AGENT_DEBUG_SAFE_ERRORS === "1") {
+          console.error(
+            JSON.stringify({
+              agentProviderProgress: event.type,
+              ...event,
+            }),
+          );
+        }
+      });
   }
 
-  async #scheduledRequest<T>(operation: () => Promise<T>): Promise<T> {
+  async #scheduledRequest<T>(
+    operation: () => Promise<T>,
+    beforeOperation?: () => void,
+  ): Promise<T> {
     const run = this.#requestQueue.then(async () => {
       if (this.#quotaExhausted) {
         throw new SafeModelProviderError("QUOTA_EXHAUSTED");
@@ -304,6 +337,7 @@ export class GeminiModelProvider implements ModelProvider {
       if (waitMs > 0) {
         await this.#sleep(waitMs);
       }
+      beforeOperation?.();
       try {
         return await operation();
       } finally {
@@ -324,10 +358,27 @@ export class GeminiModelProvider implements ModelProvider {
     operation: () => Promise<T>,
     timeoutMs: number,
   ): Promise<T> {
+    let pendingRetry:
+      | {
+          code: SafeModelProviderErrorCode;
+          attempt: number;
+          maxAttempts: number;
+        }
+      | undefined;
+
     for (let attempt = 0; attempt <= this.#maxRetries; attempt += 1) {
+      const retry = pendingRetry;
       try {
-        return await this.#scheduledRequest(() =>
-          withTimeout(operation, timeoutMs),
+        return await this.#scheduledRequest(
+          () => withTimeout(operation, timeoutMs),
+          retry
+            ? () => {
+                this.#onProgress({
+                  type: "RETRY_STARTED",
+                  ...retry,
+                });
+              }
+            : undefined,
         );
       } catch (error) {
         const safe = safeProviderError(error);
@@ -344,6 +395,16 @@ export class GeminiModelProvider implements ModelProvider {
         if (retryAfterMs > this.#maxRetryDelayMs) {
           throw new SafeModelProviderError(safe.code, { retryAfterMs });
         }
+        pendingRetry = {
+          code: safe.code,
+          attempt: attempt + 2,
+          maxAttempts: this.#maxRetries + 1,
+        };
+        this.#onProgress({
+          type: "RETRY_SCHEDULED",
+          ...pendingRetry,
+          retryAfterMs,
+        });
         this.#nextRequestAt = Math.max(
           this.#nextRequestAt,
           this.#now() + retryAfterMs,
