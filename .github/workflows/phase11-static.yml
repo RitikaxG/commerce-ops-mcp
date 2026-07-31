@@ -67,6 +67,7 @@ jobs:
         run: bun run db:generate
 
       - name: Apply migrations and configure restricted roles
+        id: database
         run: |
           bun run db:migrate
           bun run db:setup-access
@@ -105,7 +106,7 @@ jobs:
         run: bun run eval:mcp:direct
 
       - name: Restore clean workflow-demo state
-        if: always()
+        if: always() && steps.database.outcome == 'success'
         run: |
           bun run db:reset-workflow-demo
           bun run db:verify-demo
