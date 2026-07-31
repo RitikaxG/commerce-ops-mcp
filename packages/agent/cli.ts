@@ -31,27 +31,53 @@ async function main(): Promise<void> {
       : { maxRetryDelayMs: config.providerMaxRetryDelayMs }),
   });
   const agent = createCommerceOperationsAgent({ config, provider });
-  const result = await agent.run({ message });
-  console.log(result.message);
+  const startedAt = Date.now();
+
   if (debug) {
-    console.log(
-      JSON.stringify(
-        {
-          outcome: result.outcome,
-          tools: result.toolTrace.map(({ toolName }) => toolName),
-          investigationId: result.investigationId,
-          reviewCaseId: result.reviewCaseId,
-          model: result.usage.model,
-          totalTokens: result.usage.totalTokens,
-          commerceStateChanged: result.commerceStateChanged,
-        },
-        null,
-        2,
-      ),
+    console.error(
+      "[agent] Starting the bounded AI workflow. The first Gemini attempt starts immediately.",
     );
   }
-  if (result.outcome === "SAFE_ERROR") {
-    process.exitCode = 1;
+
+  const progressTimer = debug
+    ? setInterval(() => {
+        const elapsedSeconds = Math.max(
+          1,
+          Math.floor((Date.now() - startedAt) / 1_000),
+        );
+        console.error(
+          `[agent] Still running after ${elapsedSeconds}s. Gemini may be processing, honoring a retry delay, or the host may be executing MCP.`,
+        );
+      }, 10_000)
+    : undefined;
+
+  try {
+    const result = await agent.run({ message });
+    console.log(result.message);
+    if (debug) {
+      console.log(
+        JSON.stringify(
+          {
+            outcome: result.outcome,
+            tools: result.toolTrace.map(({ toolName }) => toolName),
+            investigationId: result.investigationId,
+            reviewCaseId: result.reviewCaseId,
+            model: result.usage.model,
+            totalTokens: result.usage.totalTokens,
+            commerceStateChanged: result.commerceStateChanged,
+          },
+          null,
+          2,
+        ),
+      );
+    }
+    if (result.outcome === "SAFE_ERROR") {
+      process.exitCode = 1;
+    }
+  } finally {
+    if (progressTimer) {
+      clearInterval(progressTimer);
+    }
   }
 }
 
