@@ -1,4 +1,9 @@
-export { parseAgentRuntimeConfig, type AgentRuntimeConfig } from "./config.js";
+export {
+  parseAgentRuntimeConfig,
+  parseModelRuntimeConfig,
+  type AgentRuntimeConfig,
+  type ModelRuntimeConfig,
+} from "./config.js";
 export {
   createDeterministicIdentifierGenerator,
   createRuntimeIdentifierGenerator,
