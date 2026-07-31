@@ -77,19 +77,26 @@ export type SafeModelProviderErrorCode =
   | "AUTHENTICATION_FAILED"
   | "MODEL_UNAVAILABLE"
   | "RATE_LIMITED"
+  | "QUOTA_EXHAUSTED"
   | "PROVIDER_TIMEOUT"
   | "INVALID_PROVIDER_RESPONSE"
   | "PROVIDER_UNAVAILABLE";
 
+export interface SafeModelProviderErrorOptions {
+  readonly retryAfterMs?: number;
+}
+
 export class SafeModelProviderError extends Error {
   readonly code: SafeModelProviderErrorCode;
+  readonly retryAfterMs: number | null;
 
   constructor(
     code: SafeModelProviderErrorCode,
-    message = "The model provider could not complete safely.",
+    options: SafeModelProviderErrorOptions = {},
   ) {
-    super(message);
+    super("The model provider could not complete safely.");
     this.name = "SafeModelProviderError";
     this.code = code;
+    this.retryAfterMs = options.retryAfterMs ?? null;
   }
 }
