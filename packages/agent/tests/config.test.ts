@@ -1,9 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  parseAgentRuntimeConfig,
-  parseModelRuntimeConfig,
-} from "../index.js";
+import { parseAgentRuntimeConfig, parseModelRuntimeConfig } from "../index.js";
 
 const MODEL_ENV = {
   MODEL_PROVIDER: "gemini",
@@ -30,9 +27,7 @@ describe("agent configuration", () => {
       MCP_SERVER_URL: "http://127.0.0.1:3000/mcp",
     });
 
-    expect(parsed.mcpServerUrl.toString()).toBe(
-      "http://127.0.0.1:3000/mcp",
-    );
+    expect(parsed.mcpServerUrl.toString()).toBe("http://127.0.0.1:3000/mcp");
     expect(parsed.maxToolSteps).toBe(4);
     expect(parsed.providerTimeoutMs).toBe(30_000);
     expect(parsed.mcpTimeoutMs).toBe(15_000);
