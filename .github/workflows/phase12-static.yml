@@ -65,7 +65,10 @@ jobs:
             "apps/api/**/*.ts" \
             "packages/config/**/*.ts" \
             "packages/evaluations/hosted-*.ts" \
+            "packages/evaluations/runtime.ts" \
+            "packages/evaluations/direct/run.ts" \
             ".github/workflows/phase12-static.yml" \
+            "AGENTS.md" \
             "README.md" \
             "docs/deployment/aws-ec2.md" \
             "docs/evaluations/phase-12-hosted-mcp.md" \
@@ -185,13 +188,24 @@ jobs:
       - name: Verify authentication and runtime credential boundary
         shell: bash
         run: |
+          initialize='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"phase12-compose","version":"1.0.0"}}}'
+
           status=$(curl --silent --output /tmp/missing-token.json --write-out '%{http_code}' \
             --request POST http://127.0.0.1/mcp \
             --header 'Accept: application/json, text/event-stream' \
             --header 'Content-Type: application/json' \
-            --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"phase12-compose","version":"1.0.0"}}}')
+            --data "$initialize")
           test "$status" = '401'
           test "$(cat /tmp/missing-token.json)" = '{"error":"MCP_AUTH_REQUIRED"}'
+
+          status=$(curl --silent --output /tmp/invalid-token.json --write-out '%{http_code}' \
+            --request POST http://127.0.0.1/mcp \
+            --header 'Accept: application/json, text/event-stream' \
+            --header 'Authorization: Bearer invalid-token' \
+            --header 'Content-Type: application/json' \
+            --data "$initialize")
+          test "$status" = '401'
+          test "$(cat /tmp/invalid-token.json)" = '{"error":"MCP_AUTH_INVALID"}'
 
           docker compose --env-file .env.compose -f docker-compose.production.yml exec -T api sh -lc \
             'test -n "$WORKFLOW_DATABASE_URL" && test -n "$MCP_API_KEY" && test -z "$DATABASE_URL" && test -z "$DEMO_DATABASE_URL" && test -z "$MODEL_API_KEY"'
