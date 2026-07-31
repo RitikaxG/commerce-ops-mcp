@@ -261,6 +261,9 @@ export function createCommerceOperationsAgent(
           throw new Error("EXPECTED_ONE_TOOL_CALL");
         }
         const call = turn.calls[0];
+        if (!call) {
+          throw new Error("EXPECTED_ONE_TOOL_CALL");
+        }
         const toolName = ApprovedAgentToolNameSchema.parse(call.name);
         if (toolName !== input_.expected) {
           throw new Error("UNEXPECTED_TOOL_SELECTION");
