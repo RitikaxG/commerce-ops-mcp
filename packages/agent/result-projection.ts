@@ -224,7 +224,7 @@ export function projectMcpResult(
 const FALSE_CHANGE =
   /\b(was|has been|successfully|is now)\s+(reassigned|released|retried|updated|created|shipped|fixed|reserved)\b/i;
 const FALSE_REVIEW_CASE =
-  /\b(review case|human-review case)\s+(was|has been|is)\s+(created|opened)\b/i;
+  /\b(?:(?:review case|human-review case)|(?:CASE|ESC)-[A-Za-z0-9-]+)\s+(?:was|has been|is)\s+(?:created|opened)\b/i;
 const SECRET_LIKE = /\b(?:AIza|AQ\.)[A-Za-z0-9_-]{20,}\b/;
 const IDENTIFIER_PATTERN = /\b(?:ORD|INV|CASE|ESC)-[A-Za-z0-9-]+\b/g;
 const WAREHOUSE_PATTERN = /\bWH-[A-Za-z0-9-]+\b/g;
