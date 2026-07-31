@@ -19,7 +19,11 @@ async function main(): Promise<void> {
   }
 
   const config = parseAgentRuntimeConfig();
-  const provider = new GeminiModelProvider(config.modelApiKey);
+  const provider = new GeminiModelProvider(config.modelApiKey, undefined, {
+    minIntervalMs: config.providerMinIntervalMs,
+    maxRetries: config.providerMaxRetries,
+    maxRetryDelayMs: config.providerMaxRetryDelayMs,
+  });
   const agent = createCommerceOperationsAgent({ config, provider });
   const result = await agent.run({ message });
   console.log(result.message);
