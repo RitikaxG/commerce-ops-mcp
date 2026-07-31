@@ -30,6 +30,7 @@ jobs:
 
       - name: Apply live grounding and reset-order fixes
         run: |
+          # This workflow is intentionally temporary and branch-scoped.
           python3 <<'PY'
           from pathlib import Path
 
