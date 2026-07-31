@@ -128,7 +128,7 @@ function retryAfterMsFrom(error: unknown): number | null {
 
   const text = errorText(error);
   const duration = text.match(
-    /(?:retry(?:ing)?(?:\s+please)?\s+(?:in|after)|retryDelay["']?\s*[:=]\s*["']?)(\d+(?:\.\d+)?)\s*(ms|milliseconds?|s|seconds?)/i,
+    /(?:(?:please\s+)?retry(?:ing)?\s+(?:in|after)|retryDelay["']?\s*[:=]\s*["']?)(\d+(?:\.\d+)?)\s*(ms|milliseconds?|s|seconds?)/i,
   );
   if (!duration) {
     return null;
