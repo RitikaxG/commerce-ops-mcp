@@ -25,7 +25,7 @@ export interface AuthoritativeAgentState {
 }
 
 export function createEmptyAuthoritativeState(): AuthoritativeAgentState {
-  return {
+  const state = {
     orderId: null,
     investigationId: null,
     reviewCaseId: null,
@@ -35,8 +35,14 @@ export function createEmptyAuthoritativeState(): AuthoritativeAgentState {
     suggestedQueue: null,
     suggestedNextStep: null,
     eligibleAlternativeWarehouseIds: [],
-    authoritativeWarehouseIds: [],
-  };
+  } as AuthoritativeAgentState;
+
+  Object.defineProperty(state, "authoritativeWarehouseIds", {
+    value: [],
+    writable: true,
+    enumerable: false,
+  });
+  return state;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
