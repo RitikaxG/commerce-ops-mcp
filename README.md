@@ -51,13 +51,21 @@ MODEL_PROVIDER=gemini
 MODEL_NAME=gemini-3.6-flash
 MODEL_API_KEY=<rotated key>
 MCP_SERVER_URL=http://127.0.0.1:3000/mcp
+
+AGENT_PROVIDER_MIN_INTERVAL_MS=3500
+AGENT_PROVIDER_MAX_RETRIES=2
+AGENT_PROVIDER_MAX_RETRY_DELAY_MS=60000
 ```
 
-Verify model access:
+Gemini requests are serialized through one provider queue. The default 3.5-second interval keeps the process below a 20 requests-per-minute limit. Transient rate limits honor Gemini's advertised retry delay and retry at most twice. Daily or project quota exhaustion opens an in-process circuit breaker, performs no further Gemini calls, and returns an explicit `QUOTA_EXHAUSTED` safe error.
+
+Verify model access and one real function-calling request:
 
 ```bash
 bun --env-file=.env.local run agent:model-smoke
 ```
+
+A rate-limited smoke test reports `RATE_LIMITED` with `retryAfterMs`. A daily/project quota failure reports `QUOTA_EXHAUSTED` and is not retried.
 
 With the local MCP API running, ask the host using natural language only:
 
