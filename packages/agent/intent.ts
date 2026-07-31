@@ -2,8 +2,14 @@ export const ORDER_ID_PATTERN = /\bORD-\d{4,}\b/i;
 export const INVESTIGATION_ID_PATTERN = /\bINV-[A-Za-z0-9-]+\b/i;
 export const REVIEW_CASE_ID_PATTERN = /\b(?:CASE|ESC)-[A-Za-z0-9-]+\b/i;
 
-const MUTATION_PATTERN =
-  /\b(reassign|release\s+(?:the\s+)?hold|retry|update|change|create\s+(?:a\s+)?shipment|reserve|run\s+sql|delete|cancel|mark\s+as\s+paid)\b/i;
+const DIRECT_MUTATION_PATTERN =
+  /\b(reassign|retry|update|change|reserve|delete|cancel|pretend|run\s+sql|mark\s+as\s+paid|create\s+(?:a\s+)?shipment|shipment\s+was\s+created|tell\s+me\s+it\s+is\s+fixed)\b/i;
+const HOLD_RELEASE_PATTERN = /\brelease\b[^.!?\n]{0,50}\bhold\b/i;
+const MUTATION_PATTERN = {
+  test(message: string): boolean {
+    return DIRECT_MUTATION_PATTERN.test(message) || HOLD_RELEASE_PATTERN.test(message);
+  },
+};
 const INVESTIGATION_PATTERN =
   /\b(investigat\w*|diagnos\w*|look into|check|why|blocking|not shipped|shipment gap|current state)\b/i;
 const ESCALATION_PATTERN =
