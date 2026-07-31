@@ -1,4 +1,4 @@
-name: Phase 11 one-time formatting
+name: Phase 11 one-time live grounding fix
 
 on:
   push:
@@ -9,11 +9,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: phase11-one-time-format
+  group: phase11-one-time-live-fix
   cancel-in-progress: true
 
 jobs:
-  format:
+  fix:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,36 +28,106 @@ jobs:
       - name: Install frozen dependencies
         run: bun install --frozen-lockfile
 
-      - name: Format Phase 11 files
+      - name: Apply live grounding and reset-order fixes
         run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text()
+              if old not in text:
+                  raise SystemExit(f"expected text not found in {path}: {old[:80]!r}")
+              file.write_text(text.replace(old, new))
+
+          replace(
+              "packages/agent/runner.ts",
+              '          throw new Error("GROUNDING_FAILED");',
+              '          throw new Error(`GROUNDING_FAILED:${issues.join(",")}`);',
+          )
+          replace(
+              "packages/agent/runner.ts",
+              '          message: assembleGroundedMessage(explanationTurn.explanation),',
+              '          message: assembleGroundedMessage(\n            explanationTurn.explanation,\n            state.suggestedNextStep,\n          ),',
+          )
+          replace(
+              "packages/agent/runner.ts",
+              '      } catch {\n        return CommerceOperationsAgentResultSchema.parse({',
+              '      } catch (error) {\n        if (process.env.AGENT_DEBUG_SAFE_ERRORS === "1") {\n          console.error(\n            JSON.stringify({\n              agentSafeError:\n                error instanceof Error ? error.message : "UNKNOWN_SAFE_ERROR",\n            }),\n          );\n        }\n        return CommerceOperationsAgentResultSchema.parse({',
+          )
+
+          replace(
+              "packages/agent/result-projection.ts",
+              '  if (explanation.nextStep !== state.suggestedNextStep) {\n    issues.push("NEXT_STEP_MISMATCH");\n  }\n',
+              '',
+          )
+          replace(
+              "packages/agent/result-projection.ts",
+              'export function assembleGroundedMessage(explanation: ModelExplanation): string {',
+              'export function assembleGroundedMessage(\n  explanation: ModelExplanation,\n  suggestedNextStep: string | null,\n): string {',
+          )
+          replace(
+              "packages/agent/result-projection.ts",
+              '    explanation.nextStep ? `Next step: ${explanation.nextStep}` : null,',
+              '    suggestedNextStep ? `Next step: ${suggestedNextStep}` : null,',
+          )
+
+          replace(
+              "packages/agent/providers/gemini.ts",
+              '      "Copy suggestedNextStep exactly when it is present; otherwise use null.",',
+              '      "Set nextStep to null. The host appends the authoritative MCP next step.",',
+          )
+
+          replace(
+              "packages/agent/cli.ts",
+              '  const debug = args.includes("--debug");',
+              '  const debug = args.includes("--debug");\n  if (debug) {\n    process.env.AGENT_DEBUG_SAFE_ERRORS = "1";\n  }',
+          )
+
+          replace(
+              "packages/agent/tests/grounding.test.ts",
+              '        "NEXT_STEP_MISMATCH",\n',
+              '',
+          )
+
+          replace(
+              "package.json",
+              '    "db:reset-demo": "bun run --filter @repo/fixtures reset",',
+              '    "db:reset-demo": "bun run db:reset-workflow-demo && bun run --filter @repo/fixtures reset",',
+          )
+
+          readme = Path("README.md")
+          text = readme.read_text()
+          marker = "The live evaluator uses the real Gemini API"
+          note = (
+              "`db:reset-demo` clears owner-only workflow demo rows before resetting the nine commerce fixtures, "
+              "so persisted investigations cannot block fixture cleanup.\n\n"
+          )
+          if note not in text:
+              text = text.replace(marker, note + marker)
+              readme.write_text(text)
+          PY
+
           bunx prettier --write \
             "packages/agent/**/*.ts" \
-            "packages/schemas/agent.ts" \
-            "packages/schemas/index.ts" \
-            "packages/evaluations/agent-gemini.ts" \
-            "docs/evaluations/phase-11-gemini-ai-host.md" \
-            "docs/deployment/post-phase-11-staging-handoff.md" \
-            "docs/architecture/package-graph.md" \
-            "README.md" \
-            "AGENTS.md"
+            "package.json" \
+            "README.md"
 
-      - name: Commit formatted files
+      - name: Run focused checks
+        run: |
+          bun run --filter @repo/agent typecheck
+          bun run --filter @repo/agent test
+          bun run --filter @repo/evaluations typecheck
+          git diff --check
+
+      - name: Commit fixes
         run: |
           if git diff --quiet; then
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            packages/agent \
-            packages/schemas/agent.ts \
-            packages/schemas/index.ts \
-            packages/evaluations/agent-gemini.ts \
-            docs/evaluations/phase-11-gemini-ai-host.md \
-            docs/deployment/post-phase-11-staging-handoff.md \
-            docs/architecture/package-graph.md \
-            README.md \
-            AGENTS.md
-          git commit -m "style(agent): format Phase 11 implementation"
+          git add packages/agent package.json README.md
+          git commit -m "fix(agent): keep final response grounded in MCP state"
           git pull --rebase origin phase/11-gemini-ai-host
           git push origin HEAD:phase/11-gemini-ai-host
