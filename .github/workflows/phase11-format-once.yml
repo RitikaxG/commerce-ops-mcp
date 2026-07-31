@@ -1,0 +1,13 @@
+name: Phase 11 one-time fix archived
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archived:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "The one-time Phase 11 grounding fix has already been applied."

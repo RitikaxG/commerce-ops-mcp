@@ -4,6 +4,10 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["index.ts", "direct-mcp.ts", "tests/**/*.ts"],
+  "include": [
+    "*.ts",
+    "direct/**/*.ts",
+    "tests/**/*.ts"
+  ],
   "exclude": ["dist", "node_modules"]
 }
