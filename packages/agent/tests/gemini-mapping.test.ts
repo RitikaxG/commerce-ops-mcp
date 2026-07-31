@@ -13,25 +13,29 @@ const ZERO_GENERATION = {
   timeoutMs: 5_000,
 };
 
+function toolCallResponse(callId = "call-1") {
+  return {
+    steps: [
+      {
+        type: "function_call",
+        id: callId,
+        name: "investigate_order_exception",
+        arguments: { orderId: "ORD-1042" },
+      },
+    ],
+    usage: {
+      total_input_tokens: 10,
+      total_output_tokens: 2,
+      total_tokens: 12,
+    },
+  };
+}
+
 describe("Gemini provider mapping", () => {
   test("maps stateless Interactions API function calls and results", async () => {
     const requests: unknown[] = [];
     const responses = [
-      {
-        steps: [
-          {
-            type: "function_call",
-            id: "call-1",
-            name: "investigate_order_exception",
-            arguments: { orderId: "ORD-1042" },
-          },
-        ],
-        usage: {
-          total_input_tokens: 10,
-          total_output_tokens: 2,
-          total_tokens: 12,
-        },
-      },
+      toolCallResponse(),
       {
         steps: [
           {
@@ -58,7 +62,9 @@ describe("Gemini provider mapping", () => {
         },
       },
     };
-    const provider = new GeminiModelProvider("not-a-real-key", fake as never);
+    const provider = new GeminiModelProvider("not-a-real-key", fake as never, {
+      minIntervalMs: 0,
+    });
 
     const first = await provider.generateToolTurn({
       sessionId: "session",
@@ -146,7 +152,9 @@ describe("Gemini provider mapping", () => {
         },
       },
     };
-    const provider = new GeminiModelProvider("not-a-real-key", fake as never);
+    const provider = new GeminiModelProvider("not-a-real-key", fake as never, {
+      minIntervalMs: 0,
+    });
     const result = await provider.generateExplanation({
       systemInstructions: "system",
       userMessage: "List demos",
@@ -179,7 +187,9 @@ describe("Gemini provider mapping", () => {
         },
       },
     };
-    const provider = new GeminiModelProvider(secret, fake as never);
+    const provider = new GeminiModelProvider(secret, fake as never, {
+      minIntervalMs: 0,
+    });
     let caught: unknown;
     try {
       await provider.generateToolTurn({
@@ -197,5 +207,88 @@ describe("Gemini provider mapping", () => {
     expect((caught as SafeModelProviderError).code).toBe(
       "AUTHENTICATION_FAILED",
     );
+  });
+
+  test("honors Gemini retry delay before retrying a transient rate limit", async () => {
+    let calls = 0;
+    let now = 0;
+    const sleeps: number[] = [];
+    const fake = {
+      models: { get: async () => ({}) },
+      interactions: {
+        create: async () => {
+          calls += 1;
+          if (calls === 1) {
+            throw {
+              status: 429,
+              message: "Rate limit exceeded. Please retry in 2.25s.",
+            };
+          }
+          return toolCallResponse("call-after-backoff");
+        },
+      },
+    };
+    const provider = new GeminiModelProvider("test-key", fake as never, {
+      minIntervalMs: 0,
+      maxRetries: 1,
+      maxRetryDelayMs: 5_000,
+      now: () => now,
+      sleep: async (milliseconds) => {
+        sleeps.push(milliseconds);
+        now += milliseconds;
+      },
+    });
+
+    const result = await provider.generateToolTurn({
+      sessionId: "rate-limit",
+      systemInstructions: "system",
+      userMessage: "Investigate ORD-1042",
+      tools: getModelToolDefinitions(),
+      generation: ZERO_GENERATION,
+    });
+
+    expect(result.kind).toBe("TOOL_CALLS");
+    expect(calls).toBe(2);
+    expect(sleeps).toEqual([2_250]);
+  });
+
+  test("stops immediately and opens a circuit on daily quota exhaustion", async () => {
+    let calls = 0;
+    const fake = {
+      models: { get: async () => ({}) },
+      interactions: {
+        create: async () => {
+          calls += 1;
+          throw {
+            status: 429,
+            message:
+              "Quota exceeded for GenerateRequestsPerDayPerProjectPerModel-FreeTier.",
+          };
+        },
+      },
+    };
+    const provider = new GeminiModelProvider("test-key", fake as never, {
+      minIntervalMs: 0,
+      maxRetries: 3,
+    });
+
+    for (const sessionId of ["quota-first", "quota-second"]) {
+      let caught: unknown;
+      try {
+        await provider.generateToolTurn({
+          sessionId,
+          systemInstructions: "system",
+          userMessage: "Investigate ORD-1042",
+          tools: getModelToolDefinitions(),
+          generation: ZERO_GENERATION,
+        });
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(SafeModelProviderError);
+      expect((caught as SafeModelProviderError).code).toBe("QUOTA_EXHAUSTED");
+    }
+
+    expect(calls).toBe(1);
   });
 });
