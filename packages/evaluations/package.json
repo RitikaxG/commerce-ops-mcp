@@ -8,12 +8,14 @@
   },
   "scripts": {
     "build": "tsc",
+    "eval:agent:gemini": "bun agent-gemini.ts",
     "eval:mcp:direct": "bun direct-mcp.ts",
     "test": "bun test tests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
+    "@repo/agent": "*",
     "@repo/db": "*",
     "@repo/fixtures": "*",
     "@repo/mcp": "*",
