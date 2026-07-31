@@ -52,8 +52,7 @@ function evaluationConfig(endpoint: URL): AgentRuntimeConfig {
       process.env.AGENT_PROVIDER_MIN_INTERVAL_MS ??
       DEFAULT_EVALUATION_MIN_INTERVAL_MS,
     AGENT_PROVIDER_MAX_RETRIES:
-      process.env.AGENT_PROVIDER_MAX_RETRIES ??
-      DEFAULT_EVALUATION_MAX_RETRIES,
+      process.env.AGENT_PROVIDER_MAX_RETRIES ?? DEFAULT_EVALUATION_MAX_RETRIES,
     AGENT_PROVIDER_MAX_RETRY_DELAY_MS:
       process.env.AGENT_PROVIDER_MAX_RETRY_DELAY_MS ??
       DEFAULT_EVALUATION_MAX_RETRY_DELAY_MS,
@@ -229,22 +228,18 @@ async function run(): Promise<void> {
     runtime = await startDirectMcpApi();
     const config = evaluationConfig(runtime.endpoint);
     let activeStep = "model-verification";
-    const provider = new GeminiModelProvider(
-      config.modelApiKey,
-      undefined,
-      {
-        ...(config.providerMinIntervalMs === undefined
-          ? {}
-          : { minIntervalMs: config.providerMinIntervalMs }),
-        ...(config.providerMaxRetries === undefined
-          ? {}
-          : { maxRetries: config.providerMaxRetries }),
-        ...(config.providerMaxRetryDelayMs === undefined
-          ? {}
-          : { maxRetryDelayMs: config.providerMaxRetryDelayMs }),
-        onProgress: (event) => printProviderProgress(activeStep, event),
-      },
-    );
+    const provider = new GeminiModelProvider(config.modelApiKey, undefined, {
+      ...(config.providerMinIntervalMs === undefined
+        ? {}
+        : { minIntervalMs: config.providerMinIntervalMs }),
+      ...(config.providerMaxRetries === undefined
+        ? {}
+        : { maxRetries: config.providerMaxRetries }),
+      ...(config.providerMaxRetryDelayMs === undefined
+        ? {}
+        : { maxRetryDelayMs: config.providerMaxRetryDelayMs }),
+      onProgress: (event) => printProviderProgress(activeStep, event),
+    });
 
     console.error(
       JSON.stringify({
