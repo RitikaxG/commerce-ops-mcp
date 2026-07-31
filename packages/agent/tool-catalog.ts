@@ -133,7 +133,10 @@ export function parseModelToolArguments(
 
 export interface AgentMcpClient {
   readonly toolNames: readonly ApprovedAgentToolName[];
-  callTool(name: ApprovedAgentToolName, arguments_: JsonObject): Promise<unknown>;
+  callTool(
+    name: ApprovedAgentToolName,
+    arguments_: JsonObject,
+  ): Promise<unknown>;
   close(): Promise<void>;
 }
 

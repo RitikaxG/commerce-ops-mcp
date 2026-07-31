@@ -7,7 +7,10 @@ import {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const debug = args.includes("--debug");
-  const message = args.filter((value) => value !== "--debug").join(" ").trim();
+  const message = args
+    .filter((value) => value !== "--debug")
+    .join(" ")
+    .trim();
   if (!message) {
     throw new Error("Usage: agent:ask [--debug] <message>");
   }

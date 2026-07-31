@@ -13,7 +13,10 @@ import {
   type ModelUsage,
 } from "../provider.js";
 
-function numberField(record: Record<string, unknown>, ...keys: string[]): number {
+function numberField(
+  record: Record<string, unknown>,
+  ...keys: string[]
+): number {
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "number" && Number.isFinite(value)) {

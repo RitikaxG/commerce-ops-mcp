@@ -19,10 +19,7 @@ import type {
 } from "@repo/schemas";
 
 import { ZERO_WORKFLOW_COUNTS } from "./assertions.js";
-import {
-  startDirectMcpApi,
-  type DirectMcpApiRuntime,
-} from "./runtime.js";
+import { startDirectMcpApi, type DirectMcpApiRuntime } from "./runtime.js";
 
 const INPUT_PRICE_PER_MILLION_USD = 1.5;
 const OUTPUT_PRICE_PER_MILLION_USD = 7.5;
@@ -83,10 +80,7 @@ function assertScenario(
   assert.equal(result.diagnosisCode, expected.expectedDiagnosis);
   assert.equal(result.shouldEscalate, expected.shouldEscalate);
   assert.equal(result.suggestedQueue, expected.expectedQueue);
-  assert.equal(
-    result.suggestedNextStep,
-    expected.expectedSuggestedNextStep,
-  );
+  assert.equal(result.suggestedNextStep, expected.expectedSuggestedNextStep);
   assert.equal(result.reviewCaseId, null);
   assert.equal(result.commerceStateChanged, false);
   assert.match(result.message, /No commerce state was changed\./);

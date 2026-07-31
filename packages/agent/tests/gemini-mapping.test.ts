@@ -26,14 +26,25 @@ describe("Gemini provider mapping", () => {
             arguments: { orderId: "ORD-1042" },
           },
         ],
-        usage: { total_input_tokens: 10, total_output_tokens: 2, total_tokens: 12 },
+        usage: {
+          total_input_tokens: 10,
+          total_output_tokens: 2,
+          total_tokens: 12,
+        },
       },
       {
         steps: [
-          { type: "assistant_message", content: [{ type: "text", text: "done" }] },
+          {
+            type: "assistant_message",
+            content: [{ type: "text", text: "done" }],
+          },
         ],
         output_text: "done",
-        usage: { total_input_tokens: 4, total_output_tokens: 1, total_tokens: 5 },
+        usage: {
+          total_input_tokens: 4,
+          total_output_tokens: 1,
+          total_tokens: 5,
+        },
       },
     ];
     const fake = {
@@ -183,6 +194,8 @@ describe("Gemini provider mapping", () => {
     }
     expect(caught).toBeInstanceOf(SafeModelProviderError);
     expect((caught as Error).message).not.toContain(secret);
-    expect((caught as SafeModelProviderError).code).toBe("AUTHENTICATION_FAILED");
+    expect((caught as SafeModelProviderError).code).toBe(
+      "AUTHENTICATION_FAILED",
+    );
   });
 });

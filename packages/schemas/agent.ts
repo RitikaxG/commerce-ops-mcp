@@ -103,8 +103,7 @@ export const CommerceOperationsAgentResultSchema = z
   .strict()
   .superRefine((result, context) => {
     if (
-      (result.outcome === "REFUSED" ||
-        result.outcome === "NEEDS_USER_INPUT") &&
+      (result.outcome === "REFUSED" || result.outcome === "NEEDS_USER_INPUT") &&
       result.toolTrace.length > 0
     ) {
       context.addIssue({
@@ -122,9 +121,7 @@ export const CommerceOperationsAgentResultSchema = z
     }
   });
 
-export type ApprovedAgentToolName = z.infer<
-  typeof ApprovedAgentToolNameSchema
->;
+export type ApprovedAgentToolName = z.infer<typeof ApprovedAgentToolNameSchema>;
 export type AgentOutcome = z.infer<typeof AgentOutcomeSchema>;
 export type CommerceOperationsAgentRequest = z.infer<
   typeof CommerceOperationsAgentRequestSchema

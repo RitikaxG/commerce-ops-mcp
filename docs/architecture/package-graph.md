@@ -54,30 +54,30 @@ Arrows mean source-code dependency unless labelled HTTP or Gemini API. `packages
 
 ## Ownership
 
-| Component | Owns | May import |
-| --- | --- | --- |
-| `apps/api` | Express composition, `/health`, `/mcp`, Host validation, MCP transport lifecycle, graceful shutdown | `config`, `mcp`, `workflow` |
-| `apps/web` | Later minimal read-only trace viewer | shared schemas and API over HTTP |
-| `packages/config` | Environment and shared configuration parsing | no domain runtime package |
-| `packages/schemas` | Public Zod and TypeScript contracts | no infrastructure package |
-| `packages/db` | Prisma, migrations, database clients, transactions, repository contracts and implementations | `config`, `schemas` |
-| `packages/fixtures` | Frozen scenarios, fixture validation, explicit seed/reset/verify | `schemas`, `db` |
-| `packages/evidence` | Evidence collection and source-read metadata | `schemas`, repository contracts from `db` |
-| `packages/diagnosis` | Readiness, conflicts, deterministic diagnosis | `schemas` only |
-| `packages/observability` | Safe audit builders and trace queries | `schemas`, repository contracts from `db` |
-| `packages/workflow` | Investigation/escalation orchestration, persistence, idempotency, audit coordination, demo catalog | `schemas`, `db`, `evidence`, `diagnosis`, `observability` |
-| `packages/mcp` | Exact five tool registrations, descriptions, annotations, adapters, safe error mapping, stateless transport handler | `schemas`, `workflow`, official MCP SDK |
-| `packages/agent` | Provider-neutral model interface, Gemini provider, system policy, exact MCP discovery, model-facing tool projection, host-generated identifiers, bounded tool loop, compact result projection, grounding gate, CLI, model smoke check | `schemas`, official MCP client SDK, `@google/genai` |
-| `packages/evaluations` | Direct MCP evaluation and explicit live Gemini model evaluation | top-level packages under test, `fixtures`, `db/testing` |
+| Component                | Owns                                                                                                                                                                                                                                  | May import                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `apps/api`               | Express composition, `/health`, `/mcp`, Host validation, MCP transport lifecycle, graceful shutdown                                                                                                                                   | `config`, `mcp`, `workflow`                               |
+| `apps/web`               | Later minimal read-only trace viewer                                                                                                                                                                                                  | shared schemas and API over HTTP                          |
+| `packages/config`        | Environment and shared configuration parsing                                                                                                                                                                                          | no domain runtime package                                 |
+| `packages/schemas`       | Public Zod and TypeScript contracts                                                                                                                                                                                                   | no infrastructure package                                 |
+| `packages/db`            | Prisma, migrations, database clients, transactions, repository contracts and implementations                                                                                                                                          | `config`, `schemas`                                       |
+| `packages/fixtures`      | Frozen scenarios, fixture validation, explicit seed/reset/verify                                                                                                                                                                      | `schemas`, `db`                                           |
+| `packages/evidence`      | Evidence collection and source-read metadata                                                                                                                                                                                          | `schemas`, repository contracts from `db`                 |
+| `packages/diagnosis`     | Readiness, conflicts, deterministic diagnosis                                                                                                                                                                                         | `schemas` only                                            |
+| `packages/observability` | Safe audit builders and trace queries                                                                                                                                                                                                 | `schemas`, repository contracts from `db`                 |
+| `packages/workflow`      | Investigation/escalation orchestration, persistence, idempotency, audit coordination, demo catalog                                                                                                                                    | `schemas`, `db`, `evidence`, `diagnosis`, `observability` |
+| `packages/mcp`           | Exact five tool registrations, descriptions, annotations, adapters, safe error mapping, stateless transport handler                                                                                                                   | `schemas`, `workflow`, official MCP SDK                   |
+| `packages/agent`         | Provider-neutral model interface, Gemini provider, system policy, exact MCP discovery, model-facing tool projection, host-generated identifiers, bounded tool loop, compact result projection, grounding gate, CLI, model smoke check | `schemas`, official MCP client SDK, `@google/genai`       |
+| `packages/evaluations`   | Direct MCP evaluation and explicit live Gemini model evaluation                                                                                                                                                                       | top-level packages under test, `fixtures`, `db/testing`   |
 
 ## Implemented MCP surface
 
 `packages/mcp` exposes:
 
 ```ts
-createCommerceOperationsMcpServer({ workflow })
-handleCommerceOperationsMcpHttpRequest(request, response, { workflow })
-MCP_TOOL_NAMES
+createCommerceOperationsMcpServer({ workflow });
+handleCommerceOperationsMcpHttpRequest(request, response, { workflow });
+MCP_TOOL_NAMES;
 ```
 
 The server registers exactly:

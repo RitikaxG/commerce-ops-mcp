@@ -11,9 +11,7 @@ import {
 describe("Phase 11 tool policy", () => {
   test("exposes exactly five bounded model-facing tools", () => {
     const tools = getModelToolDefinitions();
-    expect(tools.map(({ name }) => name)).toEqual([
-      ...APPROVED_MCP_TOOL_NAMES,
-    ]);
+    expect(tools.map(({ name }) => name)).toEqual([...APPROVED_MCP_TOOL_NAMES]);
     const investigation = tools.find(
       ({ name }) => name === "investigate_order_exception",
     );

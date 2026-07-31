@@ -25,22 +25,22 @@ Local prerequisites are Bun 1.3.2 and Node.js 20.9.0 or newer.
 
 ## Implementation status
 
-| Phase | Status | Main output | Evaluation |
-| --- | --- | --- | --- |
-| 0 | Complete | Workflow contract and repository rules | [Report](docs/evaluations/phase-00.md) |
-| 1 | Complete | Approved PostgreSQL schema | [Report](docs/evaluations/phase-01.md) |
-| 2 | Complete | Bun and Turborepo foundation | [Report](docs/evaluations/phase-02.md) |
-| 3 | Complete | Approved scenarios, validation, PostgreSQL seed/reset | [Report](docs/evaluations/phase-03-synthetic-scenarios.md) |
-| 4 | Complete | Roles, grants, immutable records, cross-table invariants | [Report](docs/evaluations/phase-04-database-hardening.md) |
-| 5 | Complete | Repositories and read-only commerce boundary | [Report](docs/evaluations/phase-05-readonly-commerce-repositories.md) |
-| 6 | Complete | Evidence collection and normalization | [Report](docs/evaluations/phase-06-evidence-collector.md) |
-| 7 | Complete | Evidence readiness and conflict gate | [Report](docs/evaluations/phase-07-evidence-readiness.md) |
-| 8 | Complete | Deterministic diagnosis and suggested action | [Report](docs/evaluations/phase-08-diagnosis-engine.md) |
-| 9 | Complete | Persistent investigation and escalation workflow | [Report](docs/evaluations/phase-09-persistence-escalation.md) |
-| 10 | Complete | Remote MCP server and direct tool evaluations | [Report](docs/evaluations/phase-10-remote-mcp.md) |
-| 11 | Awaiting live evaluation | Gemini AI host and model-backed MCP evaluations | [Report](docs/evaluations/phase-11-gemini-ai-host.md) |
-| 12 | Not started | Trace APIs and minimal Tailwind viewer | Not created |
-| 13 | Not started | Hardening, deployment, and submission evidence | Not created |
+| Phase | Status                   | Main output                                              | Evaluation                                                            |
+| ----- | ------------------------ | -------------------------------------------------------- | --------------------------------------------------------------------- |
+| 0     | Complete                 | Workflow contract and repository rules                   | [Report](docs/evaluations/phase-00.md)                                |
+| 1     | Complete                 | Approved PostgreSQL schema                               | [Report](docs/evaluations/phase-01.md)                                |
+| 2     | Complete                 | Bun and Turborepo foundation                             | [Report](docs/evaluations/phase-02.md)                                |
+| 3     | Complete                 | Approved scenarios, validation, PostgreSQL seed/reset    | [Report](docs/evaluations/phase-03-synthetic-scenarios.md)            |
+| 4     | Complete                 | Roles, grants, immutable records, cross-table invariants | [Report](docs/evaluations/phase-04-database-hardening.md)             |
+| 5     | Complete                 | Repositories and read-only commerce boundary             | [Report](docs/evaluations/phase-05-readonly-commerce-repositories.md) |
+| 6     | Complete                 | Evidence collection and normalization                    | [Report](docs/evaluations/phase-06-evidence-collector.md)             |
+| 7     | Complete                 | Evidence readiness and conflict gate                     | [Report](docs/evaluations/phase-07-evidence-readiness.md)             |
+| 8     | Complete                 | Deterministic diagnosis and suggested action             | [Report](docs/evaluations/phase-08-diagnosis-engine.md)               |
+| 9     | Complete                 | Persistent investigation and escalation workflow         | [Report](docs/evaluations/phase-09-persistence-escalation.md)         |
+| 10    | Complete                 | Remote MCP server and direct tool evaluations            | [Report](docs/evaluations/phase-10-remote-mcp.md)                     |
+| 11    | Awaiting live evaluation | Gemini AI host and model-backed MCP evaluations          | [Report](docs/evaluations/phase-11-gemini-ai-host.md)                 |
+| 12    | Not started              | Trace APIs and minimal Tailwind viewer                   | Not created                                                           |
+| 13    | Not started              | Hardening, deployment, and submission evidence           | Not created                                                           |
 
 ## Phase 11 local commands
 

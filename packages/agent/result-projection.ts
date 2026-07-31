@@ -41,7 +41,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function stringValue(record: Record<string, unknown>, key: string): string | null {
+function stringValue(
+  record: Record<string, unknown>,
+  key: string,
+): string | null {
   return typeof record[key] === "string" ? record[key] : null;
 }
 
@@ -115,8 +118,7 @@ export function projectMcpResult(
       shouldEscalate: state.shouldEscalate,
       suggestedQueue: state.suggestedQueue,
       suggestedNextStep: state.suggestedNextStep,
-      eligibleAlternativeWarehouseIds:
-        state.eligibleAlternativeWarehouseIds,
+      eligibleAlternativeWarehouseIds: state.eligibleAlternativeWarehouseIds,
       commerceStateChanged: false,
     };
   }
@@ -202,10 +204,7 @@ export function projectMcpResult(
     investigation,
     "suggestedQueue",
   ) as ReviewQueue | null;
-  state.suggestedNextStep = stringValue(
-    investigation,
-    "suggestedNextStep",
-  );
+  state.suggestedNextStep = stringValue(investigation, "suggestedNextStep");
   return {
     investigationId: state.investigationId,
     orderId: state.orderId,
@@ -323,9 +322,9 @@ export function validateGroundedExplanation(
       break;
     }
   }
-  for (const [queue, pattern] of Object.entries(
-    QUEUE_LANGUAGE,
-  ) as Array<[ReviewQueue, RegExp]>) {
+  for (const [queue, pattern] of Object.entries(QUEUE_LANGUAGE) as Array<
+    [ReviewQueue, RegExp]
+  >) {
     if (pattern.test(text) && queue !== state.suggestedQueue) {
       issues.push("UNSUPPORTED_QUEUE");
       break;

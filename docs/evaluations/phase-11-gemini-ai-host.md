@@ -227,17 +227,17 @@ The evaluator:
 
 ## Frozen scenario expectations
 
-| Order | Evidence | Diagnosis | Human review |
-| --- | --- | --- | --- |
-| `ORD-1042` | `COMPLETE` | `ASSIGNED_WAREHOUSE_OUT_OF_STOCK` | `FULFILMENT_OPERATIONS` |
-| `ORD-1043` | `COMPLETE` | `FULFILMENT_CREATION_FAILED` | `FULFILMENT_OPERATIONS` |
-| `ORD-1044` | `COMPLETE` | `WITHIN_EXPECTED_PROCESSING_TIME` | No |
-| `ORD-1045` | `COMPLETE` | `SHIPMENT_LABEL_CREATION_FAILED` | `SHIPPING_OPERATIONS` |
-| `ORD-1046` | `MISSING` | `null` | `OPERATIONS_DATA_REVIEW` |
-| `ORD-1047` | `COMPLETE` | `SHIPMENT_ALREADY_EXISTS` | No |
-| `ORD-1048` | `COMPLETE` | `CAUSE_NOT_DETERMINED` | `GENERAL_COMMERCE_OPERATIONS` |
-| `ORD-1049` | `COMPLETE` | `PAYMENT_NOT_CONFIRMED` | `PAYMENT_OPERATIONS` |
-| `ORD-1050` | `CONFLICTING` | `null` | `OPERATIONS_DATA_REVIEW` |
+| Order      | Evidence      | Diagnosis                         | Human review                  |
+| ---------- | ------------- | --------------------------------- | ----------------------------- |
+| `ORD-1042` | `COMPLETE`    | `ASSIGNED_WAREHOUSE_OUT_OF_STOCK` | `FULFILMENT_OPERATIONS`       |
+| `ORD-1043` | `COMPLETE`    | `FULFILMENT_CREATION_FAILED`      | `FULFILMENT_OPERATIONS`       |
+| `ORD-1044` | `COMPLETE`    | `WITHIN_EXPECTED_PROCESSING_TIME` | No                            |
+| `ORD-1045` | `COMPLETE`    | `SHIPMENT_LABEL_CREATION_FAILED`  | `SHIPPING_OPERATIONS`         |
+| `ORD-1046` | `MISSING`     | `null`                            | `OPERATIONS_DATA_REVIEW`      |
+| `ORD-1047` | `COMPLETE`    | `SHIPMENT_ALREADY_EXISTS`         | No                            |
+| `ORD-1048` | `COMPLETE`    | `CAUSE_NOT_DETERMINED`            | `GENERAL_COMMERCE_OPERATIONS` |
+| `ORD-1049` | `COMPLETE`    | `PAYMENT_NOT_CONFIRMED`           | `PAYMENT_OPERATIONS`          |
+| `ORD-1050` | `CONFLICTING` | `null`                            | `OPERATIONS_DATA_REVIEW`      |
 
 Actual live-model results remain pending the rotated key and must be recorded here before Phase 11 acceptance.
 

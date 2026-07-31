@@ -120,7 +120,10 @@ class FakeMcpClient implements AgentMcpClient {
   failuresRemaining = 0;
   investigateShouldEscalate = true;
 
-  async callTool(name: (typeof this.toolNames)[number], arguments_: JsonObject) {
+  async callTool(
+    name: (typeof this.toolNames)[number],
+    arguments_: JsonObject,
+  ) {
     this.calls.push({ name, arguments: { ...arguments_ } });
     if (this.failuresRemaining > 0) {
       this.failuresRemaining -= 1;
@@ -132,7 +135,11 @@ class FakeMcpClient implements AgentMcpClient {
     if (name === "create_human_review_escalation") {
       return escalationOutput();
     }
-    return { schemaVersion: 1, ok: true, result: { commerceStateChanged: false } };
+    return {
+      schemaVersion: 1,
+      ok: true,
+      result: { commerceStateChanged: false },
+    };
   }
 
   close(): Promise<void> {
@@ -140,7 +147,11 @@ class FakeMcpClient implements AgentMcpClient {
   }
 }
 
-function toolTurn(name: string, arguments_: JsonObject, callId = "call-1"): ModelTurn {
+function toolTurn(
+  name: string,
+  arguments_: JsonObject,
+  callId = "call-1",
+): ModelTurn {
   return {
     kind: "TOOL_CALLS",
     calls: [{ callId, name, arguments: arguments_ }],
@@ -148,7 +159,10 @@ function toolTurn(name: string, arguments_: JsonObject, callId = "call-1"): Mode
   };
 }
 
-function explanation(nextStep: string | null, reason = "Grounded in MCP evidence."): ModelExplanationTurn {
+function explanation(
+  nextStep: string | null,
+  reason = "Grounded in MCP evidence.",
+): ModelExplanationTurn {
   return {
     explanation: {
       summary: "The order investigation completed.",
@@ -185,7 +199,9 @@ describe("CommerceOperationsAgent", () => {
       clientRequestId: "REQ-unit-2",
       idempotencyKey: "IDEMP-INV-unit-3",
     });
-    expect(result.toolTrace[0]?.modelArguments).toEqual({ orderId: "ORD-1042" });
+    expect(result.toolTrace[0]?.modelArguments).toEqual({
+      orderId: "ORD-1042",
+    });
     expect(JSON.stringify(provider.toolInputs)).not.toContain("idempotencyKey");
   });
 
@@ -214,7 +230,11 @@ describe("CommerceOperationsAgent", () => {
   test("investigates before an explicitly requested eligible escalation", async () => {
     const provider = new FakeProvider();
     provider.toolTurns.push(
-      toolTurn("investigate_order_exception", { orderId: "ORD-1042" }, "call-investigate"),
+      toolTurn(
+        "investigate_order_exception",
+        { orderId: "ORD-1042" },
+        "call-investigate",
+      ),
       toolTurn(
         "create_human_review_escalation",
         { investigationId: "INV-1042" },
@@ -231,7 +251,8 @@ describe("CommerceOperationsAgent", () => {
     });
 
     const result = await agent.run({
-      message: "Investigate ORD-1042 and create a human-review case if required.",
+      message:
+        "Investigate ORD-1042 and create a human-review case if required.",
     });
 
     expect(result.outcome).toBe("ANSWERED");
@@ -257,7 +278,9 @@ describe("CommerceOperationsAgent", () => {
       toolTurn("investigate_order_exception", { orderId: "ORD-1042" }),
     );
     provider.explanations.push(
-      explanation("Continue normal monitoring within the expected processing window."),
+      explanation(
+        "Continue normal monitoring within the expected processing window.",
+      ),
     );
     const client = new FakeMcpClient();
     client.investigateShouldEscalate = false;
@@ -287,7 +310,9 @@ describe("CommerceOperationsAgent", () => {
       connectMcp: async () => client,
     });
 
-    const result = await agent.run({ message: "Reassign ORD-1042 to WH-B now." });
+    const result = await agent.run({
+      message: "Reassign ORD-1042 to WH-B now.",
+    });
 
     expect(result.outcome).toBe("REFUSED");
     expect(provider.toolCalls).toBe(0);
@@ -316,7 +341,11 @@ describe("CommerceOperationsAgent", () => {
     provider.toolTurns.push({
       kind: "TOOL_CALLS",
       calls: [
-        { callId: "one", name: "investigate_order_exception", arguments: { orderId: "ORD-1042" } },
+        {
+          callId: "one",
+          name: "investigate_order_exception",
+          arguments: { orderId: "ORD-1042" },
+        },
         { callId: "two", name: "list_demo_cases", arguments: {} },
       ],
       usage: ZERO_USAGE,

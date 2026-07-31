@@ -7,7 +7,10 @@ const DIRECT_MUTATION_PATTERN =
 const HOLD_RELEASE_PATTERN = /\brelease\b[^.!?\n]{0,50}\bhold\b/i;
 const MUTATION_PATTERN = {
   test(message: string): boolean {
-    return DIRECT_MUTATION_PATTERN.test(message) || HOLD_RELEASE_PATTERN.test(message);
+    return (
+      DIRECT_MUTATION_PATTERN.test(message) ||
+      HOLD_RELEASE_PATTERN.test(message)
+    );
   },
 };
 const INVESTIGATION_PATTERN =
@@ -35,10 +38,7 @@ export interface IntentPreflight {
   readonly investigationId: string | null;
   readonly reviewCaseId: string | null;
   readonly needsIdentifier:
-    | "ORDER_OR_WORKFLOW_ID"
-    | "INVESTIGATION_ID"
-    | "REVIEW_CASE_ID"
-    | null;
+    "ORDER_OR_WORKFLOW_ID" | "INVESTIGATION_ID" | "REVIEW_CASE_ID" | null;
 }
 
 function firstMatch(pattern: RegExp, message: string): string | null {
