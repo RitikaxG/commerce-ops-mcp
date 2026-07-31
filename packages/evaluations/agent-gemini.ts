@@ -197,7 +197,7 @@ async function run(): Promise<void> {
       investigationEvidence: 9,
       humanReviewEscalations: 0,
       idempotencyRecords: 9,
-      auditEvents: 54,
+      auditEvents: 106,
     });
 
     const discovery = await agent.run({
