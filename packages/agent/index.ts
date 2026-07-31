@@ -25,8 +25,13 @@ export {
   type ModelToolResult,
   type ModelTurn,
   type ModelUsage,
+  type SafeModelProviderErrorCode,
+  type SafeModelProviderErrorOptions,
 } from "./provider.js";
-export { GeminiModelProvider } from "./providers/gemini.js";
+export {
+  GeminiModelProvider,
+  type GeminiModelProviderOptions,
+} from "./providers/gemini.js";
 export {
   assembleGroundedMessage,
   createEmptyAuthoritativeState,
