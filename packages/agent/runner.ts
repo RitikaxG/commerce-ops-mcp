@@ -19,11 +19,12 @@ import {
   type AgentIntentKind,
   type IntentPreflight,
 } from "./intent.js";
-import type {
-  JsonObject,
-  ModelProvider,
-  ModelToolCall,
-  ModelUsage,
+import {
+  SafeModelProviderError,
+  type JsonObject,
+  type ModelProvider,
+  type ModelToolCall,
+  type ModelUsage,
 } from "./provider.js";
 import {
   assembleGroundedMessage,
@@ -90,6 +91,36 @@ function missingInputMessage(intent: IntentPreflight): string {
       return "Please provide the review-case ID. No commerce state was changed.";
     default:
       return "Please provide the order or workflow identifier. No commerce state was changed.";
+  }
+}
+
+function safeAgentFailureMessage(error: unknown): string {
+  if (!(error instanceof SafeModelProviderError)) {
+    return "The AI host could not complete safely. No commerce state was changed.";
+  }
+
+  switch (error.code) {
+    case "QUOTA_EXHAUSTED":
+      return "Gemini quota is exhausted for the current project. Wait for the quota reset or enable billing before retrying. No commerce state was changed.";
+    case "RATE_LIMITED": {
+      const retrySeconds =
+        error.retryAfterMs === null
+          ? null
+          : Math.max(1, Math.ceil(error.retryAfterMs / 1_000));
+      return retrySeconds === null
+        ? "Gemini is currently rate limited. Retry later. No commerce state was changed."
+        : `Gemini is currently rate limited. Retry after approximately ${retrySeconds} seconds. No commerce state was changed.`;
+    }
+    case "AUTHENTICATION_FAILED":
+      return "Gemini authentication failed. Verify the server-side API key. No commerce state was changed.";
+    case "MODEL_UNAVAILABLE":
+      return "The configured Gemini model is unavailable to this project. No commerce state was changed.";
+    case "PROVIDER_TIMEOUT":
+      return "Gemini timed out after bounded retries. No commerce state was changed.";
+    case "PROVIDER_UNAVAILABLE":
+      return "Gemini is temporarily unavailable after bounded retries. No commerce state was changed.";
+    case "INVALID_PROVIDER_RESPONSE":
+      return "Gemini returned a response that could not be validated safely. No commerce state was changed.";
   }
 }
 
@@ -448,15 +479,22 @@ export function createCommerceOperationsAgent(
           console.error(
             JSON.stringify({
               agentSafeError:
-                error instanceof Error ? error.message : "UNKNOWN_SAFE_ERROR",
+                error instanceof SafeModelProviderError
+                  ? error.code
+                  : error instanceof Error
+                    ? error.message
+                    : "UNKNOWN_SAFE_ERROR",
+              retryAfterMs:
+                error instanceof SafeModelProviderError
+                  ? error.retryAfterMs
+                  : null,
             }),
           );
         }
         return CommerceOperationsAgentResultSchema.parse({
           ...baseResult(),
           outcome: "SAFE_ERROR",
-          message:
-            "The AI host could not complete safely. No commerce state was changed.",
+          message: safeAgentFailureMessage(error),
         });
       } finally {
         dependencies.provider.clearSession(sessionId);
