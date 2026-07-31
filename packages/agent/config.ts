@@ -59,9 +59,9 @@ export interface ModelRuntimeConfig {
   readonly provider: "gemini";
   readonly model: string;
   readonly modelApiKey: string;
-  readonly providerMinIntervalMs: number;
-  readonly providerMaxRetries: number;
-  readonly providerMaxRetryDelayMs: number;
+  readonly providerMinIntervalMs?: number;
+  readonly providerMaxRetries?: number;
+  readonly providerMaxRetryDelayMs?: number;
 }
 
 export interface AgentRuntimeConfig extends ModelRuntimeConfig {
