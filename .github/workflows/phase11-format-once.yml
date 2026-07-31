@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+env:
+  NODE_ENV: test
+  DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/commerce_ops
+
 concurrency:
   group: phase11-one-time-live-fix
   cancel-in-progress: true
@@ -37,6 +41,8 @@ jobs:
           def replace(path: str, old: str, new: str) -> None:
               file = Path(path)
               text = file.read_text()
+              if new in text:
+                  return
               if old not in text:
                   raise SystemExit(f"expected text not found in {path}: {old[:80]!r}")
               file.write_text(text.replace(old, new))
@@ -113,6 +119,9 @@ jobs:
             "packages/agent/**/*.ts" \
             "package.json" \
             "README.md"
+
+      - name: Generate Prisma client
+        run: bun run db:generate
 
       - name: Run focused checks
         run: |
