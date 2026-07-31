@@ -180,8 +180,8 @@ export class GeminiModelProvider implements ModelProvider {
   readonly #client: GoogleGenAI;
   readonly #histories = new Map<string, JsonObject[]>();
 
-  constructor(apiKey: string) {
-    this.#client = new GoogleGenAI({ apiKey });
+  constructor(apiKey: string, client?: GoogleGenAI) {
+    this.#client = client ?? new GoogleGenAI({ apiKey });
   }
 
   async verifyModel(model: string): Promise<void> {

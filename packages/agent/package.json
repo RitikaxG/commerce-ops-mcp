@@ -9,14 +9,15 @@
   "scripts": {
     "agent:ask": "bun cli.ts",
     "agent:model-smoke": "bun model-smoke.ts",
-    "build": "tsc",
+    "build": "tsc --project tsconfig.build.json",
     "test": "bun test tests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@google/genai": "2.13.0",
     "@modelcontextprotocol/sdk": "1.30.0",
-    "@repo/schemas": "*"
+    "@repo/schemas": "*",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",
