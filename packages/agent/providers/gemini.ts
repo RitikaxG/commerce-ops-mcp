@@ -136,6 +136,15 @@ function mapTools(tools: readonly AgentToolDefinition[]): unknown[] {
   }));
 }
 
+function toolChoice(tools: readonly AgentToolDefinition[]): JsonObject {
+  return {
+    allowed_tools: {
+      mode: "any",
+      tools: tools.map(({ name }) => name),
+    },
+  };
+}
+
 function userInput(text: string): JsonObject {
   return {
     type: "user_input",
@@ -227,6 +236,7 @@ export class GeminiModelProvider implements ModelProvider {
               generation_config: {
                 max_output_tokens: input.generation.maxOutputTokens,
                 thinking_level: input.generation.thinkingLevel,
+                tool_choice: toolChoice(input.tools),
               },
             } as never),
           input.generation.timeoutMs,
@@ -312,7 +322,7 @@ export class GeminiModelProvider implements ModelProvider {
                     summary: { type: "string" },
                     reason: { type: "string" },
                     nextStep: {
-                      anyOf: [{ type: "string" }, { type: "null" }],
+                      type: ["string", "null"],
                     },
                   },
                   required: ["summary", "reason", "nextStep"],
