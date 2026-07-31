@@ -10,9 +10,9 @@ Add a provider-neutral AI host with one Gemini implementation that understands n
 
 The implementation, key-free verification, deterministic workflow, direct MCP evaluation, and core live Gemini scenario suite are complete. All nine approved synthetic investigations passed through the real Gemini provider and real MCP endpoint.
 
-The extended live matrix did not finish in one run because Gemini began returning repeated `429 RATE_LIMITED` responses after the nine core scenarios. The client explicitly approved keeping the sequential queued approach, bounded retries, clear quota-unavailable errors, and independent demonstration of the deterministic workflow and hosted MCP when the provider is temporarily unavailable.
+The extended live matrix did not finish in one run because Gemini began returning repeated `429 RATE_LIMITED` responses after the nine core scenarios. The client approved keeping the sequential queued approach, bounded retries, clear quota-unavailable errors, and independent demonstration of the deterministic workflow and hosted MCP when the provider is temporarily unavailable.
 
-The original raw terminal log has been replaced by a readable evidence report:
+The raw terminal log has been replaced by a readable evidence report:
 
 - [Phase 11 live Gemini evidence](./phase-11-live-gemini/README.md)
 
@@ -90,13 +90,13 @@ get_investigation_trace: { investigationId }
 
 The model never receives:
 
-- client request IDs;
-- investigation or escalation idempotency keys;
-- database credentials;
-- unrestricted evidence snapshots;
-- diagnosis inputs;
-- queue or suggested-action inputs;
-- commerce mutation tools.
+- client request IDs
+- investigation or escalation idempotency keys
+- database credentials
+- unrestricted evidence snapshots
+- diagnosis inputs
+- queue or suggested-action inputs
+- commerce mutation tools
 
 The host creates runtime IDs and reliability keys. A retry of the same MCP operation reuses the same idempotency key.
 
@@ -124,12 +124,12 @@ nextStep
 
 The host deterministically validates that the explanation:
 
-- preserves the workflow-produced next step;
-- does not invent diagnosis when diagnosis is `null`;
-- does not invent queues, IDs, warehouses, or evidence;
-- does not claim that a review case exists before successful escalation;
-- does not claim that commerce was reassigned, released, retried, updated, shipped, or fixed;
-- does not expose secret-like values.
+- preserves the workflow-produced next step
+- does not invent diagnosis when diagnosis is `null`
+- does not invent queues, IDs, warehouses, or evidence
+- does not claim that a review case exists before successful escalation
+- does not claim that commerce was reassigned, released, retried, updated, shipped, or fixed
+- does not expose secret-like values
 
 One bounded repair attempt is allowed. A second grounding failure returns `SAFE_ERROR`. The final assembler always states that no commerce state was changed.
 
@@ -173,22 +173,22 @@ The model is used for natural-language tool selection and grounded explanation. 
 
 The key-free suite covers:
 
-- provider-neutral contracts and Gemini request mapping;
-- exact five-tool discovery;
-- strict model-facing argument schemas;
-- host-generated and hidden reliability fields;
-- idempotency-key reuse across MCP retry;
-- distinct escalation keys;
-- investigation-before-escalation ordering;
-- missing-ID and unknown-order behavior;
-- mutation refusal without model or MCP execution;
-- unexpected and multiple tool-call rejection;
-- compact result projection;
-- grounding and one bounded repair;
-- prompt injection and adversarial content;
-- safe authentication, model, timeout, rate-limit, quota, response, and provider failures;
-- provider retry-delay enforcement;
-- no retry loop after daily quota exhaustion.
+- provider-neutral contracts and Gemini request mapping
+- exact five-tool discovery
+- strict model-facing argument schemas
+- host-generated and hidden reliability fields
+- idempotency-key reuse across MCP retry
+- distinct escalation keys
+- investigation-before-escalation ordering
+- missing-ID and unknown-order behavior
+- mutation refusal without model or MCP execution
+- unexpected and multiple tool-call rejection
+- compact result projection
+- grounding and one bounded repair
+- prompt injection and adversarial content
+- safe authentication, model, timeout, rate-limit, quota, response, and provider failures
+- provider retry-delay enforcement
+- no retry loop after daily quota exhaustion
 
 Static CI also runs the Phase 9 and Phase 10 regressions, repository build, type checking, tests, lint, direct MCP evaluation, database-boundary verification, and final workflow cleanup.
 
@@ -203,17 +203,17 @@ bun --env-file=.env.local run eval:agent:gemini
 
 All nine approved investigation scenarios completed with `outcome=ANSWERED`:
 
-| Order      | Evidence      | Diagnosis                         | Human review                  | Result |
-| ---------- | ------------- | --------------------------------- | ----------------------------- | ------ |
-| `ORD-1042` | `COMPLETE`    | `ASSIGNED_WAREHOUSE_OUT_OF_STOCK` | `FULFILMENT_OPERATIONS`       | Passed |
-| `ORD-1043` | `COMPLETE`    | `FULFILMENT_CREATION_FAILED`      | `FULFILMENT_OPERATIONS`       | Passed |
-| `ORD-1044` | `COMPLETE`    | `WITHIN_EXPECTED_PROCESSING_TIME` | No                            | Passed |
-| `ORD-1045` | `COMPLETE`    | `SHIPMENT_LABEL_CREATION_FAILED`  | `SHIPPING_OPERATIONS`         | Passed |
-| `ORD-1046` | `MISSING`     | `null`                            | `OPERATIONS_DATA_REVIEW`      | Passed |
-| `ORD-1047` | `COMPLETE`    | `SHIPMENT_ALREADY_EXISTS`         | No                            | Passed |
-| `ORD-1048` | `COMPLETE`    | `CAUSE_NOT_DETERMINED`            | `GENERAL_COMMERCE_OPERATIONS` | Passed |
-| `ORD-1049` | `COMPLETE`    | `PAYMENT_NOT_CONFIRMED`           | `PAYMENT_OPERATIONS`          | Passed |
-| `ORD-1050` | `CONFLICTING` | `null`                            | `OPERATIONS_DATA_REVIEW`      | Passed |
+```text
+ORD-1042 | COMPLETE    | ASSIGNED_WAREHOUSE_OUT_OF_STOCK | FULFILMENT_OPERATIONS       | Passed
+ORD-1043 | COMPLETE    | FULFILMENT_CREATION_FAILED      | FULFILMENT_OPERATIONS       | Passed
+ORD-1044 | COMPLETE    | WITHIN_EXPECTED_PROCESSING_TIME | No review                   | Passed
+ORD-1045 | COMPLETE    | SHIPMENT_LABEL_CREATION_FAILED  | SHIPPING_OPERATIONS         | Passed
+ORD-1046 | MISSING     | null                            | OPERATIONS_DATA_REVIEW      | Passed
+ORD-1047 | COMPLETE    | SHIPMENT_ALREADY_EXISTS         | No review                   | Passed
+ORD-1048 | COMPLETE    | CAUSE_NOT_DETERMINED            | GENERAL_COMMERCE_OPERATIONS | Passed
+ORD-1049 | COMPLETE    | PAYMENT_NOT_CONFIRMED           | PAYMENT_OPERATIONS          | Passed
+ORD-1050 | CONFLICTING | null                            | OPERATIONS_DATA_REVIEW      | Passed
+```
 
 Each result matched the frozen expected evidence status, diagnosis, escalation decision, queue, and suggested next step. Each result also reported `commerceStateChanged=false`.
 
@@ -225,11 +225,11 @@ Observed retry delays were approximately 57 seconds, 52 seconds, and 53 seconds.
 
 This means:
 
-- the complete extended live matrix did not finish in one free-tier run;
-- the nine core model-backed scenarios did finish successfully;
-- the deterministic workflow and MCP endpoint were not the failing components;
-- no evidence supports claiming that commerce state changed;
-- the free-tier provider remains unsuitable as a strict availability or performance dependency.
+- the complete extended live matrix did not finish in one free-tier run
+- the nine core model-backed scenarios did finish successfully
+- the deterministic workflow and MCP endpoint were not the failing components
+- no evidence supports claiming that commerce state changed
+- the free-tier provider remains unsuitable as a strict availability or performance dependency
 
 ## CI policy
 
