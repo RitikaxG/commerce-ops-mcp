@@ -50,9 +50,10 @@ jobs:
       - name: Install frozen dependencies
         run: bun install --frozen-lockfile
 
-      - name: Verify environment-file and diff hygiene
+      - name: Verify environment-file, shell, and diff hygiene
         run: |
           git check-ignore -v .env.local
+          bash -n scripts/verify-phase12-local.sh
           if git ls-files | grep -Eq '(^|/)\.env($|\.(local|runtime|admin|compose|production|development|test)$)'; then
             echo "A protected environment file is tracked."
             exit 1
@@ -68,6 +69,8 @@ jobs:
             "packages/evaluations/runtime.ts" \
             "packages/evaluations/direct/run.ts" \
             ".github/workflows/phase12-static.yml" \
+            "docker-compose.production.yml" \
+            "package.json" \
             "AGENTS.md" \
             "README.md" \
             "docs/deployment/aws-ec2.md" \
@@ -116,9 +119,6 @@ jobs:
       - name: Run direct model-independent MCP regression
         run: bun run eval:mcp:direct
 
-      - name: Build production image
-        run: docker build -t commerce-ops-mcp-api:phase12-ci .
-
       - name: Restore clean workflow-demo state
         if: always() && steps.database.outcome == 'success'
         run: |
@@ -132,101 +132,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create protected CI deployment files
-        shell: bash
-        run: |
-          umask 077
-          cat > .env.admin <<'EOF'
-          POSTGRES_USER=postgres
-          POSTGRES_PASSWORD=phase12_owner_password_ci
-          POSTGRES_DB=commerce_ops
-          DATABASE_URL=postgresql://postgres:phase12_owner_password_ci@postgres:5432/commerce_ops
-          DEMO_DATABASE_URL=postgresql://commerce_demo:phase12_demo_password_ci@postgres:5432/commerce_ops
-          WORKFLOW_DATABASE_URL=postgresql://commerce_workflow:phase12_workflow_password_ci@postgres:5432/commerce_ops
-          EOF
-          cat > .env.runtime <<'EOF'
-          NODE_ENV=production
-          PORT=3000
-          MCP_ALLOWED_HOSTS=caddy,localhost,127.0.0.1
-          MCP_API_KEY=phase12-compose-api-key-000000000000000000000000
-          WORKFLOW_DATABASE_URL=postgresql://commerce_workflow:phase12_workflow_password_ci@postgres:5432/commerce_ops
-          EOF
-          cat > .env.compose <<EOF
-          ADMIN_ENV_FILE=${GITHUB_WORKSPACE}/.env.admin
-          RUNTIME_ENV_FILE=${GITHUB_WORKSPACE}/.env.runtime
-          CADDY_SITE_ADDRESS=:80
-          IMAGE_TAG=phase12-ci
-          EOF
-          chmod 600 .env.admin .env.runtime .env.compose
-
-      - name: Validate and build production Compose stack
-        run: |
-          docker compose --env-file .env.compose -f docker-compose.production.yml config
-          docker compose --env-file .env.compose -f docker-compose.production.yml build api admin
-
-      - name: Initialize database explicitly
-        run: |
-          docker compose --env-file .env.compose -f docker-compose.production.yml up -d postgres
-          docker compose --env-file .env.compose -f docker-compose.production.yml --profile admin run --rm admin bun run db:migrate
-          docker compose --env-file .env.compose -f docker-compose.production.yml --profile admin run --rm admin bun run db:setup-access
-          docker compose --env-file .env.compose -f docker-compose.production.yml --profile admin run --rm admin bun run db:seed
-          docker compose --env-file .env.compose -f docker-compose.production.yml --profile admin run --rm admin bun run db:verify-access
-          docker compose --env-file .env.compose -f docker-compose.production.yml --profile admin run --rm admin bun run db:verify-demo
-
-      - name: Start internal API and public Caddy edge
-        run: |
-          docker compose --env-file .env.compose -f docker-compose.production.yml up -d api caddy
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1/health > /tmp/health.json; then
-              break
-            fi
-            sleep 2
-          done
-          test "$(cat /tmp/health.json)" = '{"status":"ok"}'
-          docker compose --env-file .env.compose -f docker-compose.production.yml ps
-
-      - name: Verify authentication and runtime credential boundary
-        shell: bash
-        run: |
-          initialize='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"phase12-compose","version":"1.0.0"}}}'
-
-          status=$(curl --silent --output /tmp/missing-token.json --write-out '%{http_code}' \
-            --request POST http://127.0.0.1/mcp \
-            --header 'Accept: application/json, text/event-stream' \
-            --header 'Content-Type: application/json' \
-            --data "$initialize")
-          test "$status" = '401'
-          test "$(cat /tmp/missing-token.json)" = '{"error":"MCP_AUTH_REQUIRED"}'
-
-          status=$(curl --silent --output /tmp/invalid-token.json --write-out '%{http_code}' \
-            --request POST http://127.0.0.1/mcp \
-            --header 'Accept: application/json, text/event-stream' \
-            --header 'Authorization: Bearer invalid-token' \
-            --header 'Content-Type: application/json' \
-            --data "$initialize")
-          test "$status" = '401'
-          test "$(cat /tmp/invalid-token.json)" = '{"error":"MCP_AUTH_INVALID"}'
-
-          docker compose --env-file .env.compose -f docker-compose.production.yml exec -T api sh -lc \
-            'test -n "$WORKFLOW_DATABASE_URL" && test -n "$MCP_API_KEY" && test -z "$DATABASE_URL" && test -z "$DEMO_DATABASE_URL" && test -z "$MODEL_API_KEY"'
-
-          test -z "$(docker compose --env-file .env.compose -f docker-compose.production.yml port api 3000 2>/dev/null || true)"
-          test -z "$(docker compose --env-file .env.compose -f docker-compose.production.yml port postgres 5432 2>/dev/null || true)"
-
-      - name: Run provider-independent hosted MCP verifier
-        run: |
-          docker compose --env-file .env.compose -f docker-compose.production.yml --profile admin run --rm \
-            -e MCP_SERVER_URL=http://caddy/mcp \
-            -e MCP_AUTH_BEARER_TOKEN=phase12-compose-api-key-000000000000000000000000 \
-            admin bun run verify:hosted:mcp
-
-      - name: Show safe service logs on failure
-        if: failure()
-        run: |
-          docker compose --env-file .env.compose -f docker-compose.production.yml logs --since=15m --tail=200 api caddy postgres
-
-      - name: Stop Compose stack
-        if: always()
-        run: |
-          docker compose --env-file .env.compose -f docker-compose.production.yml down --volumes --remove-orphans
-          rm -f .env.admin .env.runtime .env.compose
+      - name: Run production-like Phase 12 verification
+        run: bash scripts/verify-phase12-local.sh
