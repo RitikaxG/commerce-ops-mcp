@@ -29,17 +29,7 @@ Start here:
 
 ## Product workflow
 
-```mermaid
-flowchart TD
-  User[Commerce operations specialist] --> Client[MCP Inspector or MCP-compatible AI client]
-  Client --> MCP[Hosted TypeScript MCP]
-  MCP --> Evidence[Collect synthetic commerce evidence]
-  Evidence --> Gate[Evidence readiness and conflict gate]
-  Gate --> Diagnosis[Deterministic TypeScript diagnosis]
-  Diagnosis --> Persist[Persist investigation, immutable snapshot and audit events]
-  Persist --> Escalation[Optional human-review escalation]
-  Escalation --> Reads[Review-case and trace retrieval]
-```
+![Hosted MCP architecture and deterministic investigation workflow](images/project_workflow.png)
 
 The model is used only for natural-language interaction, approved tool selection, and explanation of validated server results. It does not create business facts, calculate diagnosis, select an arbitrary queue, or mutate commerce data.
 
