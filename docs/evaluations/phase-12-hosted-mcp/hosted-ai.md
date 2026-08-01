@@ -32,30 +32,12 @@ The model provider was used only for natural-language interaction and approved t
 - Authentication: shared bearer token, redacted
 - Status: **PASS**
 
-Gemini CLI's `/mcp` view reported:
-
-```text
-commerce-ops-hosted - Ready (5 tools)
-```
-
-It discovered the same five hosted tools:
-
-1. `list_demo_cases`
-2. `investigate_order_exception`
-3. `create_human_review_escalation`
-4. `get_review_case`
-5. `get_investigation_trace`
-
-![Gemini CLI hosted MCP discovery](../../evidence/final-submission/04-gemini-mcp-ready.png)
-
-The client received a natural-language request to use only the hosted MCP, list the demo cases, and investigate `ORD-1042` with fresh UUID-based identifiers. It selected the correct ordered tool sequence:
+Gemini CLI connected to the same hosted endpoint and discovered the exact five tools. Given a natural-language instruction, it selected the ordered tool sequence:
 
 ```text
 list_demo_cases
 -> investigate_order_exception
 ```
-
-![Gemini CLI model-selected tool call](../../evidence/final-submission/05-gemini-tool-execution.png)
 
 The final grounded result preserved the deterministic workflow output:
 
@@ -71,7 +53,7 @@ recommended next step: review reassignment; do not change commerce automatically
 commerceStateChanged: false
 ```
 
-![Gemini CLI grounded result](../../evidence/final-submission/06-gemini-grounded-result.png)
+![Gemini CLI grounded result](../../evidence/final-submission/06-gemini-grounded-result.jpg)
 
 ## Boundary demonstrated
 
@@ -84,4 +66,4 @@ Neither path moves evidence readiness, diagnosis, escalation policy, persistence
 
 ## Reproduction
 
-See [Reviewer guide - Gemini CLI](../../reviewer-guide.md#path-b-gemini-cli-as-an-mcp-compatible-ai-client).
+See [Reviewer guide - Gemini CLI](../../reviewer-guide.md#path-b-gemini-cli-as-an-mcp-compatible-ai-client) and the [final evidence index](../../evidence/final-submission/README.md).
