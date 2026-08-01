@@ -2,15 +2,24 @@
 
 Store only concise, redacted Markdown evidence in this directory.
 
-## Required evidence after deployment
+## Completed evidence
 
-1. Provider-independent hosted verifier summary.
-2. MCP Inspector summary showing Streamable HTTP connection, five tools, `ORD-1042` investigation, escalation, review read, and trace read.
-3. Focused nine-scenario hosted AI-verifier summary.
-4. One representative MCP-compatible AI-client result.
-5. Health, deployment timestamp, deployed commit SHA, AWS region, last verification timestamp, and intended shutdown timestamp.
-6. Evidence that `commerceStateChanged=false`.
-7. A provider-rate-limit or quota note, when encountered, plus a subsequent provider-independent MCP verification.
+- [Hosted provider-independent MCP](hosted-direct.md)
+- [MCP Inspector](mcp-inspector.md)
+- [Hosted model-backed verification](hosted-ai.md)
+- [Hosted database verification boundary](database-verification.md)
+
+## Verified deployment summary
+
+1. Provider-independent hosted verifier: PASS.
+2. MCP Inspector: PASS over Streamable HTTP with exactly five tools.
+3. Focused nine-scenario hosted AI verifier: PASS.
+4. Public HTTPS health: PASS.
+5. `commerceStateChanged=false`: verified in direct, Inspector, and model-backed paths.
+6. Runtime API credential isolation: verified.
+7. Initial deployed SHA: `6498a09647e0da90b7197a7becc1163c87c8cf85`.
+8. AWS region: `ap-south-1`.
+9. Intended review availability: through at least 2026-08-09 or until client review completes.
 
 ## Redaction rules
 
@@ -20,49 +29,28 @@ Do not commit:
 - Gemini keys or raw provider payloads;
 - PostgreSQL URLs, role passwords, or environment-file contents;
 - SSH private keys;
-- public-IP details that are not required by the report;
 - unredacted screenshots;
 - raw terminal logs or model transcripts.
 
 Convert useful output into a small Markdown table or a redacted JSON excerpt. Replace secrets with `<redacted>` and omit request headers entirely when possible.
 
-## Suggested hosted direct evidence
+## Reviewer identifier guidance
 
-```text
-Command: bun --env-file=.env.local run verify:hosted:mcp
-Status: PASS
-Transport: Streamable HTTP
-Tools: 5
-Synthetic scenarios advertised: 9
-Representative order: ORD-1042
-Review case read: PASS
-Trace read: PASS
-commerceStateChanged: false
-Model provider required: false
-Timestamp: <UTC timestamp>
-```
+For `investigate_order_exception`:
 
-## Suggested hosted AI evidence
+- choose `orderId` from `list_demo_cases`;
+- generate a new UUID-based `clientRequestId` for each new logical request;
+- generate a new UUID-based `idempotencyKey` for each new investigation;
+- reuse both values only when retrying the exact same request.
 
-```text
-Command: bun --env-file=.env.local run verify:hosted:ai
-Status: PASS or MODEL_PROVIDER failure
-Hosted MCP preflight: PASS
-Provider: gemini
-Scenarios completed: <0-9>
-Sequential provider requests: true
-commerceStateChanged: false
-Timestamp: <UTC timestamp>
-```
-
-When the provider returns `RATE_LIMITED` or `QUOTA_EXHAUSTED`, record the code and immediately run the direct hosted verifier. The evidence must make clear that provider unavailability did not make the MCP unavailable.
+For `create_human_review_escalation`, use the returned `investigationId`, generate a new idempotency key, and reuse it only for retrying that same escalation.
 
 ## Inspector screenshot checklist
 
-Before committing any screenshot:
+Before retaining any screenshot:
 
 - crop out the token/header control;
 - remove browser history, bookmarks, account identifiers, and unrelated tabs;
 - verify no environment file or terminal secret is visible;
 - show only the endpoint domain, selected tool, safe tool arguments, and structured result;
-- prefer a Markdown summary when the screenshot adds no unique evidence.
+- prefer the Markdown summaries in this directory when the screenshot adds no unique evidence.
