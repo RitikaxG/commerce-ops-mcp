@@ -153,24 +153,35 @@ Result: **PASS**.
 
 The provider-backed verifier remains manual and is not a required deterministic CI check.
 
+![Hosted model-backed evaluation result](../../images/model-backed-evaluation.png)
+
 ## MCP Inspector verification
 
 Result: **PASS**.
 
 Inspector connected to the public Streamable HTTP endpoint with the private bearer token, discovered exactly five tools, investigated `ORD-1042`, created a human-review escalation, read the review case, and retrieved the persisted trace.
 
-Evidence:
+### Authenticated connection
 
-- [Inspector report](phase-12-hosted-mcp/mcp-inspector.md)
-- [Inspector connection screenshot](../evidence/final-submission/01-inspector-connection.png)
-- [Inspector tool screenshot](../evidence/final-submission/02-inspector-five-tools.png)
-- [Inspector trace screenshot](../evidence/final-submission/03-inspector-trace.png)
+![MCP Inspector server settings](../../images/include-header-in-server-settings.png)
+
+### Exact five-tool catalog
+
+![MCP Inspector exact five tools](../../images/all-tools-rendered.png)
+
+### Representative workflow
+
+![MCP Inspector investigation request](../../images/investigate-an-order.png)
+
+![MCP Inspector investigation result](../../images/investigation-result.png)
+
+Detailed evidence: [Inspector report](phase-12-hosted-mcp/mcp-inspector.md).
 
 ## Gemini CLI independent-client verification
 
 Result: **PASS**.
 
-Gemini CLI v0.53.1 connected to the same hosted `/mcp` endpoint as an independent MCP-compatible AI client. Its `/mcp` view showed `commerce-ops-hosted - Ready (5 tools)`. The model selected `list_demo_cases` followed by `investigate_order_exception`, generated fresh UUID-based identifiers, and returned the grounded `ORD-1042` result:
+Gemini CLI v0.53.1 connected to the same hosted `/mcp` endpoint as an independent MCP-compatible AI client. The model selected `list_demo_cases` followed by `investigate_order_exception`, generated fresh UUID-based identifiers, and returned the grounded `ORD-1042` result:
 
 ```text
 diagnosis: ASSIGNED_WAREHOUSE_OUT_OF_STOCK
@@ -181,12 +192,9 @@ next step: human review of reassignment
 commerceStateChanged: false
 ```
 
-Evidence:
+![Gemini CLI using the hosted MCP to answer ORD-1042](../../images/gemini-client-using-mcp-to-respond.png)
 
-- [Hosted AI evidence](phase-12-hosted-mcp/hosted-ai.md)
-- [Gemini MCP-ready screenshot](../evidence/final-submission/04-gemini-mcp-ready.png)
-- [Gemini tool-execution screenshot](../evidence/final-submission/05-gemini-tool-execution.png)
-- [Gemini grounded-result screenshot](../evidence/final-submission/06-gemini-grounded-result.png)
+Detailed evidence: [Hosted AI evidence](phase-12-hosted-mcp/hosted-ai.md).
 
 ## Hosted-safe database verification
 
