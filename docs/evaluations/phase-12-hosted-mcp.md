@@ -185,7 +185,7 @@ EC2 was refreshed to the final CI-verified commit without resetting the persiste
 | Hosted provider-independent verifier                 | PASS   | 2026-08-01 |
 | MCP Inspector                                        | PASS   | 2026-08-01 |
 | Hosted nine-scenario AI verifier                     | PASS   | 2026-08-01 |
-| Final model-backed `ORD-1042` smoke test              | PASS   | 2026-08-01 |
+| Final model-backed `ORD-1042` smoke test             | PASS   | 2026-08-01 |
 | `commerceStateChanged=false`                         | PASS   | 2026-08-01 |
 | Runtime credential isolation                         | PASS   | 2026-08-01 |
 
