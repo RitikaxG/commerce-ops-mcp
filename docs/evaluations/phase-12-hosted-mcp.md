@@ -10,9 +10,11 @@
 - Hosted direct MCP verification: PASS
 - MCP Inspector verification: PASS
 - Hosted model-backed verification: PASS
-- Pull request: not created
+- Final EC2 refresh: PASS
+- Hosted-safe database verification: PASS
+- Pull request: not created at the time of this report update
 - Merge: not requested
-- Post-deployment test/documentation hardening: committed; EC2 refresh pending final branch CI
+- Final deployed commit: `3ac6c89da3f7d7675256c23cc65e257e4e10892b`
 
 ## Accepted scope
 
@@ -125,6 +127,8 @@ Verified:
 - `commerceStateChanged=false`;
 - no model-provider key.
 
+The provider-independent verifier was rerun after EC2 was refreshed to the final deployed commit and remained PASS.
+
 ### Model-backed
 
 Command:
@@ -145,6 +149,8 @@ Result: PASS.
 - `commerceStateChanged=false`.
 - `hostedMcpVerifiedBeforeProviderCalls=true`.
 
+After the final EC2 refresh, a representative model-backed smoke test for `ORD-1042` also passed against the same hosted MCP endpoint. It returned the grounded out-of-stock diagnosis, identified eligible warehouse `WH-B`, recommended human review of reassignment, and reported that no commerce state was changed.
+
 The model-backed verifier remains manual and is not a required CI check.
 
 ## Deployment evidence
@@ -152,6 +158,7 @@ The model-backed verifier remains manual and is not a required CI check.
 | Field                        | Value                                                        |
 | ---------------------------- | ------------------------------------------------------------ |
 | Initial deployed commit SHA  | `6498a09647e0da90b7197a7becc1163c87c8cf85`                   |
+| Final deployed commit SHA    | `3ac6c89da3f7d7675256c23cc65e257e4e10892b`                   |
 | AWS region                   | `ap-south-1`                                                 |
 | Deployment date              | 2026-08-01                                                   |
 | Hosted health URL            | `https://commerce-mcp.ritikaxg.co.in/health`                 |
@@ -161,7 +168,7 @@ The model-backed verifier remains manual and is not a required CI check.
 | Last successful verification | 2026-08-01                                                   |
 | Intended shutdown            | No earlier than 2026-08-09, or after client review completes |
 
-The branch now contains a hosted-safe database verification command and clearer reviewer guidance. After final branch CI passes, EC2 must be refreshed to that exact branch commit and this table must be updated with the final deployed SHA.
+EC2 was refreshed to the final CI-verified commit without resetting the persistent database. Migrations reported no pending changes, the API and PostgreSQL containers remained healthy, Caddy remained available, the runtime credential-boundary check returned exit code `0`, and the hosted-safe database verification completed with 3 passing tests and 0 failures.
 
 ## Verification evidence
 
@@ -173,9 +180,12 @@ The branch now contains a hosted-safe database verification command and clearer 
 | Local production `/health`                           | PASS   | 2026-08-01 |
 | Local authenticated `/mcp`                           | PASS   | 2026-08-01 |
 | Local model-independent demo without `MODEL_API_KEY` | PASS   | 2026-08-01 |
+| Final EC2 commit refresh                             | PASS   | 2026-08-01 |
+| Hosted-safe database verification                    | PASS   | 2026-08-01 |
 | Hosted provider-independent verifier                 | PASS   | 2026-08-01 |
 | MCP Inspector                                        | PASS   | 2026-08-01 |
 | Hosted nine-scenario AI verifier                     | PASS   | 2026-08-01 |
+| Final model-backed `ORD-1042` smoke test              | PASS   | 2026-08-01 |
 | `commerceStateChanged=false`                         | PASS   | 2026-08-01 |
 | Runtime credential isolation                         | PASS   | 2026-08-01 |
 
@@ -197,6 +207,13 @@ bun run db:verify-access:hosted
 ```
 
 The hosted-safe command preserves the role permission tests and compares commerce fingerprints and workflow counts before and after a rolled-back verification transaction. It must not delete or reset reviewer evidence.
+
+Final hosted result:
+
+```text
+3 pass
+0 fail
+```
 
 ## Provider-failure behavior
 
@@ -220,4 +237,3 @@ Keep the EC2 instance running through at least 2026-08-09 or until the client co
 - There is no automated failover or horizontal scaling.
 - The bearer API key is one shared deployment credential; OAuth and user accounts are intentionally out of scope.
 - Gemini free-tier or project quota may prevent a later model-backed demonstration while the deterministic hosted MCP remains available.
-- The final deployed SHA must be refreshed after post-deployment test and documentation hardening passes CI.
