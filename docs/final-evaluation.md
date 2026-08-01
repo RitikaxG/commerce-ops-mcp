@@ -87,13 +87,27 @@ The workflow did not reassign inventory, release a hold, retry fulfilment, creat
 
 ## Visual evidence
 
-### MCP Inspector
+### Authenticated remote MCP configuration
 
-![MCP Inspector exact tool catalog](evidence/final-submission/02-inspector-five-tools.jpg)
+![MCP Inspector configured with the remote authenticated server](../images/include-header-in-server-settings.png)
+
+### Exact five-tool surface
+
+![MCP Inspector exact tool catalog](../images/all-tools-rendered.png)
+
+### End-to-end hosted investigation
+
+![MCP Inspector investigation request](../images/investigate-an-order.png)
+
+![MCP Inspector grounded investigation result](../images/investigation-result.png)
+
+### Automated hosted model-backed evaluation
+
+![Hosted model-backed evaluation result](../images/model-backed-evaluation.png)
 
 ### Independent MCP-compatible AI client
 
-![Gemini CLI grounded result](evidence/final-submission/06-gemini-grounded-result.jpg)
+![Gemini CLI using the hosted MCP to answer ORD-1042](../images/gemini-client-using-mcp-to-respond.png)
 
 [Download the concise Hosted MCP Verification Report](evidence/final-submission/00-hosted-mcp-verification-report.pdf).
 
