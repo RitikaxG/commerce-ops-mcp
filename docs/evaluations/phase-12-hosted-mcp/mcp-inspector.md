@@ -19,7 +19,7 @@ Exactly these five tools were visible:
 
 No commerce mutation, SQL, reset, cleanup, or unrestricted HTTP tool was visible.
 
-![Inspector exact five-tool discovery](../../evidence/final-submission/02-inspector-five-tools.png)
+![Inspector exact five-tool discovery](../../evidence/final-submission/02-inspector-five-tools.jpg)
 
 ## Representative workflow
 
@@ -34,14 +34,10 @@ No commerce mutation, SQL, reset, cleanup, or unrestricted HTTP tool was visible
 - The persisted investigation trace and immutable evidence snapshot were retrieved.
 - Structured results reported `commerceStateChanged=false`.
 
-![Inspector persisted trace](../../evidence/final-submission/03-inspector-trace.png)
-
 ## Security evidence
 
-The bearer-token control and complete Authorization header are excluded from retained screenshots. The server-configuration screenshot shows only the public endpoint and Streamable HTTP transport.
-
-![Inspector server configuration](../../evidence/final-submission/01-inspector-connection.png)
+The bearer-token control and complete Authorization header were excluded from the retained evidence.
 
 ## Reproduction
 
-See [Reviewer guide - MCP Inspector](../../reviewer-guide.md#path-a-mcp-inspector) for the exact inputs, identifier rules, expected result, and trace-read steps.
+See [Reviewer guide - MCP Inspector](../../reviewer-guide.md#path-a-mcp-inspector) for exact inputs, identifier rules, expected results, and trace-read steps. The [final evidence index](../../evidence/final-submission/README.md) contains the representative redacted screenshot and verification report.
