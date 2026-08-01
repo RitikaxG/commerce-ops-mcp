@@ -177,10 +177,7 @@ async function run(): Promise<void> {
     );
   }
 
-  await verifyHostedMcpBoundary(
-    config.mcpServerUrl,
-    config.mcpAuthBearerToken,
-  );
+  await verifyHostedMcpBoundary(config.mcpServerUrl, config.mcpAuthBearerToken);
 
   const provider = new GeminiModelProvider(config.modelApiKey, undefined, {
     ...(config.providerMinIntervalMs === undefined

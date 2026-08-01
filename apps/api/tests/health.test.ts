@@ -177,10 +177,7 @@ test("API keeps health public and protects stateless Streamable HTTP MCP", async
       });
     }
 
-    const invalidHost = await postWithHost(
-      address.port,
-      "disallowed.example",
-    );
+    const invalidHost = await postWithHost(address.port, "disallowed.example");
     assert.equal(invalidHost.status, 403);
     assert.deepEqual(invalidHost.body, {
       error: "MCP_HOST_NOT_ALLOWED",

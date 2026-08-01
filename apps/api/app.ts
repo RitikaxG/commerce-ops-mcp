@@ -46,16 +46,15 @@ export function createApiApplication(
 ): ApiApplication {
   const app = express();
   const allowedHosts = new Set(
-    (
-      dependencies.allowedHosts ?? DEFAULT_LOCAL_MCP_ALLOWED_HOSTS
-    ).map(normalizeMcpHost),
+    (dependencies.allowedHosts ?? DEFAULT_LOCAL_MCP_ALLOWED_HOSTS).map(
+      normalizeMcpHost,
+    ),
   );
   const workflowContextFactory =
     dependencies.createWorkflowContext ??
     createCommerceOperationsWorkflowContext;
   let workflowContextPromise:
-    | Promise<CommerceOperationsWorkflowContext>
-    | undefined;
+    Promise<CommerceOperationsWorkflowContext> | undefined;
   let closePromise: Promise<void> | undefined;
 
   const getWorkflowContext = () => {
@@ -85,10 +84,7 @@ export function createApiApplication(
     }
 
     const match = /^Bearer ([^\s]+)$/.exec(authorization);
-    if (
-      !match?.[1] ||
-      !secureSecretMatch(match[1], dependencies.mcpApiKey)
-    ) {
+    if (!match?.[1] || !secureSecretMatch(match[1], dependencies.mcpApiKey)) {
       response.status(401).json({ error: "MCP_AUTH_INVALID" });
       return;
     }

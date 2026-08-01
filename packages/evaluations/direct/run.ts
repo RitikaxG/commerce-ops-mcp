@@ -10,10 +10,7 @@ import {
 import { MCP_TOOL_NAMES } from "@repo/mcp";
 
 import { ZERO_WORKFLOW_COUNTS } from "../assertions.js";
-import {
-  startDirectMcpApi,
-  type DirectMcpApiRuntime,
-} from "../runtime.js";
+import { startDirectMcpApi, type DirectMcpApiRuntime } from "../runtime.js";
 import { evaluateToolCatalog } from "./catalog.js";
 import { evaluateEscalations } from "./escalations.js";
 import { evaluateInvestigations } from "./investigations.js";

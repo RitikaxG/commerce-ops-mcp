@@ -238,7 +238,7 @@ curl --fail --silent --show-error \
 Expected response:
 
 ```json
-{"status":"ok"}
+{ "status": "ok" }
 ```
 
 Verify the protected MCP from a trusted local machine, using an ignored `.env.local`:

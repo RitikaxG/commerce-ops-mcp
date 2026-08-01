@@ -116,14 +116,11 @@ async function run(): Promise<void> {
     name: "commerce-operations-hosted-evaluator",
     version: "1.0.0",
   });
-  const transport = new StreamableHTTPClientTransport(
-    endpoint,
-    {
-      requestInit: {
-        headers: { Authorization: `Bearer ${bearerToken}` },
-      },
-    } as never,
-  );
+  const transport = new StreamableHTTPClientTransport(endpoint, {
+    requestInit: {
+      headers: { Authorization: `Bearer ${bearerToken}` },
+    },
+  } as never);
 
   try {
     await client.connect(transport);
@@ -193,10 +190,9 @@ async function run(): Promise<void> {
       investigation.decision.suggestedQueue,
       "FULFILMENT_OPERATIONS",
     );
-    assert.deepEqual(
-      investigation.decision.eligibleAlternativeWarehouseIds,
-      ["WH-B"],
-    );
+    assert.deepEqual(investigation.decision.eligibleAlternativeWarehouseIds, [
+      "WH-B",
+    ]);
     assert.equal(investigation.commerceStateChanged, false);
     assert.equal(investigation.decision.commerceStateChanged, false);
 

@@ -51,15 +51,15 @@ The Gemini key remains on the trusted client and is not placed on EC2.
 
 ## Authentication results
 
-| Check | Expected | Result |
-| --- | --- | --- |
-| `GET /health` without token | HTTP 200 | Pending CI |
-| `/mcp` without Authorization | HTTP 401 `MCP_AUTH_REQUIRED` | Pending CI |
-| `/mcp` with malformed or incorrect token | HTTP 401 `MCP_AUTH_INVALID` | Pending CI |
-| `/mcp` with correct bearer token | MCP request continues | Pending CI |
-| Invalid Host header | HTTP 403 `MCP_HOST_NOT_ALLOWED` | Pending CI |
-| Authenticated malformed JSON | HTTP 400 `INVALID_JSON` | Pending CI |
-| Production without `MCP_API_KEY` | Startup configuration fails | Pending CI |
+| Check                                    | Expected                        | Result     |
+| ---------------------------------------- | ------------------------------- | ---------- |
+| `GET /health` without token              | HTTP 200                        | Pending CI |
+| `/mcp` without Authorization             | HTTP 401 `MCP_AUTH_REQUIRED`    | Pending CI |
+| `/mcp` with malformed or incorrect token | HTTP 401 `MCP_AUTH_INVALID`     | Pending CI |
+| `/mcp` with correct bearer token         | MCP request continues           | Pending CI |
+| Invalid Host header                      | HTTP 403 `MCP_HOST_NOT_ALLOWED` | Pending CI |
+| Authenticated malformed JSON             | HTTP 400 `INVALID_JSON`         | Pending CI |
+| Production without `MCP_API_KEY`         | Startup configuration fails     | Pending CI |
 
 The token is compared through fixed-length SHA-256 digests with `timingSafeEqual`. The supplied and expected tokens are never logged or returned.
 
@@ -118,33 +118,33 @@ The model-backed verifier is manual and is not a required CI check.
 
 Complete after repository-owner approval and AWS deployment.
 
-| Field | Value |
-| --- | --- |
-| Deployed commit SHA | Pending |
-| AWS region | Pending; planned `ap-south-1` |
-| Deployment timestamp | Pending |
-| Hosted health URL | `https://commerce-mcp.ritikaxg.co.in/health` |
-| Hosted MCP URL | `https://commerce-mcp.ritikaxg.co.in/mcp` |
-| Transport | Streamable HTTP |
-| Authentication | `Authorization: Bearer <redacted>` |
-| Last verification timestamp | Pending |
+| Field                       | Value                                                  |
+| --------------------------- | ------------------------------------------------------ |
+| Deployed commit SHA         | Pending                                                |
+| AWS region                  | Pending; planned `ap-south-1`                          |
+| Deployment timestamp        | Pending                                                |
+| Hosted health URL           | `https://commerce-mcp.ritikaxg.co.in/health`           |
+| Hosted MCP URL              | `https://commerce-mcp.ritikaxg.co.in/mcp`              |
+| Transport                   | Streamable HTTP                                        |
+| Authentication              | `Authorization: Bearer <redacted>`                     |
+| Last verification timestamp | Pending                                                |
 | Intended shutdown timestamp | Pending; at least seven complete days after submission |
 
 ## Verification evidence
 
-| Evidence | Result | Timestamp |
-| --- | --- | --- |
-| Phase 12 static and regression CI | Pending | Pending |
-| Docker image build | Pending | Pending |
-| Local production Compose startup | Pending | Pending |
-| Local production `/health` | Pending | Pending |
-| Local authenticated `/mcp` | Pending | Pending |
-| Local model-independent demo without `MODEL_API_KEY` | Pending | Pending |
-| Hosted provider-independent verifier | Pending | Pending |
-| MCP Inspector | Pending | Pending |
-| Hosted nine-scenario AI verifier | Pending | Pending |
-| MCP-compatible AI-client representative run | Pending | Pending |
-| `commerceStateChanged=false` | Pending | Pending |
+| Evidence                                             | Result  | Timestamp |
+| ---------------------------------------------------- | ------- | --------- |
+| Phase 12 static and regression CI                    | Pending | Pending   |
+| Docker image build                                   | Pending | Pending   |
+| Local production Compose startup                     | Pending | Pending   |
+| Local production `/health`                           | Pending | Pending   |
+| Local authenticated `/mcp`                           | Pending | Pending   |
+| Local model-independent demo without `MODEL_API_KEY` | Pending | Pending   |
+| Hosted provider-independent verifier                 | Pending | Pending   |
+| MCP Inspector                                        | Pending | Pending   |
+| Hosted nine-scenario AI verifier                     | Pending | Pending   |
+| MCP-compatible AI-client representative run          | Pending | Pending   |
+| `commerceStateChanged=false`                         | Pending | Pending   |
 
 ## Provider-failure behavior
 

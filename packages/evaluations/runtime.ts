@@ -1,20 +1,13 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
-import {
-  createServer,
-  request as httpRequest,
-  type Server,
-} from "node:http";
+import { createServer, request as httpRequest, type Server } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HOST = "127.0.0.1";
 const MODULE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = path.resolve(MODULE_DIRECTORY, "../..");
-const API_ENTRYPOINT = path.join(
-  REPOSITORY_ROOT,
-  "apps/api/dist/server.js",
-);
+const API_ENTRYPOINT = path.join(REPOSITORY_ROOT, "apps/api/dist/server.js");
 
 async function closeServer(server: Server | undefined): Promise<void> {
   if (!server?.listening) {
