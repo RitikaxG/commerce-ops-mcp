@@ -1,0 +1,45 @@
+name: Format final docs once
+
+on:
+  push:
+    branches:
+      - docs/final-submission-packaging
+    paths:
+      - .github/workflows/format-final-docs-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.event.head_commit.message == 'ci: format final docs once'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out documentation branch
+        uses: actions/checkout@v4
+        with:
+          ref: docs/final-submission-packaging
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.2
+
+      - name: Install frozen dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Format final Markdown files
+        run: bunx prettier --write README.md docs/architecture/package-graph.md
+
+      - name: Commit formatting changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/architecture/package-graph.md
+          if git diff --cached --quiet; then
+            echo "No formatting changes required."
+          else
+            git commit -m "style: format final submission docs"
+            git push origin HEAD:docs/final-submission-packaging
+          fi
