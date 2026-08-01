@@ -1,6 +1,8 @@
 # Phase 12 Hosted Evidence
 
-This directory stores concise, redacted Markdown evidence for the hosted deployment. The complete visual evidence package is available at:
+This directory stores concise, redacted Markdown evidence for the hosted deployment.
+
+Start with:
 
 - [Final submission evidence](../../evidence/final-submission/README.md)
 - [Hosted verification PDF](../../evidence/final-submission/00-hosted-mcp-verification-report.pdf)
@@ -13,6 +15,24 @@ This directory stores concise, redacted Markdown evidence for the hosted deploym
 - [MCP Inspector](mcp-inspector.md)
 - [Hosted model-backed and Gemini CLI verification](hosted-ai.md)
 - [Hosted database verification boundary](database-verification.md)
+
+## Visual proof
+
+### MCP Inspector exact tools
+
+![MCP Inspector showing the exact five tools](../../../images/all-tools-rendered.png)
+
+### Grounded hosted investigation
+
+![MCP Inspector investigation result](../../../images/investigation-result.png)
+
+### Hosted model-backed evaluation
+
+![Hosted model-backed evaluation result](../../../images/model-backed-evaluation.png)
+
+### Independent MCP-compatible AI client
+
+![Gemini CLI using the hosted MCP](../../../images/gemini-client-using-mcp-to-respond.png)
 
 ## Verified deployment summary
 
@@ -40,8 +60,6 @@ Do not commit:
 - unredacted screenshots;
 - raw terminal logs or hidden model reasoning.
 
-Useful output should be reduced to a small Markdown table, safe JSON excerpt, or redacted screenshot. Replace secret values with placeholders such as `<reviewer-token>` and omit request headers where possible.
-
 ## Reviewer identifier guidance
 
 For `investigate_order_exception`:
@@ -52,13 +70,3 @@ For `investigate_order_exception`:
 - reuse both values only when retrying the exact same request.
 
 For `create_human_review_escalation`, use the returned `investigationId`, generate a new idempotency key, and reuse it only for retrying that same escalation.
-
-## Screenshot checklist
-
-Before retaining any screenshot:
-
-- crop out the token/header control;
-- remove browser history, bookmarks, account identifiers, and unrelated tabs when they add no evidence;
-- verify that no environment file or terminal secret is visible;
-- show only the endpoint domain, selected tool, safe arguments, structured result, or client tool activity;
-- do not edit tool names, inputs, outputs, identifiers, status, or results.
