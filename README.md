@@ -8,12 +8,12 @@ The workflow collects synthetic order, payment, inventory, fulfilment, event, an
 
 ## Live review
 
-| Surface | Value |
-| --- | --- |
-| Health | `https://commerce-mcp.ritikaxg.co.in/health` |
-| MCP | `https://commerce-mcp.ritikaxg.co.in/mcp` |
-| Transport | Streamable HTTP |
-| Authentication | `Authorization: Bearer <reviewer-token>` supplied privately |
+| Surface             | Value                                                       |
+| ------------------- | ----------------------------------------------------------- |
+| Health              | `https://commerce-mcp.ritikaxg.co.in/health`                |
+| MCP                 | `https://commerce-mcp.ritikaxg.co.in/mcp`                   |
+| Transport           | Streamable HTTP                                             |
+| Authentication      | `Authorization: Bearer <reviewer-token>` supplied privately |
 | Availability window | Through at least 9 August 2026, or until review is complete |
 
 Start here:
@@ -54,13 +54,13 @@ The model is used only for natural-language interaction, approved tool selection
 
 ## Exact MCP tool surface
 
-| Tool | Purpose | Operations write | Commerce write |
-| --- | --- | ---: | ---: |
-| `list_demo_cases` | Discover the approved synthetic cases | No | No |
-| `investigate_order_exception` | Collect evidence, diagnose, and persist the investigation | Yes | No |
-| `create_human_review_escalation` | Create or reuse a server-derived human-review case | Yes | No |
-| `get_review_case` | Read a persisted review case and source investigation | No | No |
-| `get_investigation_trace` | Read the investigation, immutable evidence, and ordered audit events | No | No |
+| Tool                             | Purpose                                                              | Operations write | Commerce write |
+| -------------------------------- | -------------------------------------------------------------------- | ---------------: | -------------: |
+| `list_demo_cases`                | Discover the approved synthetic cases                                |               No |             No |
+| `investigate_order_exception`    | Collect evidence, diagnose, and persist the investigation            |              Yes |             No |
+| `create_human_review_escalation` | Create or reuse a server-derived human-review case                   |              Yes |             No |
+| `get_review_case`                | Read a persisted review case and source investigation                |               No |             No |
+| `get_investigation_trace`        | Read the investigation, immutable evidence, and ordered audit events |               No |             No |
 
 Investigation and escalation write workflow records only. The MCP exposes no order update, inventory reservation, warehouse reassignment, fulfilment retry, shipment creation, SQL, reset, or unrestricted HTTP tool.
 
@@ -86,34 +86,34 @@ The running API uses a restricted PostgreSQL role and cannot insert, update, or 
 
 ## Approved synthetic scenarios
 
-| Order | Evidence | Expected outcome | Human-review queue |
-| --- | --- | --- | --- |
-| `ORD-1042` | Complete | Assigned warehouse out of stock; `WH-B` is eligible | `FULFILMENT_OPERATIONS` |
-| `ORD-1043` | Complete | Fulfilment creation failed | `FULFILMENT_OPERATIONS` |
-| `ORD-1044` | Complete | Within expected processing time | None |
-| `ORD-1045` | Complete | Shipment-label creation failed | `SHIPPING_OPERATIONS` |
-| `ORD-1046` | Missing | `NEEDS_MORE_INFO`; no diagnosis | `OPERATIONS_DATA_REVIEW` |
-| `ORD-1047` | Complete | Shipment already exists | None |
-| `ORD-1048` | Complete | Cause not determined | `GENERAL_COMMERCE_OPERATIONS` |
-| `ORD-1049` | Complete | Payment not confirmed | `PAYMENT_OPERATIONS` |
-| `ORD-1050` | Conflicting | `NEEDS_MORE_INFO`; no diagnosis | `OPERATIONS_DATA_REVIEW` |
+| Order      | Evidence    | Expected outcome                                    | Human-review queue            |
+| ---------- | ----------- | --------------------------------------------------- | ----------------------------- |
+| `ORD-1042` | Complete    | Assigned warehouse out of stock; `WH-B` is eligible | `FULFILMENT_OPERATIONS`       |
+| `ORD-1043` | Complete    | Fulfilment creation failed                          | `FULFILMENT_OPERATIONS`       |
+| `ORD-1044` | Complete    | Within expected processing time                     | None                          |
+| `ORD-1045` | Complete    | Shipment-label creation failed                      | `SHIPPING_OPERATIONS`         |
+| `ORD-1046` | Missing     | `NEEDS_MORE_INFO`; no diagnosis                     | `OPERATIONS_DATA_REVIEW`      |
+| `ORD-1047` | Complete    | Shipment already exists                             | None                          |
+| `ORD-1048` | Complete    | Cause not determined                                | `GENERAL_COMMERCE_OPERATIONS` |
+| `ORD-1049` | Complete    | Payment not confirmed                               | `PAYMENT_OPERATIONS`          |
+| `ORD-1050` | Conflicting | `NEEDS_MORE_INFO`; no diagnosis                     | `OPERATIONS_DATA_REVIEW`      |
 
 The fixtures use a fixed reference time and contain no real customer data. See the [approved scenario contract](docs/scenarios/approved-synthetic-scenarios.md).
 
 ## Verification summary
 
-| Verification layer | Result |
-| --- | --- |
-| Static and regression CI | PASS |
-| Direct protocol-level MCP evaluation | PASS |
-| All nine synthetic scenarios | PASS |
-| Hosted provider-independent MCP verification | PASS |
-| Hosted model-backed verification | PASS |
-| MCP Inspector | PASS |
-| Gemini CLI as an independent MCP-compatible AI client | PASS |
-| Hosted-safe database verification | 3 pass, 0 fail |
-| Runtime credential isolation | PASS |
-| Commerce state unchanged | PASS |
+| Verification layer                                    | Result         |
+| ----------------------------------------------------- | -------------- |
+| Static and regression CI                              | PASS           |
+| Direct protocol-level MCP evaluation                  | PASS           |
+| All nine synthetic scenarios                          | PASS           |
+| Hosted provider-independent MCP verification          | PASS           |
+| Hosted model-backed verification                      | PASS           |
+| MCP Inspector                                         | PASS           |
+| Gemini CLI as an independent MCP-compatible AI client | PASS           |
+| Hosted-safe database verification                     | 3 pass, 0 fail |
+| Runtime credential isolation                          | PASS           |
+| Commerce state unchanged                              | PASS           |
 
 ### MCP Inspector: exact five-tool discovery
 
