@@ -4,7 +4,7 @@ WORKDIR /app
 COPY . .
 
 RUN bun install --frozen-lockfile
-RUN bun run db:generate
+RUN DATABASE_URL=postgresql://build:build@localhost:5432/build bun run db:generate
 RUN bun run --filter @repo/api build
 
 FROM oven/bun:1.3.2 AS runtime
