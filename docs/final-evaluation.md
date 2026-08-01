@@ -2,7 +2,7 @@
 
 ## Decision
 
-**PASS - the hosted TypeScript MCP and the bounded commerce-operations workflow are ready for asynchronous client review.**
+**PASS - the hosted TypeScript MCP and bounded commerce-operations workflow are ready for asynchronous client review.**
 
 The implementation was verified through automated protocol and database checks, MCP Inspector, a hosted model-backed evaluator, and Gemini CLI as an independent MCP-compatible AI client. Every tested path preserved the read-only commerce boundary and reported `commerceStateChanged=false`.
 
@@ -21,14 +21,12 @@ The implementation was verified through automated protocol and database checks, 
 | Phase 12 merge commit | `c4fb3eed9aa6a9a14d42f33087f86099fe12382b` |
 | Phase 12 pull request | `#11`, merged |
 
-The deployed application SHA predates later documentation-only commits. No documentation packaging change requires an EC2 refresh.
+The deployed application SHA predates the later documentation-only commits. Final submission packaging does not require an EC2 refresh.
 
 ## Scope verified
 
-The final verification covers:
-
-- the public health endpoint and authenticated `/mcp` endpoint;
-- exact discovery of the five approved tools and their accepted schemas;
+- public health and authenticated `/mcp` endpoints;
+- exact discovery of the five approved tools and schemas;
 - all nine approved synthetic scenarios;
 - complete, missing, and conflicting evidence behavior;
 - deterministic diagnosis and queue selection;
@@ -37,28 +35,28 @@ The final verification covers:
 - review-case and trace retrieval;
 - investigation and escalation idempotency;
 - safe unknown-order, missing-ID, malformed-input, and forbidden-tool failures;
-- Host validation and bearer authentication failures;
+- Host validation and bearer authentication;
 - absence of commerce mutation tools;
 - database role isolation and commerce immutability;
 - model-backed tool selection and grounded explanation;
-- provider-rate-limit and quota errors remaining separate from MCP availability.
+- provider failures remaining separate from MCP availability.
 
 ## Verification results
 
 | Verification | Result | Observed evidence |
 | --- | --- | --- |
-| Repository static and regression CI | PASS | Build, strict typecheck, tests, lint, DB checks, direct MCP checks, production Compose checks |
-| Direct MCP evaluation | PASS | Five tools, nine investigations, seven eligible review cases, 17 idempotency records, final cleanup |
+| Static and regression CI | PASS | Build, strict typecheck, tests, lint, DB checks, direct MCP checks, production Compose checks |
+| Direct MCP evaluation | PASS | Five tools, nine investigations, seven eligible review cases, 17 idempotency records, cleanup |
 | Approved synthetic scenarios | 9/9 PASS | Expected evidence status, diagnosis, escalation decision, and queue |
-| Hosted provider-independent verifier | PASS | Public health, authenticated MCP initialization, tools, schemas, workflow, reads, safe failures |
+| Hosted provider-independent verifier | PASS | Health, authentication, discovery, workflow, reads, safe failures |
 | Hosted model-backed verifier | 9/9 PASS | Sequential requests, 18 model calls, 13,007 total tokens, approximately 187 seconds |
-| MCP Inspector | PASS | Hosted connection, exact five tools, investigation, escalation, case read, trace read |
-| Gemini CLI compatible client | PASS | `/mcp` ready with five tools, model-selected calls, grounded `ORD-1042` explanation |
-| Hosted-safe DB verification | 3 pass, 0 fail | Existing hosted workflow evidence preserved before and after the rolled-back check |
-| Runtime credential isolation | PASS | API has workflow DB and MCP token only; no owner, demo, or model-provider credential |
-| Commerce state comparison | PASS | `commerceStateChanged=false` and no commerce fixture mutation |
+| MCP Inspector | PASS | Hosted connection, exact five tools, investigation, escalation, case and trace reads |
+| Gemini CLI compatible client | PASS | Model-selected hosted tools and grounded `ORD-1042` explanation |
+| Hosted-safe DB verification | 3 pass, 0 fail | Existing hosted evidence preserved |
+| Runtime credential isolation | PASS | No owner, demo, or model-provider credential in the API container |
+| Commerce state comparison | PASS | No commerce fixture mutation; `commerceStateChanged=false` |
 
-## Representative workflow result
+## Representative result
 
 For `ORD-1042`, the hosted workflow returned:
 
@@ -77,63 +75,39 @@ commerceStateChanged: false
 
 The workflow did not reassign inventory, release a hold, retry fulfilment, create a shipment, or claim that any such action occurred.
 
-## Verification layers and their purpose
+## Verification layers
 
-### 1. Unit and package tests
-
-Verify strict schemas, repository behavior, evidence normalization, readiness rules, deterministic diagnosis, workflow orchestration, MCP adapters, AI-host policies, provider mapping, grounding checks, and safe failures.
-
-### 2. Database access and invariant tests
-
-Verify that the runtime role has commerce `SELECT` only, can perform only scoped workflow writes, and cannot bypass immutable evidence, append-only audit, terminal investigation, escalation derivation, or idempotency invariants.
-
-### 3. Direct protocol-level MCP evaluation
-
-Uses the official MCP client and the real Express `/mcp` route. It proves that the protocol surface, tool schemas, workflow persistence, idempotency, errors, and commerce immutability work without a model dependency.
-
-### 4. Hosted provider-independent verifier
-
-Connects to the already-running HTTPS endpoint and confirms that deployment, bearer authentication, tool discovery, the representative end-to-end workflow, and safe reads work without `MODEL_API_KEY`.
-
-### 5. MCP Inspector
-
-Provides independent manual protocol evidence that a standard MCP client can connect, inspect the exact tool surface, execute the workflow, and retrieve persisted trace data.
-
-### 6. Hosted model-backed evaluator
-
-Uses the provider-neutral AI host and Gemini to run all nine natural-language scenarios against the hosted MCP while comparing the model-backed result with the frozen deterministic expectations.
-
-### 7. Gemini CLI independent-client verification
-
-Demonstrates that a separate MCP-compatible AI client can discover the hosted tools, select `list_demo_cases` followed by `investigate_order_exception`, and produce a grounded answer from the same remote MCP endpoint.
+1. **Unit and package tests** validate schemas, repositories, evidence normalization, readiness, deterministic diagnosis, workflow orchestration, MCP adapters, AI-host policy, grounding, and safe failures.
+2. **Database access and invariant tests** prove runtime commerce `SELECT` only and scoped workflow writes.
+3. **Direct MCP evaluation** uses the official client and real Express `/mcp` route without a model dependency.
+4. **Hosted provider-independent verification** validates the already-running HTTPS deployment and bearer boundary.
+5. **MCP Inspector** provides independent manual protocol and tool evidence.
+6. **Hosted model-backed evaluation** runs all nine natural-language scenarios through Gemini and the hosted MCP.
+7. **Gemini CLI** demonstrates a separate MCP-compatible AI client discovering and selecting the hosted tools.
 
 ## Visual evidence
 
-### Verification report
+### MCP Inspector
 
-[Download the full Hosted MCP Verification Report](evidence/final-submission/00-hosted-mcp-verification-report.pdf)
+![MCP Inspector exact tool catalog](evidence/final-submission/02-inspector-five-tools.jpg)
 
-![First page of the hosted verification report](evidence/final-submission/00-hosted-mcp-verification-report-preview.png)
+### Independent MCP-compatible AI client
 
-### Inspector tool discovery
+![Gemini CLI grounded result](evidence/final-submission/06-gemini-grounded-result.jpg)
 
-![MCP Inspector exact tool catalog](evidence/final-submission/02-inspector-five-tools.png)
+[Download the concise Hosted MCP Verification Report](evidence/final-submission/00-hosted-mcp-verification-report.pdf).
 
-### Independent AI-client result
-
-![Gemini CLI grounded result](evidence/final-submission/06-gemini-grounded-result.png)
-
-The complete screenshot index is available in [Final submission evidence](evidence/final-submission/README.md).
+The complete evidence index is available in [Final submission evidence](evidence/final-submission/README.md).
 
 ## Known limitations
 
 - One EC2 instance and one PostgreSQL container are a deliberate review-scope single point of failure.
-- The shared bearer token provides deployment access, not individual user identity or per-reviewer authorization.
-- The model provider is external and may be slow or unavailable because of quota, rate limits, or cost controls.
-- Evidence snapshots are immutable. When source evidence changes, a new investigation is required rather than rewriting the old decision record.
+- The shared bearer token provides deployment access, not individual user identity.
+- The model provider may be slow or unavailable because of quota, rate limits, or cost controls.
+- Evidence snapshots are immutable; changed source evidence requires a new investigation.
 - The dataset is synthetic and fixed for repeatable evaluation.
-- The product recommends human action but intentionally exposes no commerce mutation capability.
-- There is no frontend; the intended review surfaces are MCP Inspector and an MCP-compatible AI client.
+- The product recommends human action but exposes no commerce mutation capability.
+- There is no frontend; review occurs through MCP Inspector and compatible AI clients.
 
 ## Submission status
 
