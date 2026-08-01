@@ -6,13 +6,18 @@ import { createApiApplication } from "./app.js";
 const environment = parseApiEnvironment(process.env);
 const application = createApiApplication({
   allowedHosts: environment.mcpAllowedHosts,
+  ...(environment.mcpApiKey ? { mcpApiKey: environment.mcpApiKey } : {}),
 });
 
-const server: Server = application.app.listen(environment.port, () => {
-  console.info(
-    `Commerce operations API listening on port ${environment.port} (${environment.nodeEnv})`,
-  );
-});
+const server: Server = application.app.listen(
+  environment.port,
+  "0.0.0.0",
+  () => {
+    console.info(
+      `Commerce operations API listening on port ${environment.port} (${environment.nodeEnv})`,
+    );
+  },
+);
 
 let shutdownPromise: Promise<void> | undefined;
 

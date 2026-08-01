@@ -35,6 +35,7 @@ export const ApiEnvironmentSchema = z
       .default("development"),
     PORT: z.coerce.number().int().min(1).max(65_535).default(3_000),
     MCP_ALLOWED_HOSTS: z.string().optional(),
+    MCP_API_KEY: z.string().trim().min(32).max(512).optional(),
   })
   .superRefine((environment, context) => {
     const hosts = parseAllowedHosts(environment.MCP_ALLOWED_HOSTS);
@@ -46,6 +47,16 @@ export const ApiEnvironmentSchema = z
         code: "custom",
         message: "MCP_ALLOWED_HOSTS is required in production",
         path: ["MCP_ALLOWED_HOSTS"],
+      });
+    }
+    if (
+      environment.NODE_ENV === "production" &&
+      environment.MCP_API_KEY === undefined
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "MCP_API_KEY is required in production",
+        path: ["MCP_API_KEY"],
       });
     }
     if (hosts.some((host) => host.includes("*"))) {
@@ -88,6 +99,7 @@ export interface ApiEnvironment {
   nodeEnv: z.infer<typeof ApiEnvironmentSchema>["NODE_ENV"];
   port: number;
   mcpAllowedHosts: readonly string[];
+  mcpApiKey?: string;
 }
 
 export interface SchemaOwnerDatabaseEnvironment {
@@ -119,6 +131,7 @@ export function parseApiEnvironment(
     nodeEnv: parsed.NODE_ENV,
     port: parsed.PORT,
     mcpAllowedHosts: parseAllowedHosts(parsed.MCP_ALLOWED_HOSTS),
+    ...(parsed.MCP_API_KEY ? { mcpApiKey: parsed.MCP_API_KEY } : {}),
   };
 }
 

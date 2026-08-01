@@ -6,14 +6,13 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 
 ## Current gate
 
-- Phases 0 through 10 are accepted and merged.
-- Phase 9 was merged to `main` as `d11b589fabe9e16222953bb251e39ba79c73887a`.
-- The initial Phase 10 MCP implementation was merged to `main` as `355960c2a3441a05430de8cbf87234bb8285ff18`.
-- The Phase 10 completion work was merged through PR #9 as `ef80769506bcb3b78b03cbc6a5333d153d2919e1`.
-- The direct Streamable HTTP MCP evaluation and combined Phase 9/10 verification passed.
-- Phase 11 is implemented on `phase/11-gemini-ai-host` with Gemini, provider-neutral host contracts, key-free tests, and an explicit live evaluator.
-- Phase 11 remains awaiting review and real model validation. Do not merge or begin hosted staging until `eval:agent:gemini` passes with a rotated `MODEL_API_KEY`.
-- The API key previously pasted into chat is exposed and must never be used, logged, stored, or committed.
+- Phases 0 through 11 are accepted and merged into `main`.
+- Phase 11 was merged through PR #10 at `28632a46c1d8166a4f0967ce3e8373e2ee1e0de3`.
+- Phase 12 work belongs only on `phase/12-aws-hosted-mcp`.
+- Phase 12 makes the accepted MCP deployable to one always-on AWS EC2 instance and adds provider-independent and model-backed hosted verification.
+- Do not create AWS resources until the repository owner explicitly approves deployment.
+- Do not commit to `main`, merge the Phase 12 branch, or expose any secret.
+- The previously exposed Gemini key must never be reused, logged, stored, or committed.
 
 ## Permanent safety boundary
 
@@ -23,20 +22,32 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 - Forbidden: raw SQL tools, unrestricted API/fetch tools, reservation, reassignment, hold release, fulfilment retry, or shipment creation/retry.
 - A recommendation is a proposal for human review, never evidence that an operational action occurred.
 - Every investigation and escalation result states `commerceStateChanged=false`.
-- Hidden model chain of thought, credentials, SQL, raw provider payloads, and unrestricted source dumps must not be persisted or returned.
+- Hidden model reasoning, credentials, SQL, raw provider payloads, and unrestricted source dumps must not be persisted or returned.
 
-## Database boundary
+## Accepted MCP contract
 
-- `DATABASE_URL` is schema-owner only.
-- `DEMO_DATABASE_URL` is for explicit non-production commerce seed/reset only.
-- `WORKFLOW_DATABASE_URL` is the runtime connection: commerce `SELECT`, scoped operations writes, and approved investigation outcome updates.
-- The runtime may not invoke demo or workflow cleanup helpers.
-- `bun run db:reset-workflow-demo` is owner-only, destructive to demo operations rows, and prohibited in production.
-- PostgreSQL triggers enforce terminal investigation consistency, immutable evidence, append-only audit events, escalation derivation, and idempotency-resource validity.
+Register exactly:
+
+1. `list_demo_cases`
+2. `investigate_order_exception`
+3. `create_human_review_escalation`
+4. `get_review_case`
+5. `get_investigation_trace`
+
+The server advertises no prompts, generic resources, SQL tools, CRUD tools, unrestricted HTTP tools, operational mutation tools, reset tools, or cleanup tools.
+
+Tool rules:
+
+- `list_demo_cases`, `get_review_case`, and `get_investigation_trace` are read-only.
+- Investigation and escalation are non-destructive workflow writes and idempotent by their approved keys.
+- Investigation never creates a review case automatically.
+- Escalation accepts only `investigationId` and `idempotencyKey`; queue, reason, order, and next step are server-derived.
+- All inputs and structured outputs validate through shared schemas.
+- Expected workflow failures return finite safe envelopes; unexpected failures map to `INTERNAL_ERROR`.
 
 ## Approved scenarios
 
-The frozen matrix contains exactly nine orders:
+The frozen matrix contains exactly nine synthetic orders:
 
 - `ORD-1042`: assigned warehouse out of stock; human review in `FULFILMENT_OPERATIONS`.
 - `ORD-1043`: fulfilment creation failed; `FULFILMENT_OPERATIONS`.
@@ -56,125 +67,137 @@ Synthetic evidence uses the fixed reference time `2026-07-30T12:00:00.000Z`. Wal
 - `packages/db`: Prisma, clients, transactions, repositories, migrations, and owner-only testing helpers.
 - `packages/fixtures`: frozen scenarios and explicit seed/reset/verify composition.
 - `packages/evidence`: normalized source collection through repository contracts.
-- `packages/diagnosis`: pure readiness and deterministic diagnosis; schemas-only runtime dependency.
+- `packages/diagnosis`: pure readiness and deterministic diagnosis.
 - `packages/observability`: safe audit builders and trace reads.
 - `packages/workflow`: orchestration, persistence, idempotency, escalation, and safe workflow errors.
-- `packages/mcp`: the five approved tool adapters and MCP error mapping; imports only schemas, workflow, and the official MCP SDK.
-- `apps/api`: Express composition, health, `/mcp`, Host validation, transport lifecycle, and graceful shutdown.
-- `packages/evaluations`: direct protocol and explicit model evaluations; may consume top-level runtime packages but is never imported by runtime code.
-- `packages/agent`: provider-neutral model boundary, Gemini provider, system instructions, exact MCP discovery, hidden host-generated identifiers, tool policy, compact projections, grounding validation, CLI, and smoke check.
-- `apps/web`: later read-only trace viewer; no direct database access.
+- `packages/mcp`: the five approved tool adapters and MCP error mapping.
+- `apps/api`: Express composition, `/health`, authenticated `/mcp`, Host validation, transport lifecycle, and graceful shutdown.
+- `packages/evaluations`: direct, hosted direct, and explicit model-backed evaluations; never imported by runtime code.
+- `packages/agent`: provider-neutral model boundary, Gemini provider, exact MCP discovery, host-generated identifiers, tool policy, grounding validation, CLI, and smoke check.
 
-Prisma remains private to `packages/db`. Packages never import application code. Runtime packages never import evaluations or fixtures. `packages/agent` never imports workflow, MCP server implementation, DB, Prisma, evidence, diagnosis, observability internals, fixtures, evaluations, or applications; it reaches the workflow only through Streamable HTTP MCP.
+Prisma remains private to `packages/db`. Runtime packages never import fixtures or evaluations. The AI host reaches the workflow only through Streamable HTTP MCP.
 
-## Phase 10 MCP surface
+## Database credential boundary
 
-Register exactly:
+- `DATABASE_URL` is schema-owner only and is used for explicit migrations.
+- `DEMO_DATABASE_URL` is used only for explicit synthetic seed/reset operations.
+- `WORKFLOW_DATABASE_URL` is the restricted runtime connection: commerce `SELECT`, scoped operations writes, and approved investigation outcome updates.
+- The running API container receives only `WORKFLOW_DATABASE_URL`.
+- The running API must not receive `DATABASE_URL`, `DEMO_DATABASE_URL`, or `MODEL_API_KEY`.
+- Migrations, role creation, access verification, and seeding are explicit one-off admin operations.
+- Do not run migrations or reset demo data automatically at API startup.
+- Do not expose reset or cleanup through MCP.
+- PostgreSQL triggers enforce terminal investigation consistency, immutable evidence, append-only audit events, escalation derivation, and idempotency-resource validity.
 
-- `list_demo_cases`
-- `investigate_order_exception`
-- `create_human_review_escalation`
-- `get_review_case`
-- `get_investigation_trace`
+## Remote transport and authentication
 
-The server must advertise no prompts, generic resources, SQL tools, CRUD tools, unrestricted HTTP tools, or operational mutation tools.
-
-Tool rules:
-
-- `list_demo_cases`, `get_review_case`, and `get_investigation_trace` are read-only.
-- Investigation and escalation are non-destructive operations-workflow writes and idempotent by their approved keys.
-- Investigation never creates a review case automatically.
-- Escalation accepts only `investigationId` and `idempotencyKey`; queue, reason, order, and next step are server-derived.
-- All inputs and structured outputs validate through shared schemas.
-- Expected workflow failures return finite safe envelopes; unexpected failures map to `INTERNAL_ERROR`.
-
-## Remote transport
-
-- Use stable `@modelcontextprotocol/sdk` v1; current resolved version is `1.30.0`.
-- Use Streamable HTTP at `/mcp`.
-- Use stateless mode with JSON responses.
+- Use pinned `@modelcontextprotocol/sdk` v1; the accepted resolved version is `1.30.0`.
+- Use stateless Streamable HTTP at `/mcp` with JSON responses.
 - Do not implement legacy HTTP+SSE.
 - Validate the Host header before MCP processing.
-- Production requires a nonempty explicit `MCP_ALLOWED_HOSTS`; wildcards are forbidden.
-- Keep `GET /health` unchanged and `x-powered-by` disabled.
-- Do not add duplicate REST routes for MCP workflow actions.
+- Protect only `/mcp` with `Authorization: Bearer <MCP_API_KEY>`.
+- Keep `GET /health` unauthenticated and model-independent.
+- Production requires explicit non-wildcard `MCP_ALLOWED_HOSTS` and a strong `MCP_API_KEY`.
+- Missing authorization returns HTTP 401 `MCP_AUTH_REQUIRED`.
+- Malformed or incorrect authorization returns HTTP 401 `MCP_AUTH_INVALID`.
+- Compare tokens safely; never log or return either token.
+- Authentication must complete before creating the workflow context.
+- Do not add users, sessions, OAuth, refresh tokens, or browser credentials.
 
-## Phase 10 direct evaluation
+## Phase 11 model boundary
 
-`bun run eval:mcp:direct` must:
+Gemini is used only for natural-language interaction and approved tool selection. The deterministic workflow remains authoritative for evidence, diagnosis, escalation policy, persistence, and audit behavior.
 
-1. clear only demo operations rows through the owner-only cleanup boundary;
-2. verify the approved commerce fixtures;
-3. build and start the real Express API on a temporary local port;
-4. connect using the official `Client` and `StreamableHTTPClientTransport`;
-5. discover exactly five tools and no prompt/resource capabilities;
-6. execute all nine investigations and compare frozen outcomes;
-7. create seven eligible review cases and reject `ORD-1044`/`ORD-1047` escalation;
-8. verify exact retry, idempotency-key conflict, second-key case reuse, case reads, and trace reads;
-9. reject forbidden tools, extra business fields, malformed identifiers, and disallowed hosts;
-10. prove commerce fixtures are unchanged;
-11. always clear operations rows in `finally` and verify final zero workflow counts.
+- Keep `MODEL_PROVIDER=gemini`, the accepted model name, serialized requests, bounded retries, and safe `RATE_LIMITED` / `QUOTA_EXHAUSTED` errors.
+- Mutation requests are refused before any model or MCP call.
+- The Gemini key stays on a trusted client or evaluation runner; it is not part of the hosted MCP runtime.
+- Model-provider failure must not disable `/health`, direct MCP use, persisted investigations, review cases, or trace retrieval.
 
-The direct evaluator is explicit and serial. Do not place destructive cleanup inside parallel root tests.
+## Phase 12 deployment boundary
 
-## Phase 11 implementation boundary
+Use the minimum one-instance deployment:
 
-Phase 11 owns:
+- Ubuntu 24.04 LTS on `t3.small` with 20 GB gp3.
+- Elastic IP and `commerce-mcp.ritikaxg.co.in`.
+- Docker Engine and Docker Compose.
+- PostgreSQL 16 container with a persistent named volume.
+- Existing TypeScript API container.
+- Caddy for HTTPS and the only public ports.
 
-- `MODEL_PROVIDER=gemini`;
-- exact stable `MODEL_NAME=gemini-3.6-flash`;
-- server-side `MODEL_API_KEY` only;
-- `@google/genai@2.13.0`;
-- Gemini Interactions API with `store:false`;
-- manual function declaration and execution;
-- exact five-tool MCP discovery;
-- model-facing schemas that hide reliability fields;
-- host-generated client-request and idempotency keys;
-- one approved tool call per model turn;
-- bounded investigation-before-escalation ordering;
-- compact tool-result projection;
-- structured grounded explanation and one repair attempt;
-- refusal, prompt-injection, stability, token, and cost evaluation.
+Public endpoints:
 
-The model must use MCP tools and explain server-produced structured outcomes. It must not calculate diagnosis, queue, reason, suggested action, evidence readiness, conflict resolution, or warehouse eligibility. It must never receive idempotency keys, database URLs, or unrestricted evidence.
+- `GET https://commerce-mcp.ritikaxg.co.in/health`
+- `POST https://commerce-mcp.ritikaxg.co.in/mcp`
 
-Mutation requests are refused before any model or MCP call. Investigation and escalation remain separate. A combined request may escalate only after the investigation returns `shouldEscalate=true`.
+Do not expose ports 3000 or 5432. The security group allows public 80/443 and restricts SSH to the owner's current public IP. Do not add Kubernetes, ECS, an Application Load Balancer, RDS, or complex CI/CD.
 
-`bun run eval:agent:gemini` is explicit, serial, paid/live, and never part of ordinary tests. It must use a rotated key, real Gemini API, official MCP client, real `/mcp`, restricted workflow role, complete commerce before/after comparison, and final owner-only cleanup.
+The production Compose stack contains `postgres`, `api`, and `caddy`. A disabled-by-default `admin` profile is allowed only for explicit migrations, role setup, access verification, and synthetic seeding.
 
-## Hosted staging boundary
+## Required hosted verification
 
-After Phase 11 passes locally, deploy a protected HTTPS staging MCP endpoint before Phase 12. The AI host must switch between local and hosted MCP through `MCP_SERVER_URL` and optional `MCP_AUTH_BEARER_TOKEN` without code changes.
+### Provider-independent
 
-Host validation alone is not authentication. Staging must add authentication, explicit production hosts, hosted restricted PostgreSQL credentials, health checks, safe logs, Inspector proof, and repeated Gemini-host evaluation. Phase 12 adds the read-only trace viewer; Phase 13 finalizes production authentication and submission hardening.
+`bun run verify:hosted:mcp` must:
+
+1. use `MCP_SERVER_URL` and `MCP_AUTH_BEARER_TOKEN`;
+2. connect to an already-running endpoint without spawning a local API;
+3. verify public `/health`;
+4. initialize Streamable HTTP MCP;
+5. discover exactly five tools and their accepted schemas;
+6. list the nine approved scenarios;
+7. investigate `ORD-1042` and match the frozen result;
+8. create an escalation only from the stored investigation;
+9. read the review case and investigation trace;
+10. verify unknown-order safety and mutation-tool absence;
+11. confirm `commerceStateChanged=false`;
+12. require no model-provider key.
+
+### Model-backed
+
+`bun run verify:hosted:ai` must:
+
+1. verify hosted health and exact MCP discovery before provider calls;
+2. target the already-running hosted MCP URL;
+3. run only the existing nine natural-language scenario investigations;
+4. preserve serialized Gemini requests and bounded retries;
+5. compare deterministic scenario expectations;
+6. confirm `commerceStateChanged=false`;
+7. distinguish `HOSTED_MCP` failures from `MODEL_PROVIDER` failures;
+8. keep live provider verification manual and outside required CI.
+
+MCP Inspector and one MCP-compatible AI-client demonstration are required after owner-approved deployment. The optional trace viewer must not block or replace these demonstrations.
+
+## Verification and deployment gate
+
+Before AWS work:
+
+- verify `.env.local` is ignored;
+- install frozen dependencies;
+- run formatting, typecheck, tests, lint, database migrations, role/access tests, workflow regressions, and direct MCP evaluation;
+- build the production Docker image;
+- start the production Compose stack locally;
+- verify `/health`, missing/invalid/valid bearer behavior, Host rejection, malformed JSON, restricted runtime credentials, and internal-only API/PostgreSQL ports;
+- run the provider-independent hosted verifier with no `MODEL_API_KEY`.
+
+Do not suppress tests, weaken assertions, or make the live Gemini evaluation a required CI check.
+
+After owner-approved AWS deployment, record the deployed SHA, AWS region, health URL, MCP URL, deployment timestamp, last verification timestamp, and an intended shutdown timestamp at least seven complete days after submission. Keep restart policies, persistent volumes, EC2 status monitoring, safe log commands, and manual recovery instructions. This review-window commitment is not an SLA.
 
 ## Repository conventions
 
 - Bun is the only package manager.
 - TypeScript strict mode and ESM.
-- No `src/` directories.
+- No new `src/` directories.
 - Node.js 20.9.0 or newer.
-- Use Zod for every external/untrusted contract.
+- Use Zod for external/untrusted contracts.
 - Keep public APIs small and exported through package roots.
-- Do not introduce Redis, queues, Kafka, RAG, multi-agent orchestration, event sourcing, or complex production authentication.
-- Never commit `.env`, credentials, production data, local database dumps, generated secrets, or private AI transcripts.
+- Do not introduce Redis, queues, Kafka, RAG, multi-agent orchestration, event sourcing, user authentication systems, or a new commerce backend.
+- Never commit `.env` files, credentials, production data, local database dumps, generated secrets, private keys, raw provider payloads, or unredacted evidence.
 
-## Required Phase 11 review packet
+## Branch and review boundary
 
-Before Phase 11 is accepted, show:
-
-- selected model provider, model name, SDK, API method, and environment contract;
-- provider-neutral model boundary and concrete Gemini implementation;
-- exact model-facing tool schemas and proof reliability identifiers are host-generated;
-- natural-language intent and exact order-ID extraction results;
-- correct MCP tool selection and ordering;
-- grounded explanation results against server-produced structured output;
-- no invented evidence, diagnosis, queue, reason, warehouse, identifier, or state changes;
-- refusal of mutation requests and forbidden-tool attempts;
-- prompt-injection and adversarial model results;
-- three-run stability results;
-- token/cost and frozen evaluation settings;
-- direct MCP regression and commerce before/after proof;
-- final zero workflow counts;
-- confirmation that no key, raw provider response, hidden reasoning, or transcript was committed;
-- files changed, lockfile/env changes, and proposed merge details.
+- Work only on `phase/12-aws-hosted-mcp`.
+- Keep changes minimal and scoped to authentication, hosted verification, EC2 deployment configuration, and evidence documentation.
+- Do not deploy AWS resources without explicit owner confirmation.
+- Do not merge the Phase 12 branch.
+- Before a pull request, provide exact verification results, changed files, environment variables still needed, branch status, and confirmation that no secrets or protected environment files are tracked.

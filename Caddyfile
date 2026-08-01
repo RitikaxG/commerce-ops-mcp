@@ -1,0 +1,21 @@
+{$CADDY_SITE_ADDRESS} {
+  encode zstd gzip
+
+  header {
+    -Server
+    X-Content-Type-Options nosniff
+    Referrer-Policy no-referrer
+  }
+
+  handle /health {
+    reverse_proxy api:3000
+  }
+
+  handle /mcp {
+    reverse_proxy api:3000
+  }
+
+  handle {
+    respond "Not found" 404
+  }
+}

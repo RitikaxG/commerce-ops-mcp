@@ -10,10 +10,7 @@ import {
 import { MCP_TOOL_NAMES } from "@repo/mcp";
 
 import { ZERO_WORKFLOW_COUNTS } from "../assertions.js";
-import {
-  startDirectMcpApi,
-  type DirectMcpApiRuntime,
-} from "../runtime.js";
+import { startDirectMcpApi, type DirectMcpApiRuntime } from "../runtime.js";
 import { evaluateToolCatalog } from "./catalog.js";
 import { evaluateEscalations } from "./escalations.js";
 import { evaluateInvestigations } from "./investigations.js";
@@ -34,8 +31,18 @@ export async function runDirectMcpEvaluation(): Promise<void> {
       name: "commerce-operations-direct-evaluator",
       version: "1.0.0",
     });
+    const transportOptions = runtime.bearerToken
+      ? {
+          requestInit: {
+            headers: { Authorization: `Bearer ${runtime.bearerToken}` },
+          },
+        }
+      : undefined;
     await client.connect(
-      new StreamableHTTPClientTransport(runtime.endpoint),
+      new StreamableHTTPClientTransport(
+        runtime.endpoint,
+        transportOptions as never,
+      ),
     );
 
     await evaluateToolCatalog(client);
@@ -56,6 +63,9 @@ export async function runDirectMcpEvaluation(): Promise<void> {
           sdk: "@modelcontextprotocol/sdk@1.30.0",
           transport: "Streamable HTTP",
           endpoint: "/mcp",
+          authentication: runtime.bearerToken
+            ? "Authorization: Bearer <redacted>"
+            : "not configured",
           tools: MCP_TOOL_NAMES,
           scenarios: approvedScenarioManifest.length,
           investigations: after.summary.workflow.investigations,

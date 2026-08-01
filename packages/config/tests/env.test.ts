@@ -8,6 +8,9 @@ import {
   parseWorkflowDatabaseEnvironment,
 } from "../env.js";
 
+const PRODUCTION_MCP_API_KEY =
+  "phase12-production-test-key-00000000000000000000";
+
 describe("parseApiEnvironment", () => {
   test("applies safe local defaults", () => {
     expect(parseApiEnvironment({})).toEqual({
@@ -30,20 +33,33 @@ describe("parseApiEnvironment", () => {
     ).toEqual(["localhost", "api.example.test"]);
   });
 
-  test("requires explicit non-wildcard MCP hosts in production", () => {
+  test("requires explicit non-wildcard MCP hosts and an API key in production", () => {
     expect(() => parseApiEnvironment({ NODE_ENV: "production" })).toThrow();
     expect(() =>
       parseApiEnvironment({
         NODE_ENV: "production",
         MCP_ALLOWED_HOSTS: "*",
+        MCP_API_KEY: PRODUCTION_MCP_API_KEY,
+      }),
+    ).toThrow();
+    expect(() =>
+      parseApiEnvironment({
+        NODE_ENV: "production",
+        MCP_ALLOWED_HOSTS: "mcp.example.com",
       }),
     ).toThrow();
     expect(
       parseApiEnvironment({
         NODE_ENV: "production",
         MCP_ALLOWED_HOSTS: "mcp.example.com",
-      }).mcpAllowedHosts,
-    ).toEqual(["mcp.example.com"]);
+        MCP_API_KEY: PRODUCTION_MCP_API_KEY,
+      }),
+    ).toEqual({
+      nodeEnv: "production",
+      port: 3000,
+      mcpAllowedHosts: ["mcp.example.com"],
+      mcpApiKey: PRODUCTION_MCP_API_KEY,
+    });
   });
 });
 

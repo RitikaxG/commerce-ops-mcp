@@ -17,7 +17,8 @@
         "DEMO_DATABASE_URL",
         "WORKFLOW_DATABASE_URL",
         "NODE_ENV",
-        "MCP_ALLOWED_HOSTS"
+        "MCP_ALLOWED_HOSTS",
+        "MCP_API_KEY"
       ]
     },
     "typecheck": {

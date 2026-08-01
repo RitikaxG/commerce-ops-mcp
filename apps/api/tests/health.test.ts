@@ -10,6 +10,8 @@ import type {
 
 import { createApiApplication } from "../app.js";
 
+const MCP_API_KEY = "phase12-test-api-key-000000000000000000000000";
+
 const unusedWorkflow: CommerceOperationsWorkflow = {
   async listDemoCases() {
     throw new Error("not called");
@@ -41,6 +43,7 @@ async function postWithHost(
         method: "POST",
         headers: {
           accept: "application/json, text/event-stream",
+          authorization: `Bearer ${MCP_API_KEY}`,
           "content-type": "application/json",
           host: hostHeader,
         },
@@ -64,7 +67,21 @@ async function postWithHost(
   });
 }
 
-test("API preserves health and safely mounts stateless Streamable HTTP MCP", async () => {
+function initializeBody(): string {
+  return JSON.stringify({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: {
+      protocolVersion: "2025-11-25",
+      capabilities: {},
+      clientInfo: { name: "api-test", version: "1.0.0" },
+    },
+  });
+}
+
+test("API keeps health public and protects stateless Streamable HTTP MCP", async () => {
+  let contextCreations = 0;
   let disconnects = 0;
   const context: CommerceOperationsWorkflowContext = {
     workflow: unusedWorkflow,
@@ -74,7 +91,11 @@ test("API preserves health and safely mounts stateless Streamable HTTP MCP", asy
   };
   const application = createApiApplication({
     allowedHosts: ["127.0.0.1"],
-    createWorkflowContext: async () => context,
+    mcpApiKey: MCP_API_KEY,
+    createWorkflowContext: async () => {
+      contextCreations += 1;
+      return context;
+    },
   });
   let server: Server | undefined;
 
@@ -92,34 +113,61 @@ test("API preserves health and safely mounts stateless Streamable HTTP MCP", asy
     assert.equal(health.headers.get("x-powered-by"), null);
     assert.deepEqual(await health.json(), { status: "ok" });
 
-    const initialized = await fetch(`${baseUrl}/mcp`, {
+    const missingToken = await fetch(`${baseUrl}/mcp`, {
       method: "POST",
       headers: {
         accept: "application/json, text/event-stream",
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "initialize",
-        params: {
-          protocolVersion: "2025-11-25",
-          capabilities: {},
-          clientInfo: { name: "api-test", version: "1.0.0" },
+      body: initializeBody(),
+    });
+    assert.equal(missingToken.status, 401);
+    assert.deepEqual(await missingToken.json(), {
+      error: "MCP_AUTH_REQUIRED",
+    });
+
+    for (const authorization of ["Bearer incorrect", "Basic incorrect"]) {
+      const invalidToken = await fetch(`${baseUrl}/mcp`, {
+        method: "POST",
+        headers: {
+          accept: "application/json, text/event-stream",
+          authorization,
+          "content-type": "application/json",
         },
-      }),
+        body: initializeBody(),
+      });
+      assert.equal(invalidToken.status, 401);
+      assert.deepEqual(await invalidToken.json(), {
+        error: "MCP_AUTH_INVALID",
+      });
+    }
+
+    assert.equal(contextCreations, 0);
+
+    const initialized = await fetch(`${baseUrl}/mcp`, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/event-stream",
+        authorization: `Bearer ${MCP_API_KEY}`,
+        "content-type": "application/json",
+      },
+      body: initializeBody(),
     });
     assert.equal(initialized.status, 200);
-    const initializeBody = (await initialized.json()) as {
+    const initializeResponse = (await initialized.json()) as {
       result?: { serverInfo?: { name?: string } };
     };
     assert.equal(
-      initializeBody.result?.serverInfo?.name,
+      initializeResponse.result?.serverInfo?.name,
       "commerce-operations-investigator",
     );
+    assert.equal(contextCreations, 1);
 
     for (const method of ["GET", "DELETE"] as const) {
-      const unsupported = await fetch(`${baseUrl}/mcp`, { method });
+      const unsupported = await fetch(`${baseUrl}/mcp`, {
+        method,
+        headers: { authorization: `Bearer ${MCP_API_KEY}` },
+      });
       assert.equal(unsupported.status, 405);
       assert.equal(unsupported.headers.get("allow"), "POST");
       assert.deepEqual(await unsupported.json(), {
@@ -129,10 +177,7 @@ test("API preserves health and safely mounts stateless Streamable HTTP MCP", asy
       });
     }
 
-    const invalidHost = await postWithHost(
-      address.port,
-      "disallowed.example",
-    );
+    const invalidHost = await postWithHost(address.port, "disallowed.example");
     assert.equal(invalidHost.status, 403);
     assert.deepEqual(invalidHost.body, {
       error: "MCP_HOST_NOT_ALLOWED",
@@ -140,7 +185,10 @@ test("API preserves health and safely mounts stateless Streamable HTTP MCP", asy
 
     const malformed = await fetch(`${baseUrl}/mcp`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        authorization: `Bearer ${MCP_API_KEY}`,
+        "content-type": "application/json",
+      },
       body: "{",
     });
     assert.equal(malformed.status, 400);

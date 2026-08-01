@@ -1,20 +1,13 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
-import {
-  createServer,
-  request as httpRequest,
-  type Server,
-} from "node:http";
+import { createServer, request as httpRequest, type Server } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HOST = "127.0.0.1";
 const MODULE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = path.resolve(MODULE_DIRECTORY, "../..");
-const API_ENTRYPOINT = path.join(
-  REPOSITORY_ROOT,
-  "apps/api/dist/server.js",
-);
+const API_ENTRYPOINT = path.join(REPOSITORY_ROOT, "apps/api/dist/server.js");
 
 async function closeServer(server: Server | undefined): Promise<void> {
   if (!server?.listening) {
@@ -88,6 +81,7 @@ async function waitForHealth(baseUrl: URL, child: ChildProcess): Promise<void> {
 export interface DirectMcpApiRuntime {
   readonly baseUrl: URL;
   readonly endpoint: URL;
+  readonly bearerToken?: string;
   close(): Promise<void>;
 }
 
@@ -100,6 +94,7 @@ export async function startDirectMcpApi(): Promise<DirectMcpApiRuntime> {
 
   const port = await reservePort();
   const baseUrl = new URL(`http://${HOST}:${port}`);
+  const bearerToken = process.env.MCP_API_KEY?.trim() || undefined;
   const child = spawn("node", [API_ENTRYPOINT], {
     cwd: REPOSITORY_ROOT,
     env: {
@@ -116,6 +111,7 @@ export async function startDirectMcpApi(): Promise<DirectMcpApiRuntime> {
   return {
     baseUrl,
     endpoint: new URL("/mcp", baseUrl),
+    ...(bearerToken ? { bearerToken } : {}),
     close() {
       closePromise ??= (async () => {
         if (child.exitCode !== null) {
