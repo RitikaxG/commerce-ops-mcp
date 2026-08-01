@@ -6,25 +6,21 @@ This guide verifies the deployed commerce-operations MCP without cloning or runn
 
 ```text
 Health: https://commerce-mcp.ritikaxg.co.in/health
-MCP:    https://commerce-mcp.ritikaxg.co.in/mcp
+MCP: https://commerce-mcp.ritikaxg.co.in/mcp
 Transport: Streamable HTTP
 ```
 
-The health endpoint is public. The MCP endpoint requires the reviewer bearer token supplied through a secure, expiring share link.
+The health endpoint is public. The MCP endpoint requires the bearer token supplied through a secure, expiring share link.
 
 ## Security guidance
 
-- Do not paste the reviewer token into screenshots, source control, shared logs, or issue comments.
+- Do not include the reviewer token in screenshots, source control, shared logs, or issue comments.
 - Do not commit an MCP client configuration containing the token.
-- Keep the token only for the review window.
 - The repository owner will revoke or rotate the token after review.
-- When capturing evidence, crop the token/header control and unrelated account details.
 
 ## Path A: MCP Inspector
 
 ### 1. Start Inspector
-
-From a trusted local machine:
 
 ```bash
 npx @modelcontextprotocol/inspector@latest
@@ -38,13 +34,9 @@ URL: https://commerce-mcp.ritikaxg.co.in/mcp
 Header: Authorization: Bearer <reviewer-token>
 ```
 
-The server configuration used during verification is shown below. The token control is intentionally excluded.
-
-![Inspector server configuration](evidence/final-submission/01-inspector-connection.png)
-
 ### 2. Confirm the exact tool catalog
 
-After connecting, Inspector should show exactly:
+Inspector should show exactly:
 
 1. `list_demo_cases`
 2. `investigate_order_exception`
@@ -54,29 +46,15 @@ After connecting, Inspector should show exactly:
 
 No commerce mutation, SQL, reset, cleanup, or unrestricted HTTP tool should be present.
 
-![Inspector exact five-tool catalog](evidence/final-submission/02-inspector-five-tools.png)
+![Inspector exact five-tool catalog](evidence/final-submission/02-inspector-five-tools.jpg)
 
 ### 3. Discover the synthetic cases
 
-Call:
-
-```text
-list_demo_cases
-```
-
-The result should list the nine approved order IDs `ORD-1042` through `ORD-1050`.
+Call `list_demo_cases`. The result should list `ORD-1042` through `ORD-1050`.
 
 ### 4. Investigate `ORD-1042`
 
-Generate fresh UUID-based values for each new logical investigation. On macOS or Linux, `uuidgen` can be used locally; the value does not need to be shared with the repository owner.
-
-Call:
-
-```text
-investigate_order_exception
-```
-
-Example input:
+Call `investigate_order_exception` with:
 
 ```json
 {
@@ -86,12 +64,7 @@ Example input:
 }
 ```
 
-Identifier rules:
-
-- Generate a new `clientRequestId` for every new logical investigation.
-- Generate a new `idempotencyKey` for every new investigation.
-- Reuse both values only when retrying the exact same request with the same arguments.
-- Reusing a key with different arguments is rejected safely.
+Generate fresh UUID-based values for every new logical investigation. Reuse the same values only when retrying that exact request with the same arguments.
 
 Expected result:
 
@@ -105,15 +78,9 @@ suggestedQueue: FULFILMENT_OPERATIONS
 commerceStateChanged: false
 ```
 
-### 5. Create the human-review escalation
+### 5. Create and inspect the human-review case
 
-Copy the returned `investigationId`, then call:
-
-```text
-create_human_review_escalation
-```
-
-Example input:
+Use the returned `investigationId`:
 
 ```json
 {
@@ -122,51 +89,26 @@ Example input:
 }
 ```
 
-The server derives the order, reason, queue, evidence summary, and next step from the persisted investigation. The caller cannot supply or override those business fields.
-
-### 6. Read the case and trace
-
-Use the returned identifiers:
+Call `create_human_review_escalation`, then use the returned IDs with:
 
 ```text
 get_review_case
+afterward: get_investigation_trace
 ```
 
-```json
-{
-  "reviewCaseId": "<returned-review-case-id>"
-}
-```
-
-Then call:
-
-```text
-get_investigation_trace
-```
-
-```json
-{
-  "investigationId": "<returned-investigation-id>"
-}
-```
-
-The trace should include the persisted investigation, immutable decision-time evidence snapshot, and ordered safe audit events.
-
-![Inspector persisted trace result](evidence/final-submission/03-inspector-trace.png)
+The server derives the order, reason, queue, evidence summary, and next step from the persisted investigation. The caller cannot override those fields.
 
 ## Path B: Gemini CLI as an MCP-compatible AI client
 
-This path demonstrates that an external model-backed client can discover and select the same hosted tools. The model-provider credential remains with the client; no Gemini key is stored on the EC2 MCP server.
+This verifies that an independent model-backed client can discover and select the hosted tools. The model-provider credential remains with the client; no Gemini key is stored on EC2.
 
-### 1. Start Gemini CLI
-
-Use a supported Gemini CLI authentication method owned by the reviewer:
+### 1. Start and authenticate Gemini CLI
 
 ```bash
 npx -y @google/gemini-cli@latest
 ```
 
-Exit after authentication if the MCP server still needs to be configured.
+Use a supported authentication method owned by the reviewer.
 
 ### 2. Load the reviewer token without printing it
 
@@ -178,9 +120,7 @@ export MCP_REVIEWER_TOKEN
 echo
 ```
 
-Do not run `echo $MCP_REVIEWER_TOKEN`.
-
-### 3. Add the hosted MCP server to the local user configuration
+### 3. Add the hosted MCP server
 
 ```bash
 npx -y @google/gemini-cli@latest mcp remove \
@@ -195,27 +135,9 @@ npx -y @google/gemini-cli@latest mcp add \
   https://commerce-mcp.ritikaxg.co.in/mcp
 ```
 
-This stores the server only in the reviewer's local user configuration, not in the repository. Remove it after testing.
+### 4. Confirm discovery and run the workflow
 
-### 4. Confirm tool discovery
-
-Start Gemini CLI and run:
-
-```text
-/mcp
-```
-
-Expected status:
-
-```text
-commerce-ops-hosted - Ready (5 tools)
-```
-
-![Gemini CLI showing the hosted MCP ready](evidence/final-submission/04-gemini-mcp-ready.png)
-
-### 5. Ask the AI client to use the hosted tools
-
-Use this prompt:
+Inside Gemini CLI, run `/mcp` and confirm `commerce-ops-hosted` is ready with five tools. Then use:
 
 ```text
 Use only the commerce-ops-hosted MCP server for this task.
@@ -236,29 +158,18 @@ Report:
 - whether commerceStateChanged is false.
 ```
 
-Approve the requested MCP calls. Expected order:
+Expected tool order:
 
 ```text
 list_demo_cases
 -> investigate_order_exception
 ```
 
-![Gemini CLI requesting hosted MCP tool execution](evidence/final-submission/05-gemini-tool-execution.png)
+The captured independent-client result shows both hosted MCP tools, fresh reliability identifiers, the deterministic diagnosis, supporting evidence, suggested queue, and `commerceStateChanged=false`.
 
-Expected grounded answer:
+![Gemini CLI grounded ORD-1042 result](evidence/final-submission/06-gemini-grounded-result.jpg)
 
-```text
-diagnosis: ASSIGNED_WAREHOUSE_OUT_OF_STOCK
-assigned warehouse: WH-A
-eligible alternative: WH-B
-queue: FULFILMENT_OPERATIONS
-next step: human review of warehouse reassignment
-commerceStateChanged: false
-```
-
-![Gemini CLI grounded ORD-1042 result](evidence/final-submission/06-gemini-grounded-result.png)
-
-### 6. Remove local access after review
+### 5. Remove local access after review
 
 ```bash
 npx -y @google/gemini-cli@latest mcp remove \
@@ -270,12 +181,10 @@ unset MCP_REVIEWER_TOKEN
 
 ## Optional high-value cases
 
-A reviewer does not need to run all nine scenarios manually. These three cases demonstrate important safety behavior:
-
 | Order | What it demonstrates | Expected result |
 | --- | --- | --- |
 | `ORD-1046` | Required inventory evidence is absent | `NEEDS_MORE_INFO`, no diagnosis, `OPERATIONS_DATA_REVIEW` |
-| `ORD-1049` | Operator context is not treated as source-of-truth payment evidence | `PAYMENT_NOT_CONFIRMED`, `PAYMENT_OPERATIONS` |
+| `ORD-1049` | Operator context is not authoritative payment evidence | `PAYMENT_NOT_CONFIRMED`, `PAYMENT_OPERATIONS` |
 | `ORD-1050` | Persisted inventory sources conflict | `NEEDS_MORE_INFO`, no diagnosis, `OPERATIONS_DATA_REVIEW` |
 
 ## Troubleshooting
@@ -287,6 +196,6 @@ A reviewer does not need to run all nine scenarios manually. These three cases d
 | HTTP 403 `MCP_HOST_NOT_ALLOWED` | Use the public hostname exactly as shown above |
 | Client shows no tools | Reconnect and verify Streamable HTTP plus the bearer header |
 | Idempotency reuse error | Generate fresh UUIDs for a new logical request |
-| Gemini provider error | The hosted MCP may still be healthy; confirm `/health` and test through Inspector |
+| Gemini provider error | Confirm `/health`; the deterministic MCP may still be available through Inspector |
 
-The full hosted verification report is available at [Hosted MCP Verification Report](evidence/final-submission/00-hosted-mcp-verification-report.pdf).
+The concise verification report is available at [Hosted MCP Verification Report](evidence/final-submission/00-hosted-mcp-verification-report.pdf).
