@@ -34,6 +34,8 @@ URL: https://commerce-mcp.ritikaxg.co.in/mcp
 Header: Authorization: Bearer <reviewer-token>
 ```
 
+![MCP Inspector server settings with the authenticated remote endpoint](../images/include-header-in-server-settings.png)
+
 ### 2. Confirm the exact tool catalog
 
 Inspector should show exactly:
@@ -46,7 +48,7 @@ Inspector should show exactly:
 
 No commerce mutation, SQL, reset, cleanup, or unrestricted HTTP tool should be present.
 
-![Inspector exact five-tool catalog](evidence/final-submission/02-inspector-five-tools.jpg)
+![MCP Inspector showing all five approved tools](../images/all-tools-rendered.png)
 
 ### 3. Discover the synthetic cases
 
@@ -66,6 +68,8 @@ Call `investigate_order_exception` with:
 
 Generate fresh UUID-based values for every new logical investigation. Reuse the same values only when retrying that exact request with the same arguments.
 
+![MCP Inspector investigation request for ORD-1042](../images/investigate-an-order.png)
+
 Expected result:
 
 ```text
@@ -77,6 +81,8 @@ eligible alternative warehouse: WH-B
 suggestedQueue: FULFILMENT_OPERATIONS
 commerceStateChanged: false
 ```
+
+![MCP Inspector grounded investigation result](../images/investigation-result.png)
 
 ### 5. Create and inspect the human-review case
 
@@ -165,9 +171,9 @@ list_demo_cases
 -> investigate_order_exception
 ```
 
-The captured independent-client result shows both hosted MCP tools, fresh reliability identifiers, the deterministic diagnosis, supporting evidence, suggested queue, and `commerceStateChanged=false`.
+The captured result shows the independent client using the hosted MCP and returning the deterministic diagnosis, supporting evidence, queue, safe recommendation, and `commerceStateChanged=false`.
 
-![Gemini CLI grounded ORD-1042 result](evidence/final-submission/06-gemini-grounded-result.jpg)
+![Gemini CLI using the hosted MCP to answer ORD-1042](../images/gemini-client-using-mcp-to-respond.png)
 
 ### 5. Remove local access after review
 
@@ -178,6 +184,12 @@ npx -y @google/gemini-cli@latest mcp remove \
 
 unset MCP_REVIEWER_TOKEN
 ```
+
+## Automated model-backed verification
+
+The repository also ran the hosted nine-scenario model-backed evaluator against the same remote MCP endpoint.
+
+![Hosted model-backed evaluation result](../images/model-backed-evaluation.png)
 
 ## Optional high-value cases
 
