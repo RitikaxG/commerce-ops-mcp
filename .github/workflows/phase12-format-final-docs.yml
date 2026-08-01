@@ -1,0 +1,38 @@
+name: Phase 12 format final docs once
+
+on:
+  push:
+    branches:
+      - phase/12-aws-hosted-mcp
+
+permissions:
+  contents: write
+
+jobs:
+  format-final-docs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: phase/12-aws-hosted-mcp
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.2
+      - run: bun install --frozen-lockfile
+      - name: Format final Phase 12 documentation
+        run: |
+          bunx prettier --write \
+            README.md \
+            docs/evaluations/phase-12-hosted-mcp.md
+      - name: Commit canonical formatting
+        run: |
+          if git diff --quiet -- README.md docs/evaluations/phase-12-hosted-mcp.md; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/evaluations/phase-12-hosted-mcp.md
+          git commit -m "style(phase12): format final deployment docs"
+          git push origin HEAD:phase/12-aws-hosted-mcp
