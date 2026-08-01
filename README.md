@@ -267,21 +267,21 @@ The target is Ubuntu 24.04 LTS, `t3.small`, 20 GB gp3, an Elastic IP, and `ap-so
 
 ## Implementation status
 
-| Phase | Status                                      | Main output                                      | Evaluation                                                            |
-| ----- | ------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- |
-| 0     | Complete                                    | Workflow contract and repository rules           | [Report](docs/evaluations/phase-00.md)                                |
-| 1     | Complete                                    | Approved PostgreSQL schema                       | [Report](docs/evaluations/phase-01.md)                                |
-| 2     | Complete                                    | Bun and Turborepo foundation                     | [Report](docs/evaluations/phase-02.md)                                |
-| 3     | Complete                                    | Approved scenarios and PostgreSQL seed/reset     | [Report](docs/evaluations/phase-03-synthetic-scenarios.md)            |
-| 4     | Complete                                    | Roles, grants, immutable records and invariants  | [Report](docs/evaluations/phase-04-database-hardening.md)             |
-| 5     | Complete                                    | Read-only commerce repositories                  | [Report](docs/evaluations/phase-05-readonly-commerce-repositories.md) |
-| 6     | Complete                                    | Evidence collection and normalization            | [Report](docs/evaluations/phase-06-evidence-collector.md)             |
-| 7     | Complete                                    | Evidence readiness and conflict gate             | [Report](docs/evaluations/phase-07-evidence-readiness.md)             |
-| 8     | Complete                                    | Deterministic diagnosis and suggested action     | [Report](docs/evaluations/phase-08-diagnosis-engine.md)               |
-| 9     | Complete                                    | Persistent investigation and escalation workflow | [Report](docs/evaluations/phase-09-persistence-escalation.md)         |
-| 10    | Complete                                    | Remote MCP server and direct tool evaluation     | [Report](docs/evaluations/phase-10-remote-mcp.md)                     |
-| 11    | Complete                                    | Gemini AI host and model-backed MCP evaluation   | [Report](docs/evaluations/phase-11-gemini-ai-host.md)                 |
-| 12    | Deployed and verified; PR pending           | Bearer-protected hosted MCP and EC2 deployment   | [Report](docs/evaluations/phase-12-hosted-mcp.md)                     |
+| Phase | Status                            | Main output                                      | Evaluation                                                            |
+| ----- | --------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- |
+| 0     | Complete                          | Workflow contract and repository rules           | [Report](docs/evaluations/phase-00.md)                                |
+| 1     | Complete                          | Approved PostgreSQL schema                       | [Report](docs/evaluations/phase-01.md)                                |
+| 2     | Complete                          | Bun and Turborepo foundation                     | [Report](docs/evaluations/phase-02.md)                                |
+| 3     | Complete                          | Approved scenarios and PostgreSQL seed/reset     | [Report](docs/evaluations/phase-03-synthetic-scenarios.md)            |
+| 4     | Complete                          | Roles, grants, immutable records and invariants  | [Report](docs/evaluations/phase-04-database-hardening.md)             |
+| 5     | Complete                          | Read-only commerce repositories                  | [Report](docs/evaluations/phase-05-readonly-commerce-repositories.md) |
+| 6     | Complete                          | Evidence collection and normalization            | [Report](docs/evaluations/phase-06-evidence-collector.md)             |
+| 7     | Complete                          | Evidence readiness and conflict gate             | [Report](docs/evaluations/phase-07-evidence-readiness.md)             |
+| 8     | Complete                          | Deterministic diagnosis and suggested action     | [Report](docs/evaluations/phase-08-diagnosis-engine.md)               |
+| 9     | Complete                          | Persistent investigation and escalation workflow | [Report](docs/evaluations/phase-09-persistence-escalation.md)         |
+| 10    | Complete                          | Remote MCP server and direct tool evaluation     | [Report](docs/evaluations/phase-10-remote-mcp.md)                     |
+| 11    | Complete                          | Gemini AI host and model-backed MCP evaluation   | [Report](docs/evaluations/phase-11-gemini-ai-host.md)                 |
+| 12    | Deployed and verified; PR pending | Bearer-protected hosted MCP and EC2 deployment   | [Report](docs/evaluations/phase-12-hosted-mcp.md)                     |
 
 ## Existing regression commands
 

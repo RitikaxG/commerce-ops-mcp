@@ -149,17 +149,17 @@ The model-backed verifier remains manual and is not a required CI check.
 
 ## Deployment evidence
 
-| Field                       | Value                                                         |
-| --------------------------- | ------------------------------------------------------------- |
-| Initial deployed commit SHA | `6498a09647e0da90b7197a7becc1163c87c8cf85`                    |
-| AWS region                  | `ap-south-1`                                                  |
-| Deployment date             | 2026-08-01                                                    |
-| Hosted health URL           | `https://commerce-mcp.ritikaxg.co.in/health`                  |
-| Hosted MCP URL              | `https://commerce-mcp.ritikaxg.co.in/mcp`                     |
-| Transport                   | Streamable HTTP                                               |
-| Authentication              | `Authorization: Bearer <redacted>`                            |
-| Last successful verification| 2026-08-01                                                    |
-| Intended shutdown           | No earlier than 2026-08-09, or after client review completes |
+| Field                        | Value                                                        |
+| ---------------------------- | ------------------------------------------------------------ |
+| Initial deployed commit SHA  | `6498a09647e0da90b7197a7becc1163c87c8cf85`                   |
+| AWS region                   | `ap-south-1`                                                 |
+| Deployment date              | 2026-08-01                                                   |
+| Hosted health URL            | `https://commerce-mcp.ritikaxg.co.in/health`                 |
+| Hosted MCP URL               | `https://commerce-mcp.ritikaxg.co.in/mcp`                    |
+| Transport                    | Streamable HTTP                                              |
+| Authentication               | `Authorization: Bearer <redacted>`                           |
+| Last successful verification | 2026-08-01                                                   |
+| Intended shutdown            | No earlier than 2026-08-09, or after client review completes |
 
 The branch now contains a hosted-safe database verification command and clearer reviewer guidance. After final branch CI passes, EC2 must be refreshed to that exact branch commit and this table must be updated with the final deployed SHA.
 
