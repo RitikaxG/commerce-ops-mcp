@@ -4,7 +4,7 @@ A remotely hosted TypeScript MCP that helps a commerce operations specialist ans
 
 > Why has this paid order not reached shipment creation?
 
-The workflow collects synthetic order, payment, inventory, fulfilment, event, and shipment evidence; checks whether that evidence is complete and coherent; applies deterministic TypeScript diagnosis rules; persists an immutable investigation record and audit trail; and can create a human-review escalation. It recommends an operational next step but never changes commerce state.
+The workflow collects synthetic order, payment, inventory, fulfilment, event, and shipment evidence; checks whether that evidence is complete and coherent; applies deterministic TypeScript rules; persists an immutable investigation and audit trail; and can create a human-review escalation. It recommends a next step but never changes commerce state.
 
 ## Live review
 
@@ -45,13 +45,11 @@ The model is used only for natural-language interaction, approved tool selection
 
 ## Why MCP is central
 
-MCP is the only supported AI-to-workflow boundary:
-
-- The AI host reaches the workflow through Streamable HTTP MCP, not through workflow, database, or repository imports.
+- The AI host reaches the workflow through Streamable HTTP MCP, not through workflow or database imports.
 - Tool schemas define the complete capability surface and reject unsupported fields.
-- Tool descriptions explain side effects, identifier rules, and safe retry behavior to compatible clients.
+- Tool descriptions explain side effects, identifiers, and safe retry behavior.
 - The server returns versioned structured results and finite safe errors.
-- MCP Inspector, Gemini CLI, the direct evaluator, and the model-backed host all use the same `/mcp` contract.
+- MCP Inspector, Gemini CLI, the direct evaluator, and the model-backed host use the same `/mcp` contract.
 - The deterministic MCP remains usable when the external model provider is unavailable.
 
 ## Exact MCP tool surface
@@ -84,7 +82,7 @@ operations schema - scoped workflow writes
 - append-only audit events
 ```
 
-The running API uses a restricted PostgreSQL role. It cannot insert, update, or delete commerce records. Every investigation and escalation response states `commerceStateChanged=false`.
+The running API uses a restricted PostgreSQL role and cannot insert, update, or delete commerce records. Every investigation and escalation response states `commerceStateChanged=false`.
 
 ## Approved synthetic scenarios
 
@@ -119,27 +117,22 @@ The fixtures use a fixed reference time and contain no real customer data. See t
 
 ### MCP Inspector: exact five-tool discovery
 
-![MCP Inspector showing the five approved tools](docs/evidence/final-submission/02-inspector-five-tools.png)
+![MCP Inspector showing the five approved tools](docs/evidence/final-submission/02-inspector-five-tools.jpg)
 
-### MCP-compatible AI client: hosted tool discovery and execution
+### MCP-compatible AI client: grounded hosted result
 
-![Gemini CLI showing the hosted MCP ready with five tools](docs/evidence/final-submission/04-gemini-mcp-ready.png)
-
-### Grounded result returned through the hosted MCP
-
-![Gemini CLI grounded ORD-1042 result](docs/evidence/final-submission/06-gemini-grounded-result.png)
+![Gemini CLI grounded ORD-1042 result](docs/evidence/final-submission/06-gemini-grounded-result.jpg)
 
 ## Important tradeoffs and limitations
 
 - **Deterministic diagnosis:** results are testable and auditable, but adding a diagnosis requires a reviewed code change.
-- **Immutable decision-time evidence:** an existing investigation is never silently rewritten; evaluate newer source evidence by creating a new investigation.
-- **No automatic operational fix:** the system stops at a recommendation and optional human-review case.
-- **Separate escalation tool:** investigation does not create a review case without an explicit second action.
+- **Immutable decision-time evidence:** newer source evidence is evaluated through a new investigation rather than rewriting history.
+- **No automatic operational fix:** the workflow stops at a recommendation and optional human-review case.
 - **Sequential Gemini requests:** reduces free-tier rate-limit pressure but increases latency and limits throughput.
-- **Bounded retries:** transient failures are retried safely, but exhausted daily or project quota still returns a provider error.
-- **Shared reviewer bearer token:** suitable for a bounded review window, not individual production identity; it will be rotated after review.
-- **Single EC2 and PostgreSQL deployment:** intentionally simple and continuously available, but it has no automated failover.
-- **Synthetic fixed dataset:** useful for repeatability and verification, not a substitute for a production commerce integration.
+- **Bounded retries:** exhausted daily or project quota still returns a provider error.
+- **Shared reviewer bearer token:** suitable for a bounded review window, not individual production identity.
+- **Single EC2 and PostgreSQL deployment:** intentionally simple and continuously available, but without automated failover.
+- **Synthetic fixed dataset:** repeatable for evaluation, not a production commerce integration.
 - **No frontend:** reviewers interact through MCP Inspector or an MCP-compatible AI client.
 
 ## Documentation
