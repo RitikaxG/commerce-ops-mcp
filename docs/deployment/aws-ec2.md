@@ -4,10 +4,10 @@ This guide deploys the accepted commerce-operations MCP to one always-on EC2 ins
 
 ## Deployment target
 
-- Region: `ap-south-1` unless the repository owner selects another region
+- Region: `ap-south-1`
 - AMI: Ubuntu Server 24.04 LTS
 - Instance: `t3.small`
-- Root storage: 20 GB gp3
+- Root storage: 20 GB encrypted gp3
 - Static address: Elastic IP
 - Public domain: `commerce-mcp.ritikaxg.co.in`
 - Public endpoints:
@@ -36,7 +36,7 @@ Store these values in `/opt/commerce-ops-mcp/.env.runtime` on EC2:
 - `NODE_ENV=production`: enables production validation.
 - `PORT=3000`: internal API port.
 - `MCP_ALLOWED_HOSTS=commerce-mcp.ritikaxg.co.in`: preserves Host-header validation.
-- `MCP_API_KEY`: protects only `/mcp` with a bearer token.
+- `MCP_API_KEY`: protects all `/mcp` access with a shared bearer token.
 - `WORKFLOW_DATABASE_URL`: restricted `commerce_workflow` role used by the API.
 
 The API container must not receive `DATABASE_URL`, `DEMO_DATABASE_URL`, or `MODEL_API_KEY`.
@@ -67,15 +67,13 @@ Keep these in an ignored local `.env.local`, not on EC2:
 
 ## 3. EC2 and network creation
 
-Do not perform these steps until the repository owner approves AWS deployment.
-
 1. Select `ap-south-1`.
-2. Create an EC2 key pair, or configure AWS Systems Manager Session Manager.
+2. Select an EC2 key pair whose private key is still available, or configure AWS Systems Manager Session Manager.
 3. Create a security group with only:
    - TCP 80 from `0.0.0.0/0`.
    - TCP 443 from `0.0.0.0/0`.
    - TCP 22 from the repository owner's current public IP only, when SSH is used.
-4. Launch Ubuntu 24.04 LTS on `t3.small` with a 20 GB gp3 root volume.
+4. Launch Ubuntu 24.04 LTS on `t3.small` with a 20 GB encrypted gp3 root volume.
 5. Allocate and associate an Elastic IP.
 6. In GoDaddy DNS, create an `A` record for `commerce-mcp.ritikaxg.co.in` pointing to the Elastic IP.
 7. Do not add security-group rules for ports 3000 or 5432.
@@ -103,16 +101,16 @@ Add the deployment user to the Docker group only when that access is acceptable,
 sudo usermod -aG docker "$USER"
 ```
 
-## 5. Clone the Phase 12 commit
+## 5. Clone the reviewed Phase 12 commit
 
 ```bash
 sudo install -d -m 0755 -o "$USER" -g "$USER" /opt/commerce-ops-mcp
 git clone https://github.com/RitikaxG/commerce-ops-mcp.git /opt/commerce-ops-mcp
 cd /opt/commerce-ops-mcp
 git fetch origin
-git checkout phase/12-aws-hosted-mcp
-git pull --ff-only origin phase/12-aws-hosted-mcp
+git checkout --detach <reviewed-phase-12-commit-sha>
 git rev-parse HEAD
+git status
 ```
 
 Record the exact commit SHA in the Phase 12 evaluation report before deployment.
@@ -201,19 +199,26 @@ Run migrations once:
 $COMPOSE --profile admin run --rm admin bun run db:migrate
 ```
 
-Create and verify the restricted roles once:
+Create the restricted roles:
 
 ```bash
 $COMPOSE --profile admin run --rm admin bun run db:setup-access
-$COMPOSE --profile admin run --rm admin bun run db:verify-access
 ```
 
-Seed exactly the existing nine synthetic scenarios:
+Seed exactly the existing nine synthetic scenarios and verify them before running access tests that reference `ORD-1042`:
 
 ```bash
 $COMPOSE --profile admin run --rm admin bun run db:seed
 $COMPOSE --profile admin run --rm admin bun run db:verify-demo
 ```
+
+Verify the clean deployment database and permission boundaries:
+
+```bash
+$COMPOSE --profile admin run --rm admin bun run db:verify-access
+```
+
+Expected result: six tests pass and zero fail. This clean-state suite must run before hosted investigations create persistent workflow evidence.
 
 Do not put migration, role creation, reset, or seeding commands in API startup. Do not expose reset through MCP.
 
@@ -247,11 +252,11 @@ Verify the protected MCP from a trusted local machine, using an ignored `.env.lo
 bun --env-file=.env.local run verify:hosted:mcp
 ```
 
-This command performs no Gemini request and does not start a local API. It verifies health, MCP initialization, exactly five tool contracts, the nine-case catalog, the accepted `ORD-1042` result, escalation, review read, trace read, unknown-order safety, mutation-tool absence, and `commerceStateChanged=false`.
+This command performs no model-provider request and does not start a local API. It verifies health, MCP initialization, exactly five tool contracts, the nine-case catalog, the accepted `ORD-1042` result, escalation, review read, trace read, unknown-order safety, mutation-tool absence, and `commerceStateChanged=false`.
 
 ## 10. MCP Inspector demonstration
 
-Use the current MCP Inspector v2 release from a trusted local machine:
+Use the current MCP Inspector release from a trusted local machine:
 
 ```bash
 npx @modelcontextprotocol/inspector@latest
@@ -263,12 +268,25 @@ In the Inspector:
 2. Enter `https://commerce-mcp.ritikaxg.co.in/mcp`.
 3. Add the bearer token through the Inspector token/header control. Never include it in a screenshot.
 4. Connect and confirm exactly five tools.
-5. Call `list_demo_cases`.
-6. Call `investigate_order_exception` for `ORD-1042` with unique `clientRequestId` and `idempotencyKey` values.
-7. Call `create_human_review_escalation` with the returned investigation ID and a unique idempotency key.
+5. Call `list_demo_cases` to discover valid order IDs.
+6. Call `investigate_order_exception` for `ORD-1042`.
+   - Generate a new `clientRequestId` for each new logical investigation request.
+   - Generate a new `idempotencyKey` for each new investigation.
+   - Reuse both values only when retrying the exact same request with unchanged arguments.
+7. Call `create_human_review_escalation` with the returned investigation ID and a new escalation idempotency key. Reuse that key only for a retry of the same escalation.
 8. Call `get_review_case` with the returned review-case ID.
 9. Call `get_investigation_trace` with the investigation ID.
 10. Record only redacted evidence showing `commerceStateChanged=false`.
+
+Recommended UUID-based example:
+
+```json
+{
+  "orderId": "ORD-1042",
+  "clientRequestId": "reviewer-request-550e8400-e29b-41d4-a716-446655440000",
+  "idempotencyKey": "investigate-ORD-1042-550e8400-e29b-41d4-a716-446655440001"
+}
+```
 
 A CLI catalog check is also possible without exposing the token in shell history by reading it from a protected local environment variable:
 
@@ -281,6 +299,8 @@ npx @modelcontextprotocol/inspector@latest --cli \
 ```
 
 ## 11. MCP-compatible AI-client demonstration
+
+There is no separate model-backed MCP endpoint. The hosted `/mcp` URL is the deterministic tool server. A model-backed experience is produced when a trusted MCP-compatible AI client connects to that URL and uses its own configured model provider.
 
 Keep the Gemini key on the trusted local client only. Configure `.env.local` with the hosted MCP URL, bearer token, provider settings, and rotated Gemini key, then run:
 
@@ -299,7 +319,23 @@ bun --env-file=.env.local run agent:ask -- \
 
 Confirm that the final result includes `commerceStateChanged=false`.
 
-## 12. Seven-day availability and operations
+Hosting an additional chat API or model proxy is outside Phase 12 because it would place a provider credential on infrastructure and introduce new usage, cost, privacy, rate-limit, and authentication concerns.
+
+## 12. Rerun database safety checks after reviewer activity
+
+Hosted verification and Inspector calls intentionally persist investigations, evidence, escalations, idempotency records, and audit events. Do not rerun the clean-state `db:verify-access` command after those rows exist because one Phase 4 invariant intentionally expects an empty operations schema.
+
+Use the hosted-safe command instead:
+
+```bash
+$COMPOSE --profile admin run --rm admin bun run db:verify-access:hosted
+```
+
+This command still verifies the role permission matrix and runs a rolled-back valid operations transaction. It compares commerce fingerprints and workflow counts before and after the transaction, so existing reviewer evidence must remain unchanged.
+
+Do not reset or delete hosted workflow rows during the review window.
+
+## 13. Seven-day availability and operations
 
 Do not schedule an automatic shutdown during the client review window. Record these fields in `docs/evaluations/phase-12-hosted-mcp.md`:
 
@@ -344,21 +380,21 @@ $COMPOSE ps
 
 Enable EC2 status-check monitoring in AWS and investigate any failed instance or system status check. The README and report document a planned review window, not an SLA.
 
-## 13. Updating the deployment
+## 14. Updating the deployment
 
 Only deploy a reviewed commit:
 
 ```bash
 cd /opt/commerce-ops-mcp
 git fetch origin
-git checkout phase/12-aws-hosted-mcp
-git pull --ff-only origin phase/12-aws-hosted-mcp
+git checkout --detach <new-reviewed-commit-sha>
 git rev-parse HEAD
 COMPOSE="docker compose --env-file /opt/commerce-ops-mcp/.env.compose -f docker-compose.production.yml"
 $COMPOSE build api admin
 $COMPOSE --profile admin run --rm admin bun run db:migrate
 $COMPOSE up -d api caddy
 $COMPOSE ps
+$COMPOSE --profile admin run --rm admin bun run db:verify-access:hosted
 ```
 
 Do not run demo reset during the seven-day review window unless the repository owner explicitly decides to clear the synthetic workflow evidence.
