@@ -15,6 +15,7 @@
     "db:setup-access": "bun run --filter @repo/db db:setup-access",
     "db:setup-access:local": "bun run --filter @repo/db db:setup-access:local",
     "db:verify-access": "bun run --filter @repo/db test:access",
+    "db:verify-access:hosted": "bun run --filter @repo/db test:access:hosted",
     "db:verify-demo": "bun run --filter @repo/fixtures verify",
     "dev": "turbo run dev",
     "eval:agent:gemini": "bun run --filter @repo/evaluations eval:agent:gemini",
