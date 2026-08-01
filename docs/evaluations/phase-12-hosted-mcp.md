@@ -62,15 +62,15 @@ Hosting a separate chat or model-proxy endpoint was excluded because it would ad
 
 ## Authentication results
 
-| Check | Expected | Result |
-| --- | --- | --- |
-| `GET /health` without token | HTTP 200 | PASS |
-| `/mcp` without Authorization | HTTP 401 `MCP_AUTH_REQUIRED` | PASS |
-| `/mcp` with malformed or incorrect token | HTTP 401 `MCP_AUTH_INVALID` | PASS |
-| `/mcp` with correct bearer token | MCP request continues | PASS |
-| Invalid Host header | HTTP 403 `MCP_HOST_NOT_ALLOWED` | PASS |
-| Authenticated malformed JSON | HTTP 400 `INVALID_JSON` | PASS |
-| Production without `MCP_API_KEY` | Startup configuration fails | PASS |
+| Check                                    | Expected                        | Result |
+| ---------------------------------------- | ------------------------------- | ------ |
+| `GET /health` without token              | HTTP 200                        | PASS   |
+| `/mcp` without Authorization             | HTTP 401 `MCP_AUTH_REQUIRED`    | PASS   |
+| `/mcp` with malformed or incorrect token | HTTP 401 `MCP_AUTH_INVALID`     | PASS   |
+| `/mcp` with correct bearer token         | MCP request continues           | PASS   |
+| Invalid Host header                      | HTTP 403 `MCP_HOST_NOT_ALLOWED` | PASS   |
+| Authenticated malformed JSON             | HTTP 400 `INVALID_JSON`         | PASS   |
+| Production without `MCP_API_KEY`         | Startup configuration fails     | PASS   |
 
 The expected and supplied token values are hashed before fixed-length comparison and are never logged or returned.
 
@@ -217,19 +217,19 @@ Final hosted result:
 
 ## Final verification matrix
 
-| Evidence | Result | Date |
-| --- | --- | --- |
-| Phase 12 static and regression CI | PASS | 2026-08-01 |
-| Docker image build | PASS | 2026-08-01 |
-| Local production Compose startup | PASS | 2026-08-01 |
-| Final EC2 commit refresh | PASS | 2026-08-01 |
-| Hosted-safe database verification | PASS | 2026-08-01 |
-| Hosted provider-independent verifier | PASS | 2026-08-01 |
-| MCP Inspector | PASS | 2026-08-01 |
-| Hosted nine-scenario AI verifier | PASS | 2026-08-01 |
-| Gemini CLI independent compatible client | PASS | 2026-08-01 |
-| Runtime credential isolation | PASS | 2026-08-01 |
-| `commerceStateChanged=false` | PASS | 2026-08-01 |
+| Evidence                                 | Result | Date       |
+| ---------------------------------------- | ------ | ---------- |
+| Phase 12 static and regression CI        | PASS   | 2026-08-01 |
+| Docker image build                       | PASS   | 2026-08-01 |
+| Local production Compose startup         | PASS   | 2026-08-01 |
+| Final EC2 commit refresh                 | PASS   | 2026-08-01 |
+| Hosted-safe database verification        | PASS   | 2026-08-01 |
+| Hosted provider-independent verifier     | PASS   | 2026-08-01 |
+| MCP Inspector                            | PASS   | 2026-08-01 |
+| Hosted nine-scenario AI verifier         | PASS   | 2026-08-01 |
+| Gemini CLI independent compatible client | PASS   | 2026-08-01 |
+| Runtime credential isolation             | PASS   | 2026-08-01 |
+| `commerceStateChanged=false`             | PASS   | 2026-08-01 |
 
 Full evidence:
 
