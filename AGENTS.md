@@ -6,12 +6,12 @@ Diagnose why a paid order has not reached shipment creation and create a persist
 
 ## Current gate
 
-- Phases 0 through 11 are accepted and merged into `main`.
-- Phase 11 was merged through PR #10 at `28632a46c1d8166a4f0967ce3e8373e2ee1e0de3`.
-- Phase 12 work belongs only on `phase/12-aws-hosted-mcp`.
-- Phase 12 makes the accepted MCP deployable to one always-on AWS EC2 instance and adds provider-independent and model-backed hosted verification.
-- Do not create AWS resources until the repository owner explicitly approves deployment.
-- Do not commit to `main`, merge the Phase 12 branch, or expose any secret.
+- Phases 0 through 12 are complete and merged into `main`.
+- Phase 12 was merged through PR #11 at `c4fb3eed9aa6a9a14d42f33087f86099fe12382b`.
+- The final deployed application SHA is `3ac6c89da3f7d7675256c23cc65e257e4e10892b`.
+- Current work is documentation-only final submission packaging on `docs/final-submission-packaging`.
+- Do not change runtime behavior, schemas, migrations, tests, workflows, deployment configuration, or infrastructure during packaging.
+- Do not deploy, merge, or expose any secret without explicit repository-owner approval.
 - The previously exposed Gemini key must never be reused, logged, stored, or committed.
 
 ## Permanent safety boundary
@@ -42,7 +42,7 @@ Tool rules:
 - Investigation and escalation are non-destructive workflow writes and idempotent by their approved keys.
 - Investigation never creates a review case automatically.
 - Escalation accepts only `investigationId` and `idempotencyKey`; queue, reason, order, and next step are server-derived.
-- All inputs and structured outputs validate through shared schemas.
+- All external inputs and structured outputs validate through shared Zod schemas.
 - Expected workflow failures return finite safe envelopes; unexpected failures map to `INTERNAL_ERROR`.
 
 ## Approved scenarios
@@ -63,17 +63,18 @@ Synthetic evidence uses the fixed reference time `2026-07-30T12:00:00.000Z`. Wal
 
 ## Package ownership
 
+- `packages/config`: environment and shared configuration parsing.
 - `packages/schemas`: public Zod and TypeScript contracts; no infrastructure imports.
-- `packages/db`: Prisma, clients, transactions, repositories, migrations, and owner-only testing helpers.
+- `packages/db`: Prisma, migrations, clients, transactions, repositories, and owner-only testing helpers.
 - `packages/fixtures`: frozen scenarios and explicit seed/reset/verify composition.
 - `packages/evidence`: normalized source collection through repository contracts.
-- `packages/diagnosis`: pure readiness and deterministic diagnosis.
+- `packages/diagnosis`: pure readiness, conflict detection, and deterministic diagnosis.
 - `packages/observability`: safe audit builders and trace reads.
 - `packages/workflow`: orchestration, persistence, idempotency, escalation, and safe workflow errors.
-- `packages/mcp`: the five approved tool adapters and MCP error mapping.
+- `packages/mcp`: exact five tool adapters, descriptions, annotations, transport handler, and safe MCP error mapping.
 - `apps/api`: Express composition, `/health`, authenticated `/mcp`, Host validation, transport lifecycle, and graceful shutdown.
+- `packages/agent`: provider-neutral model boundary, Gemini provider, exact MCP discovery, host-generated identifiers, tool policy, grounding validation, CLI, and smoke checks.
 - `packages/evaluations`: direct, hosted direct, and explicit model-backed evaluations; never imported by runtime code.
-- `packages/agent`: provider-neutral model boundary, Gemini provider, exact MCP discovery, host-generated identifiers, tool policy, grounding validation, CLI, and smoke check.
 
 Prisma remains private to `packages/db`. Runtime packages never import fixtures or evaluations. The AI host reaches the workflow only through Streamable HTTP MCP.
 
@@ -81,8 +82,8 @@ Prisma remains private to `packages/db`. Runtime packages never import fixtures 
 
 - `DATABASE_URL` is schema-owner only and is used for explicit migrations.
 - `DEMO_DATABASE_URL` is used only for explicit synthetic seed/reset operations.
-- `WORKFLOW_DATABASE_URL` is the restricted runtime connection: commerce `SELECT`, scoped operations writes, and approved investigation outcome updates.
-- The running API container receives only `WORKFLOW_DATABASE_URL`.
+- `WORKFLOW_DATABASE_URL` is the restricted runtime connection: commerce `SELECT`, scoped operations writes, and approved investigation lifecycle updates.
+- The running API container receives only `WORKFLOW_DATABASE_URL` and `MCP_API_KEY`.
 - The running API must not receive `DATABASE_URL`, `DEMO_DATABASE_URL`, or `MODEL_API_KEY`.
 - Migrations, role creation, access verification, and seeding are explicit one-off admin operations.
 - Do not run migrations or reset demo data automatically at API startup.
@@ -93,7 +94,6 @@ Prisma remains private to `packages/db`. Runtime packages never import fixtures 
 
 - Use pinned `@modelcontextprotocol/sdk` v1; the accepted resolved version is `1.30.0`.
 - Use stateless Streamable HTTP at `/mcp` with JSON responses.
-- Do not implement legacy HTTP+SSE.
 - Validate the Host header before MCP processing.
 - Protect only `/mcp` with `Authorization: Bearer <MCP_API_KEY>`.
 - Keep `GET /health` unauthenticated and model-independent.
@@ -102,26 +102,27 @@ Prisma remains private to `packages/db`. Runtime packages never import fixtures 
 - Malformed or incorrect authorization returns HTTP 401 `MCP_AUTH_INVALID`.
 - Compare tokens safely; never log or return either token.
 - Authentication must complete before creating the workflow context.
-- Do not add users, sessions, OAuth, refresh tokens, or browser credentials.
+- Do not add users, sessions, OAuth, refresh tokens, or browser credentials during submission packaging.
 
-## Phase 11 model boundary
+## Model boundary
 
 Gemini is used only for natural-language interaction and approved tool selection. The deterministic workflow remains authoritative for evidence, diagnosis, escalation policy, persistence, and audit behavior.
 
 - Keep `MODEL_PROVIDER=gemini`, the accepted model name, serialized requests, bounded retries, and safe `RATE_LIMITED` / `QUOTA_EXHAUSTED` errors.
 - Mutation requests are refused before any model or MCP call.
+- Reliability identifiers are generated in trusted host code and reused across exact retries.
 - The Gemini key stays on a trusted client or evaluation runner; it is not part of the hosted MCP runtime.
 - Model-provider failure must not disable `/health`, direct MCP use, persisted investigations, review cases, or trace retrieval.
 
-## Phase 12 deployment boundary
+## Hosted deployment boundary
 
-Use the minimum one-instance deployment:
+The accepted deployment uses:
 
-- Ubuntu 24.04 LTS on `t3.small` with 20 GB gp3.
-- Elastic IP and `commerce-mcp.ritikaxg.co.in`.
-- Docker Engine and Docker Compose.
-- PostgreSQL 16 container with a persistent named volume.
-- Existing TypeScript API container.
+- Ubuntu 24.04 LTS on `t3.small` with 20 GB encrypted gp3;
+- Elastic IP and `commerce-mcp.ritikaxg.co.in`;
+- Docker Engine and Docker Compose;
+- PostgreSQL 16 with a persistent named volume;
+- the TypeScript API container;
 - Caddy for HTTPS and the only public ports.
 
 Public endpoints:
@@ -129,75 +130,40 @@ Public endpoints:
 - `GET https://commerce-mcp.ritikaxg.co.in/health`
 - `POST https://commerce-mcp.ritikaxg.co.in/mcp`
 
-Do not expose ports 3000 or 5432. The security group allows public 80/443 and restricts SSH to the owner's current public IP. Do not add Kubernetes, ECS, an Application Load Balancer, RDS, or complex CI/CD.
+Do not expose ports 3000 or 5432. Do not add Kubernetes, ECS, an Application Load Balancer, RDS, or complex CI/CD as part of final packaging.
 
-The production Compose stack contains `postgres`, `api`, and `caddy`. A disabled-by-default `admin` profile is allowed only for explicit migrations, role setup, access verification, and synthetic seeding.
+## Accepted verification
 
-## Required hosted verification
+The final system has passed:
 
-### Provider-independent
+- repository build, typecheck, tests, and lint;
+- database migration, fixture, access, and invariant checks;
+- direct MCP evaluation through the official client;
+- local production Compose verification;
+- hosted provider-independent verification;
+- hosted-safe database verification;
+- MCP Inspector verification;
+- hosted nine-scenario model-backed evaluation;
+- Gemini CLI verification as an independent MCP-compatible AI client;
+- runtime credential-isolation checks;
+- commerce-state comparison with `commerceStateChanged=false`.
 
-`bun run verify:hosted:mcp` must:
+Do not weaken assertions, fabricate results, or make the live model provider a required deterministic CI dependency.
 
-1. use `MCP_SERVER_URL` and `MCP_AUTH_BEARER_TOKEN`;
-2. connect to an already-running endpoint without spawning a local API;
-3. verify public `/health`;
-4. initialize Streamable HTTP MCP;
-5. discover exactly five tools and their accepted schemas;
-6. list the nine approved scenarios;
-7. investigate `ORD-1042` and match the frozen result;
-8. create an escalation only from the stored investigation;
-9. read the review case and investigation trace;
-10. verify unknown-order safety and mutation-tool absence;
-11. confirm `commerceStateChanged=false`;
-12. require no model-provider key.
+## Final packaging rules
 
-### Model-backed
-
-`bun run verify:hosted:ai` must:
-
-1. verify hosted health and exact MCP discovery before provider calls;
-2. target the already-running hosted MCP URL;
-3. run only the existing nine natural-language scenario investigations;
-4. preserve serialized Gemini requests and bounded retries;
-5. compare deterministic scenario expectations;
-6. confirm `commerceStateChanged=false`;
-7. distinguish `HOSTED_MCP` failures from `MODEL_PROVIDER` failures;
-8. keep live provider verification manual and outside required CI.
-
-MCP Inspector and one MCP-compatible AI-client demonstration are required after owner-approved deployment. The optional trace viewer must not block or replace these demonstrations.
-
-## Verification and deployment gate
-
-Before AWS work:
-
-- verify `.env.local` is ignored;
-- install frozen dependencies;
-- run formatting, typecheck, tests, lint, database migrations, role/access tests, workflow regressions, and direct MCP evaluation;
-- build the production Docker image;
-- start the production Compose stack locally;
-- verify `/health`, missing/invalid/valid bearer behavior, Host rejection, malformed JSON, restricted runtime credentials, and internal-only API/PostgreSQL ports;
-- run the provider-independent hosted verifier with no `MODEL_API_KEY`.
-
-Do not suppress tests, weaken assertions, or make the live Gemini evaluation a required CI check.
-
-After owner-approved AWS deployment, record the deployed SHA, AWS region, health URL, MCP URL, deployment timestamp, last verification timestamp, and an intended shutdown timestamp at least seven complete days after submission. Keep restart policies, persistent volumes, EC2 status monitoring, safe log commands, and manual recovery instructions. This review-window commitment is not an SLA.
+- Documentation must describe the merged and deployed state accurately.
+- Distinguish the deployed application SHA, final Phase 12 branch head, merge commit, and later documentation-only commit.
+- Use only redacted screenshots. Never commit token controls, Authorization values, model keys, DB URLs, SSH material, or environment files.
+- Keep the README reviewer-focused; link detailed phase history rather than reproducing it.
+- The demo-video link remains explicitly incomplete until the owner records and supplies it.
+- Do not add a frontend, hosted chat service, OAuth, Redis, queues, Kafka, RAG, multi-agent orchestration, new scenarios, or new MCP tools.
 
 ## Repository conventions
 
 - Bun is the only package manager.
 - TypeScript strict mode and ESM.
-- No new `src/` directories.
 - Node.js 20.9.0 or newer.
-- Use Zod for external/untrusted contracts.
+- Use Zod for external and untrusted contracts.
 - Keep public APIs small and exported through package roots.
-- Do not introduce Redis, queues, Kafka, RAG, multi-agent orchestration, event sourcing, user authentication systems, or a new commerce backend.
 - Never commit `.env` files, credentials, production data, local database dumps, generated secrets, private keys, raw provider payloads, or unredacted evidence.
-
-## Branch and review boundary
-
-- Work only on `phase/12-aws-hosted-mcp`.
-- Keep changes minimal and scoped to authentication, hosted verification, EC2 deployment configuration, and evidence documentation.
-- Do not deploy AWS resources without explicit owner confirmation.
-- Do not merge the Phase 12 branch.
-- Before a pull request, provide exact verification results, changed files, environment variables still needed, branch status, and confirmation that no secrets or protected environment files are tracked.
