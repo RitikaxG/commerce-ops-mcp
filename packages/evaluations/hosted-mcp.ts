@@ -179,7 +179,9 @@ async function run(): Promise<void> {
     const investigation = InvestigateOrderExceptionToolSuccessSchema.parse(
       investigationCall.structuredContent,
     ).result;
-    assert.notEqual(investigation.status, "FAILED");
+    if (investigation.status === "FAILED") {
+      throw new Error("Representative investigation unexpectedly failed");
+    }
     assert.equal(investigation.orderId, "ORD-1042");
     assert.equal(
       investigation.decision.diagnosisCode,
