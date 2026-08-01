@@ -4,13 +4,15 @@
 
 - Implementation branch: `phase/12-aws-hosted-mcp`
 - Base: merged `main` containing Phase 11
-- Local/static verification: pending Phase 12 branch CI
-- AWS deployment: not started; requires repository-owner approval
-- Hosted direct MCP verification: pending deployment
-- MCP Inspector verification: pending deployment
-- Hosted model-backed verification: pending deployment and a rotated local Gemini key
+- Local production verification: PASS
+- Phase 12 static and production Compose CI: PASS
+- AWS deployment: PASS
+- Hosted direct MCP verification: PASS
+- MCP Inspector verification: PASS
+- Hosted model-backed verification: PASS
 - Pull request: not created
 - Merge: not requested
+- Post-deployment test/documentation hardening: committed; EC2 refresh pending final branch CI
 
 ## Accepted scope
 
@@ -37,51 +39,78 @@ MCP Inspector or direct MCP client
 
 This path requires no `MODEL_API_KEY`.
 
-### Model-backed path
+### Model-backed interaction
 
 ```text
-Trusted local AI host / MCP-compatible client
-  -> Gemini
+Trusted MCP-compatible AI host or client
+  -> its configured model provider
   -> hosted HTTPS /mcp with bearer API key
   -> deterministic workflow
   -> restricted PostgreSQL role
 ```
 
-The Gemini key remains on the trusted client and is not placed on EC2.
+There is no separate model-backed MCP URL. The hosted `/mcp` endpoint is the deterministic tool server. A model-backed experience is created when an MCP-compatible AI client connects to that endpoint and supplies its own model provider. The Gemini key remains on the trusted client and is not placed on EC2.
+
+Hosting a separate model proxy or chat endpoint is outside Phase 12 because it would add provider credentials, cost controls, rate limiting, privacy boundaries, and another authentication surface.
 
 ## Authentication results
 
-| Check                                    | Expected                        | Result     |
-| ---------------------------------------- | ------------------------------- | ---------- |
-| `GET /health` without token              | HTTP 200                        | Pending CI |
-| `/mcp` without Authorization             | HTTP 401 `MCP_AUTH_REQUIRED`    | Pending CI |
-| `/mcp` with malformed or incorrect token | HTTP 401 `MCP_AUTH_INVALID`     | Pending CI |
-| `/mcp` with correct bearer token         | MCP request continues           | Pending CI |
-| Invalid Host header                      | HTTP 403 `MCP_HOST_NOT_ALLOWED` | Pending CI |
-| Authenticated malformed JSON             | HTTP 400 `INVALID_JSON`         | Pending CI |
-| Production without `MCP_API_KEY`         | Startup configuration fails     | Pending CI |
+| Check                                    | Expected                        | Result |
+| ---------------------------------------- | ------------------------------- | ------ |
+| `GET /health` without token              | HTTP 200                        | PASS   |
+| `/mcp` without Authorization             | HTTP 401 `MCP_AUTH_REQUIRED`    | PASS   |
+| `/mcp` with malformed or incorrect token | HTTP 401 `MCP_AUTH_INVALID`     | PASS   |
+| `/mcp` with correct bearer token         | MCP request continues           | PASS   |
+| Invalid Host header                      | HTTP 403 `MCP_HOST_NOT_ALLOWED` | PASS   |
+| Authenticated malformed JSON             | HTTP 400 `INVALID_JSON`         | PASS   |
+| Production without `MCP_API_KEY`         | Startup configuration fails     | PASS   |
 
 The token is compared through fixed-length SHA-256 digests with `timingSafeEqual`. The supplied and expected tokens are never logged or returned.
 
 ## Deployment configuration
 
+- EC2 region: `ap-south-1`.
+- Operating system: Ubuntu Server 24.04 LTS, x86_64.
+- Instance class: `t3.small`.
+- Root volume: 20 GB encrypted gp3.
+- Elastic IP and GoDaddy `A` record configured for `commerce-mcp.ritikaxg.co.in`.
 - `Dockerfile`: builds the existing API and generated Prisma client.
 - `docker-compose.production.yml`: PostgreSQL, API, Caddy, plus an explicit one-off admin profile.
 - `Caddyfile`: publishes only `/health` and `/mcp` through HTTP/HTTPS.
+- Caddy obtained a public TLS certificate successfully.
 - PostgreSQL data and Caddy state use named volumes.
 - API and PostgreSQL ports are not published to the host.
-- API receives only `WORKFLOW_DATABASE_URL` at runtime.
-- Migrations, role creation, and synthetic seeding are explicit admin operations.
+- API receives only `WORKFLOW_DATABASE_URL` and `MCP_API_KEY` at runtime.
+- API receives no owner, demo, or model-provider credential.
+- Migrations, role creation, and synthetic seeding remain explicit admin operations.
 
-## Hosted verifier contracts
+## Reviewer request identifiers
+
+The reviewer should call `list_demo_cases` before investigating an order.
+
+For `investigate_order_exception`:
+
+- `orderId`: choose a returned synthetic order ID.
+- `clientRequestId`: generate a new UUID-based value for each new logical request.
+- `idempotencyKey`: generate a new UUID-based value for each new investigation and reuse it only when retrying the exact same arguments.
+
+For `create_human_review_escalation`, use the returned `investigationId`, generate a new escalation idempotency key, and reuse it only for retrying that same escalation.
+
+Reusing an idempotency key with different arguments is rejected as `IDEMPOTENCY_KEY_REUSE`. Reusing a client request ID for another logical request is rejected as `CLIENT_REQUEST_ID_REUSE`.
+
+## Hosted verifier results
 
 ### Provider-independent
+
+Command:
 
 ```bash
 bun --env-file=.env.local run verify:hosted:mcp
 ```
 
-Expected coverage:
+Result: PASS.
+
+Verified:
 
 - public health;
 - authenticated MCP initialization;
@@ -98,53 +127,76 @@ Expected coverage:
 
 ### Model-backed
 
+Command:
+
 ```bash
 bun --env-file=.env.local run verify:hosted:ai
 ```
 
-Expected coverage:
+Result: PASS.
 
-- hosted MCP health and exact tool discovery before provider calls;
-- the existing nine approved natural-language investigations only;
-- serialized provider requests and bounded retries;
-- exact deterministic scenario expectations;
-- `commerceStateChanged=false`;
-- distinct `HOSTED_MCP` and `MODEL_PROVIDER` failure boundaries;
-- explicit `RATE_LIMITED` and `QUOTA_EXHAUSTED` provider failures.
+- Scenarios completed: 9 of 9.
+- Sequential provider requests: true.
+- Model calls: 18.
+- Input tokens: 10,907.
+- Output tokens: 969.
+- Total tokens: 13,007.
+- Duration: approximately 187 seconds.
+- `commerceStateChanged=false`.
+- `hostedMcpVerifiedBeforeProviderCalls=true`.
 
-The model-backed verifier is manual and is not a required CI check.
+The model-backed verifier remains manual and is not a required CI check.
 
 ## Deployment evidence
 
-Complete after repository-owner approval and AWS deployment.
+| Field                       | Value                                                         |
+| --------------------------- | ------------------------------------------------------------- |
+| Initial deployed commit SHA | `6498a09647e0da90b7197a7becc1163c87c8cf85`                    |
+| AWS region                  | `ap-south-1`                                                  |
+| Deployment date             | 2026-08-01                                                    |
+| Hosted health URL           | `https://commerce-mcp.ritikaxg.co.in/health`                  |
+| Hosted MCP URL              | `https://commerce-mcp.ritikaxg.co.in/mcp`                     |
+| Transport                   | Streamable HTTP                                               |
+| Authentication              | `Authorization: Bearer <redacted>`                            |
+| Last successful verification| 2026-08-01                                                    |
+| Intended shutdown           | No earlier than 2026-08-09, or after client review completes |
 
-| Field                       | Value                                                  |
-| --------------------------- | ------------------------------------------------------ |
-| Deployed commit SHA         | Pending                                                |
-| AWS region                  | Pending; planned `ap-south-1`                          |
-| Deployment timestamp        | Pending                                                |
-| Hosted health URL           | `https://commerce-mcp.ritikaxg.co.in/health`           |
-| Hosted MCP URL              | `https://commerce-mcp.ritikaxg.co.in/mcp`              |
-| Transport                   | Streamable HTTP                                        |
-| Authentication              | `Authorization: Bearer <redacted>`                     |
-| Last verification timestamp | Pending                                                |
-| Intended shutdown timestamp | Pending; at least seven complete days after submission |
+The branch now contains a hosted-safe database verification command and clearer reviewer guidance. After final branch CI passes, EC2 must be refreshed to that exact branch commit and this table must be updated with the final deployed SHA.
 
 ## Verification evidence
 
-| Evidence                                             | Result  | Timestamp |
-| ---------------------------------------------------- | ------- | --------- |
-| Phase 12 static and regression CI                    | Pending | Pending   |
-| Docker image build                                   | Pending | Pending   |
-| Local production Compose startup                     | Pending | Pending   |
-| Local production `/health`                           | Pending | Pending   |
-| Local authenticated `/mcp`                           | Pending | Pending   |
-| Local model-independent demo without `MODEL_API_KEY` | Pending | Pending   |
-| Hosted provider-independent verifier                 | Pending | Pending   |
-| MCP Inspector                                        | Pending | Pending   |
-| Hosted nine-scenario AI verifier                     | Pending | Pending   |
-| MCP-compatible AI-client representative run          | Pending | Pending   |
-| `commerceStateChanged=false`                         | Pending | Pending   |
+| Evidence                                             | Result | Date       |
+| ---------------------------------------------------- | ------ | ---------- |
+| Phase 12 static and regression CI                    | PASS   | 2026-08-01 |
+| Docker image build                                   | PASS   | 2026-08-01 |
+| Local production Compose startup                     | PASS   | 2026-08-01 |
+| Local production `/health`                           | PASS   | 2026-08-01 |
+| Local authenticated `/mcp`                           | PASS   | 2026-08-01 |
+| Local model-independent demo without `MODEL_API_KEY` | PASS   | 2026-08-01 |
+| Hosted provider-independent verifier                 | PASS   | 2026-08-01 |
+| MCP Inspector                                        | PASS   | 2026-08-01 |
+| Hosted nine-scenario AI verifier                     | PASS   | 2026-08-01 |
+| `commerceStateChanged=false`                         | PASS   | 2026-08-01 |
+| Runtime credential isolation                         | PASS   | 2026-08-01 |
+
+Detailed redacted evidence:
+
+- [Hosted direct MCP](phase-12-hosted-mcp/hosted-direct.md)
+- [MCP Inspector](phase-12-hosted-mcp/mcp-inspector.md)
+- [Hosted model-backed verification](phase-12-hosted-mcp/hosted-ai.md)
+- [Hosted database verification boundary](phase-12-hosted-mcp/database-verification.md)
+
+## Hosted database verification boundary
+
+The original `db:verify-access` suite contains a Phase 4 clean-state invariant that expects the operations schema to be empty after its own transaction rolls back. That is correct for clean CI and initial deployment verification, but it is not rerunnable after hosted tool calls intentionally persist workflow evidence.
+
+Phase 12 therefore adds:
+
+```bash
+bun run db:verify-access:hosted
+```
+
+The hosted-safe command preserves the role permission tests and compares commerce fingerprints and workflow counts before and after a rolled-back verification transaction. It must not delete or reset reviewer evidence.
 
 ## Provider-failure behavior
 
@@ -156,16 +208,16 @@ A Gemini `RATE_LIMITED` or `QUOTA_EXHAUSTED` result belongs to the `MODEL_PROVID
 - persisted review cases;
 - trace retrieval.
 
-After a provider failure, rerun `verify:hosted:mcp` without `MODEL_API_KEY` to record that the MCP remains independently usable.
+The completed hosted AI run did not exhaust quota, but the accepted failure handling remains bounded and documented.
 
 ## Seven-day availability commitment
 
-After submission, record the deployment timestamp and an intended shutdown timestamp at least seven complete days later. Keep the EC2 instance running, retain `restart: unless-stopped`, monitor EC2 status checks, and use the documented health, status, log, and recovery commands. This is a scoped review-window commitment, not an SLA.
+Keep the EC2 instance running through at least 2026-08-09 or until the client confirms review is complete. Retain `restart: unless-stopped`, monitor EC2 status checks, and use the documented health, status, log, and recovery commands. This is a scoped review-window commitment, not an SLA.
 
 ## Known limitations
 
 - One EC2 instance and one PostgreSQL container are a deliberate submission-scope single point of failure.
 - There is no automated failover or horizontal scaling.
 - The bearer API key is one shared deployment credential; OAuth and user accounts are intentionally out of scope.
-- Gemini free-tier or project quota may prevent the model-backed demonstration while the deterministic hosted MCP remains available.
-- Hosted, Inspector, and AI-client results cannot be recorded until the repository owner approves AWS and DNS changes.
+- Gemini free-tier or project quota may prevent a later model-backed demonstration while the deterministic hosted MCP remains available.
+- The final deployed SHA must be refreshed after post-deployment test and documentation hardening passes CI.
