@@ -16,6 +16,7 @@
     "db:setup-access:local": "bun scripts/setup-access.ts --create-local-credentials",
     "test": "bun test tests",
     "test:access": "bun test tests/permissions.test.ts tests/invariants.test.ts",
+    "test:access:hosted": "bun test tests/permissions.test.ts tests/hosted-invariants.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
