@@ -6,7 +6,7 @@ This repository implements a bounded operations workflow that explains why a pai
 
 Phases 0 through 11 are complete and merged into `main`. Phase 11 provides the accepted provider-neutral AI host, Gemini integration, serialized requests, bounded retries, safe `RATE_LIMITED` and `QUOTA_EXHAUSTED` failures, and model-backed verification across the existing nine synthetic scenarios.
 
-Phase 12 is implemented on `phase/12-aws-hosted-mcp` and is awaiting branch verification and repository-owner approval for AWS deployment. It adds production bearer authentication for `/mcp`, provider-independent and model-backed hosted verification modes, a one-instance Docker Compose deployment for EC2, Caddy HTTPS termination, explicit database credential boundaries, and deployment/evidence documentation.
+Phase 12 is deployed and verified from `phase/12-aws-hosted-mcp`. It adds production bearer authentication for `/mcp`, provider-independent and model-backed hosted verification modes, a one-instance Docker Compose deployment for EC2, Caddy HTTPS termination, explicit database credential boundaries, and deployment/evidence documentation. The Phase 12 pull request is not yet created.
 
 The deterministic workflow remains authoritative for evidence readiness, diagnosis, escalation policy, persistence, and audit behavior. Gemini selects approved tools and explains validated server results; it never calculates or changes the diagnosis, queue, next step, or commerce state.
 
@@ -42,14 +42,45 @@ This path does not require `MODEL_API_KEY`.
 ### Demo B: model-backed interaction
 
 ```text
-Trusted local MCP-compatible AI client
-  -> Gemini
+Trusted MCP-compatible AI host or client
+  -> its configured model provider
   -> HTTPS /mcp with bearer API key
   -> deterministic workflow
   -> restricted PostgreSQL role
 ```
 
-The Gemini key remains on the trusted local client and is not installed on EC2.
+There is no separate "model-backed MCP URL." The hosted URL is the MCP tool server. A model-backed experience is created by connecting an MCP-compatible AI client to that same URL. The model/provider key remains with the trusted client and is not installed on EC2. Hosting a separate chat or model-proxy endpoint would be a different product surface with additional cost, provider credentials, rate limits, privacy controls, and authentication; it is intentionally outside Phase 12.
+
+## Reviewer tool inputs
+
+Start with `list_demo_cases` to discover the nine valid synthetic `orderId` values.
+
+For `investigate_order_exception`:
+
+- `orderId`: choose an ID returned by `list_demo_cases`, for example `ORD-1042`.
+- `clientRequestId`: identifies one logical caller request. Generate a new UUID-based value for every new investigation request.
+- `idempotencyKey`: identifies the operation for safe retry. Generate a new UUID-based value for every new investigation and reuse the same value only when retrying that exact request with the same arguments.
+
+Example:
+
+```json
+{
+  "orderId": "ORD-1042",
+  "clientRequestId": "reviewer-request-550e8400-e29b-41d4-a716-446655440000",
+  "idempotencyKey": "investigate-ORD-1042-550e8400-e29b-41d4-a716-446655440001"
+}
+```
+
+For `create_human_review_escalation`, use the `investigationId` returned by the investigation and generate a new escalation idempotency key. Reuse that key only when retrying the exact same escalation:
+
+```json
+{
+  "investigationId": "<returned-investigation-id>",
+  "idempotencyKey": "escalate-550e8400-e29b-41d4-a716-446655440002"
+}
+```
+
+Reusing an idempotency key with different arguments is rejected as `IDEMPOTENCY_KEY_REUSE`. Reusing a client request ID for a different logical investigation is rejected as `CLIENT_REQUEST_ID_REUSE`.
 
 ## Authentication behavior
 
@@ -106,7 +137,15 @@ git check-ignore -v .env.local
 
 ## Phase 12 local verification
 
-Install and run the ordinary repository checks:
+The complete production-like local verification is automated:
+
+```bash
+bun run verify:phase12:local
+```
+
+It builds the production image, starts PostgreSQL/API/Caddy, runs migrations and access setup, seeds the nine cases, verifies authentication and all five tools, checks the runtime credential boundary, and removes temporary resources.
+
+Ordinary repository checks remain available:
 
 ```bash
 bun install --frozen-lockfile
@@ -117,7 +156,7 @@ bun run test
 bun run lint
 ```
 
-With the accepted local PostgreSQL role configuration:
+On a clean database, run:
 
 ```bash
 bun run db:migrate
@@ -128,22 +167,13 @@ bun run db:verify-access
 bun run eval:mcp:direct
 ```
 
-Build the production image and run the production Compose stack using protected runtime/admin environment files:
+After hosted investigations and review records exist, use the rerunnable hosted-safe database check:
 
 ```bash
-docker build -t commerce-ops-mcp-api:phase12 .
-docker compose --env-file .env.compose -f docker-compose.production.yml up -d postgres
-docker compose --env-file .env.compose -f docker-compose.production.yml \
-  --profile admin run --rm admin bun run db:migrate
-docker compose --env-file .env.compose -f docker-compose.production.yml \
-  --profile admin run --rm admin bun run db:setup-access
-docker compose --env-file .env.compose -f docker-compose.production.yml \
-  --profile admin run --rm admin bun run db:seed
-docker compose --env-file .env.compose -f docker-compose.production.yml \
-  up -d api caddy
+bun run db:verify-access:hosted
 ```
 
-The API and PostgreSQL ports are internal only. Caddy publishes ports 80 and 443.
+The clean-state `db:verify-access` suite intentionally verifies that its test transaction leaves an otherwise empty operations schema empty. The hosted-safe command instead compares workflow and commerce state before and after its own rolled-back verification transaction, preserving existing reviewer evidence.
 
 ## Hosted provider-independent verification
 
@@ -223,7 +253,7 @@ Deployment and operations guide:
 - [Phase 12 evaluation report](docs/evaluations/phase-12-hosted-mcp.md)
 - [Hosted evidence guide](docs/evaluations/phase-12-hosted-mcp/README.md)
 
-The target is Ubuntu 24.04 LTS, `t3.small`, 20 GB gp3, an Elastic IP, and `ap-south-1` unless the repository owner chooses another region. No AWS access keys are required by the application.
+The target is Ubuntu 24.04 LTS, `t3.small`, 20 GB gp3, an Elastic IP, and `ap-south-1`. No AWS access keys are required by the application.
 
 ## Plan and architecture references
 
@@ -237,21 +267,21 @@ The target is Ubuntu 24.04 LTS, `t3.small`, 20 GB gp3, an Elastic IP, and `ap-so
 
 ## Implementation status
 
-| Phase | Status                                        | Main output                                      | Evaluation                                                            |
-| ----- | --------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- |
-| 0     | Complete                                      | Workflow contract and repository rules           | [Report](docs/evaluations/phase-00.md)                                |
-| 1     | Complete                                      | Approved PostgreSQL schema                       | [Report](docs/evaluations/phase-01.md)                                |
-| 2     | Complete                                      | Bun and Turborepo foundation                     | [Report](docs/evaluations/phase-02.md)                                |
-| 3     | Complete                                      | Approved scenarios and PostgreSQL seed/reset     | [Report](docs/evaluations/phase-03-synthetic-scenarios.md)            |
-| 4     | Complete                                      | Roles, grants, immutable records and invariants  | [Report](docs/evaluations/phase-04-database-hardening.md)             |
-| 5     | Complete                                      | Read-only commerce repositories                  | [Report](docs/evaluations/phase-05-readonly-commerce-repositories.md) |
-| 6     | Complete                                      | Evidence collection and normalization            | [Report](docs/evaluations/phase-06-evidence-collector.md)             |
-| 7     | Complete                                      | Evidence readiness and conflict gate             | [Report](docs/evaluations/phase-07-evidence-readiness.md)             |
-| 8     | Complete                                      | Deterministic diagnosis and suggested action     | [Report](docs/evaluations/phase-08-diagnosis-engine.md)               |
-| 9     | Complete                                      | Persistent investigation and escalation workflow | [Report](docs/evaluations/phase-09-persistence-escalation.md)         |
-| 10    | Complete                                      | Remote MCP server and direct tool evaluation     | [Report](docs/evaluations/phase-10-remote-mcp.md)                     |
-| 11    | Complete                                      | Gemini AI host and model-backed MCP evaluation   | [Report](docs/evaluations/phase-11-gemini-ai-host.md)                 |
-| 12    | Awaiting branch verification and AWS approval | Bearer-protected hosted MCP and EC2 deployment   | [Report](docs/evaluations/phase-12-hosted-mcp.md)                     |
+| Phase | Status                                      | Main output                                      | Evaluation                                                            |
+| ----- | ------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- |
+| 0     | Complete                                    | Workflow contract and repository rules           | [Report](docs/evaluations/phase-00.md)                                |
+| 1     | Complete                                    | Approved PostgreSQL schema                       | [Report](docs/evaluations/phase-01.md)                                |
+| 2     | Complete                                    | Bun and Turborepo foundation                     | [Report](docs/evaluations/phase-02.md)                                |
+| 3     | Complete                                    | Approved scenarios and PostgreSQL seed/reset     | [Report](docs/evaluations/phase-03-synthetic-scenarios.md)            |
+| 4     | Complete                                    | Roles, grants, immutable records and invariants  | [Report](docs/evaluations/phase-04-database-hardening.md)             |
+| 5     | Complete                                    | Read-only commerce repositories                  | [Report](docs/evaluations/phase-05-readonly-commerce-repositories.md) |
+| 6     | Complete                                    | Evidence collection and normalization            | [Report](docs/evaluations/phase-06-evidence-collector.md)             |
+| 7     | Complete                                    | Evidence readiness and conflict gate             | [Report](docs/evaluations/phase-07-evidence-readiness.md)             |
+| 8     | Complete                                    | Deterministic diagnosis and suggested action     | [Report](docs/evaluations/phase-08-diagnosis-engine.md)               |
+| 9     | Complete                                    | Persistent investigation and escalation workflow | [Report](docs/evaluations/phase-09-persistence-escalation.md)         |
+| 10    | Complete                                    | Remote MCP server and direct tool evaluation     | [Report](docs/evaluations/phase-10-remote-mcp.md)                     |
+| 11    | Complete                                    | Gemini AI host and model-backed MCP evaluation   | [Report](docs/evaluations/phase-11-gemini-ai-host.md)                 |
+| 12    | Deployed and verified; PR pending           | Bearer-protected hosted MCP and EC2 deployment   | [Report](docs/evaluations/phase-12-hosted-mcp.md)                     |
 
 ## Existing regression commands
 
@@ -271,4 +301,4 @@ The direct evaluator builds and starts the real Express API locally, connects wi
 
 ## Availability window
 
-After owner-approved deployment, record the deployment timestamp, intended shutdown timestamp, region, commit SHA, hosted URLs, and last verification timestamp in the Phase 12 report. Keep the EC2 instance and containers running for at least seven complete days after submission. The repository documents a scoped review window and does not promise an SLA.
+The deployment is intended to remain available through at least August 9, 2026, or until the client confirms review is complete. The repository documents a scoped review window and does not promise an SLA.
