@@ -22,6 +22,8 @@
 
 The model provider was used only for natural-language interaction and approved tool selection. Deterministic workflow results remained authoritative. The Gemini key remained local and was not installed on EC2.
 
+![Hosted model-backed evaluation result](../../../images/model-backed-evaluation.png)
+
 ## Independent Gemini CLI verification
 
 - Date: 2026-08-01
@@ -53,7 +55,7 @@ recommended next step: review reassignment; do not change commerce automatically
 commerceStateChanged: false
 ```
 
-![Gemini CLI grounded result](../../evidence/final-submission/06-gemini-grounded-result.jpg)
+![Gemini CLI using the hosted MCP to answer ORD-1042](../../../images/gemini-client-using-mcp-to-respond.png)
 
 ## Boundary demonstrated
 
