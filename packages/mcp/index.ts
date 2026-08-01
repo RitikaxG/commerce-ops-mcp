@@ -144,7 +144,7 @@ export function createCommerceOperationsMcpServer(
     {
       title: "Investigate an order exception",
       description:
-        "Reads commerce evidence, applies the deterministic workflow, and persists an investigation, immutable evidence snapshot, idempotency response, and append-only audit events in operations records. It does not create a human-review case and always reports commerceStateChanged=false.",
+        "Reads commerce evidence, applies the deterministic workflow, and persists an investigation, immutable evidence snapshot, idempotency response, and append-only audit events in operations records. It does not create a human-review case and always reports commerceStateChanged=false. Choose orderId from list_demo_cases. Generate a unique clientRequestId for each new logical request and a unique idempotencyKey for each new investigation; when retrying the exact same request, reuse both values. UUID-based values are recommended.",
       inputSchema: InvestigateOrderExceptionInputSchema,
       outputSchema: InvestigateOrderExceptionToolOutputSchema,
       annotations: workflowWriteAnnotations,
@@ -160,7 +160,7 @@ export function createCommerceOperationsMcpServer(
     {
       title: "Create a human-review escalation",
       description:
-        "Creates or reuses one persistent human-review case derived only from a stored eligible investigation. It writes escalation, idempotency, and append-only audit records but never changes commerce state and always reports commerceStateChanged=false.",
+        "Creates or reuses one persistent human-review case derived only from a stored eligible investigation. It writes escalation, idempotency, and append-only audit records but never changes commerce state and always reports commerceStateChanged=false. Use the investigationId returned by investigate_order_exception. Generate a new idempotencyKey for a new escalation request and reuse that same key only when retrying the exact same escalation.",
       inputSchema: CreateHumanReviewEscalationInputSchema,
       outputSchema: CreateHumanReviewEscalationToolOutputSchema,
       annotations: workflowWriteAnnotations,
