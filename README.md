@@ -117,11 +117,21 @@ The fixtures use a fixed reference time and contain no real customer data. See t
 
 ### MCP Inspector: exact five-tool discovery
 
-![MCP Inspector showing the five approved tools](docs/evidence/final-submission/02-inspector-five-tools.jpg)
+![MCP Inspector showing the exact five approved tools](images/all-tools-rendered.png)
 
-### MCP-compatible AI client: grounded hosted result
+### Hosted workflow: grounded investigation result
 
-![Gemini CLI grounded ORD-1042 result](docs/evidence/final-submission/06-gemini-grounded-result.jpg)
+![MCP Inspector showing the persisted ORD-1042 investigation result](images/investigation-result.png)
+
+### Automated hosted model-backed evaluation
+
+![Hosted model-backed evaluation result](images/model-backed-evaluation.png)
+
+### Independent MCP-compatible AI client
+
+![Gemini CLI using the hosted MCP to answer the order investigation](images/gemini-client-using-mcp-to-respond.png)
+
+The complete sequence, including the authenticated Inspector setup and investigation input, is documented in the [Reviewer guide](docs/reviewer-guide.md) and [evidence index](docs/evidence/final-submission/README.md).
 
 ## Important tradeoffs and limitations
 
