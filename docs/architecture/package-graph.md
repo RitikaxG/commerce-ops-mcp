@@ -2,31 +2,50 @@
 
 ## Status
 
-Phases 0 through 9 implement the deterministic commerce-operations workflow. Phase 10 adds the remote MCP adapter, Streamable HTTP API composition, strict MCP contracts, and direct protocol evaluation. Phase 11 adds a provider-neutral Gemini AI host and explicit model-backed evaluation without moving business decisions into the model.
+Phases 0 through 12 are complete and merged. The repository contains the deterministic commerce-operations workflow, remote authenticated MCP, provider-neutral Gemini AI host, hosted AWS deployment, and direct plus model-backed verification.
 
-## Dependency direction
+The final submission packaging changes documentation and redacted evidence only. They do not change the dependency graph or deployed runtime.
+
+## Product and deployment path
 
 ```mermaid
 flowchart TD
-  User["Operations user"] --> Agent["packages/agent<br/>Gemini AI host"]
-  Agent -->|Gemini Interactions API| Gemini["Gemini API"]
-  Agent -->|Streamable HTTP only| API["apps/api"]
+  User[Operations user] --> Client[MCP Inspector or MCP-compatible AI client]
+  Client -->|Streamable HTTP + bearer token| Caddy[Caddy HTTPS]
+  Caddy --> API[apps/api]
+  API --> MCP[packages/mcp]
+  MCP --> Workflow[packages/workflow]
+  Workflow --> Evidence[packages/evidence]
+  Workflow --> Diagnosis[packages/diagnosis]
+  Workflow --> Observability[packages/observability]
+  Workflow --> DB[packages/db]
+  DB --> Commerce[(PostgreSQL commerce - SELECT only)]
+  DB --> Operations[(PostgreSQL operations - scoped writes)]
+  Client -->|client-owned provider credential| Model[Model provider]
+```
 
-  Web["apps/web<br/>read-only trace viewer"] -->|HTTP only| API
-  Web --> Schemas
+The model provider and the hosted MCP are separate availability and credential boundaries. No model-provider key is installed on the EC2 MCP server.
 
-  API --> Config["packages/config"]
-  API --> MCP["packages/mcp"]
-  API --> Workflow["packages/workflow"]
+## Source-code dependency direction
 
-  MCP --> Schemas["packages/schemas"]
+```mermaid
+flowchart TD
+  User[Operations user] --> Agent[packages/agent]
+  Agent -->|Gemini API| Gemini[Gemini provider]
+  Agent -->|Streamable HTTP only| API[apps/api]
+
+  API --> Config[packages/config]
+  API --> MCP[packages/mcp]
+  API --> Workflow[packages/workflow]
+
+  MCP --> Schemas[packages/schemas]
   MCP --> Workflow
 
   Workflow --> Schemas
-  Workflow --> DB["packages/db"]
-  Workflow --> Evidence["packages/evidence"]
-  Workflow --> Diagnosis["packages/diagnosis"]
-  Workflow --> Obs["packages/observability"]
+  Workflow --> DB[packages/db]
+  Workflow --> Evidence[packages/evidence]
+  Workflow --> Diagnosis[packages/diagnosis]
+  Workflow --> Obs[packages/observability]
 
   Evidence --> Schemas
   Evidence --> DB
@@ -36,41 +55,40 @@ flowchart TD
   DB --> Config
   DB --> Schemas
 
-  Fixtures["packages/fixtures"] --> Schemas
+  Fixtures[packages/fixtures] --> Schemas
   Fixtures --> DB
   Agent --> Schemas
 
-  Evaluations["packages/evaluations"] --> Agent
+  Evaluations[packages/evaluations] --> Agent
   Evaluations --> Fixtures
   Evaluations --> MCP
   Evaluations --> Workflow
   Evaluations --> DB
 
-  DB --> Commerce[("PostgreSQL commerce<br/>runtime SELECT only")]
-  DB --> Operations[("PostgreSQL operations<br/>scoped workflow writes")]
+  DB --> Commerce[(PostgreSQL commerce - runtime SELECT only)]
+  DB --> Operations[(PostgreSQL operations - scoped workflow writes)]
 ```
 
-Arrows mean source-code dependency unless labelled HTTP or Gemini API. `packages/agent` does not import the API application, MCP server, workflow, database, fixtures, evidence, diagnosis, or observability implementation. It reaches the workflow only through the remote MCP protocol. Browser code never imports API or database runtime code.
+Arrows mean source-code dependency unless labelled HTTP or provider API. `packages/agent` does not import workflow internals, MCP server implementation, database code, Prisma, evidence, diagnosis, fixtures, or observability. It reaches the product workflow through the remote MCP protocol.
 
 ## Ownership
 
-| Component                | Owns                                                                                                                                                                                                                                  | May import                                                |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `apps/api`               | Express composition, `/health`, `/mcp`, Host validation, MCP transport lifecycle, graceful shutdown                                                                                                                                   | `config`, `mcp`, `workflow`                               |
-| `apps/web`               | Later minimal read-only trace viewer                                                                                                                                                                                                  | shared schemas and API over HTTP                          |
-| `packages/config`        | Environment and shared configuration parsing                                                                                                                                                                                          | no domain runtime package                                 |
-| `packages/schemas`       | Public Zod and TypeScript contracts                                                                                                                                                                                                   | no infrastructure package                                 |
-| `packages/db`            | Prisma, migrations, database clients, transactions, repository contracts and implementations                                                                                                                                          | `config`, `schemas`                                       |
-| `packages/fixtures`      | Frozen scenarios, fixture validation, explicit seed/reset/verify                                                                                                                                                                      | `schemas`, `db`                                           |
-| `packages/evidence`      | Evidence collection and source-read metadata                                                                                                                                                                                          | `schemas`, repository contracts from `db`                 |
-| `packages/diagnosis`     | Readiness, conflicts, deterministic diagnosis                                                                                                                                                                                         | `schemas` only                                            |
-| `packages/observability` | Safe audit builders and trace queries                                                                                                                                                                                                 | `schemas`, repository contracts from `db`                 |
-| `packages/workflow`      | Investigation/escalation orchestration, persistence, idempotency, audit coordination, demo catalog                                                                                                                                    | `schemas`, `db`, `evidence`, `diagnosis`, `observability` |
-| `packages/mcp`           | Exact five tool registrations, descriptions, annotations, adapters, safe error mapping, stateless transport handler                                                                                                                   | `schemas`, `workflow`, official MCP SDK                   |
-| `packages/agent`         | Provider-neutral model interface, Gemini provider, system policy, exact MCP discovery, model-facing tool projection, host-generated identifiers, bounded tool loop, compact result projection, grounding gate, CLI, model smoke check | `schemas`, official MCP client SDK, `@google/genai`       |
-| `packages/evaluations`   | Direct MCP evaluation and explicit live Gemini model evaluation                                                                                                                                                                       | top-level packages under test, `fixtures`, `db/testing`   |
+| Component                | Owns                                                                                                                                                                | May import                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `apps/api`               | Express composition, `/health`, authenticated `/mcp`, Host validation, MCP transport lifecycle, graceful shutdown                                                   | `config`, `mcp`, `workflow`                                              |
+| `packages/config`        | Environment and shared configuration parsing                                                                                                                        | No domain runtime package                                                |
+| `packages/schemas`       | Public Zod and TypeScript contracts                                                                                                                                 | No infrastructure package                                                |
+| `packages/db`            | Prisma, migrations, database clients, transactions, repository contracts and implementations                                                                        | `config`, `schemas`                                                      |
+| `packages/fixtures`      | Frozen scenarios, fixture validation, explicit seed/reset/verify                                                                                                    | `schemas`, `db`                                                          |
+| `packages/evidence`      | Evidence collection and source-read metadata                                                                                                                        | `schemas`, repository contracts from `db`                                |
+| `packages/diagnosis`     | Readiness, conflicts, deterministic diagnosis                                                                                                                       | `schemas` only                                                           |
+| `packages/observability` | Safe audit builders and trace queries                                                                                                                               | `schemas`, repository contracts from `db`                                |
+| `packages/workflow`      | Investigation/escalation orchestration, persistence, idempotency, audit coordination, demo catalog                                                                  | `schemas`, `db`, `evidence`, `diagnosis`, `observability`                |
+| `packages/mcp`           | Exact five tool registrations, descriptions, annotations, adapters, safe error mapping, stateless transport handler                                                 | `schemas`, `workflow`, official MCP SDK                                  |
+| `packages/agent`         | Provider-neutral model interface, Gemini provider, MCP discovery, model-facing projection, host-generated identifiers, bounded tool loop, grounding validation, CLI | `schemas`, official MCP client SDK, `@google/genai`                      |
+| `packages/evaluations`   | Direct MCP, hosted MCP, hosted AI, scenario, and safety verification                                                                                                | Top-level packages under test, `fixtures`, owner-only DB testing helpers |
 
-## Implemented MCP surface
+## Exact MCP surface
 
 `packages/mcp` exposes:
 
@@ -88,11 +106,9 @@ The server registers exactly:
 - `get_review_case`
 - `get_investigation_trace`
 
-`apps/api` mounts the stateless Streamable HTTP endpoint at `/mcp`. It lazily creates one workflow context, validates the Host header before MCP processing, limits JSON bodies, maps malformed transport requests safely, and disconnects the workflow context during shutdown.
+`apps/api` mounts the stateless Streamable HTTP endpoint at `/mcp`. It validates the Host header and bearer token before constructing the workflow context, limits JSON bodies, maps malformed requests safely, and closes resources during shutdown.
 
-## Implemented Phase 11 surface
-
-`packages/agent` exposes a provider-neutral `ModelProvider` and one `GeminiModelProvider`. The runtime flow is:
+## Model-backed path
 
 ```text
 natural-language request
@@ -101,29 +117,24 @@ deterministic intent/refusal preflight
         ↓
 exact five-tool MCP discovery
         ↓
-Gemini selects one model-facing tool
+model selects one approved tool
         ↓
 host validates arguments and injects reliability IDs
         ↓
-real Streamable HTTP MCP call
+remote Streamable HTTP MCP call
         ↓
 compact allowlisted result projection
         ↓
-Gemini structured explanation
+model structured explanation
         ↓
 deterministic grounding validation
         ↓
 authoritative result assembly
 ```
 
-The model-facing investigation schema includes only `orderId`; the host injects `clientRequestId` and the investigation idempotency key. The model-facing escalation schema includes only `investigationId`; the host injects a distinct escalation key.
+The model-facing investigation schema includes only `orderId`; trusted host code injects `clientRequestId` and the investigation idempotency key. The model-facing escalation schema includes only `investigationId`; the host injects a separate escalation key.
 
-The agent refuses commerce-mutation intent before model or MCP execution. A combined investigation/escalation request runs sequentially and escalates only when the persisted investigation says human action is required. Every public result states `commerceStateChanged=false`.
-
-`packages/evaluations` owns both explicit serial boundaries:
-
-- `eval:mcp:direct` tests the protocol and deterministic workflow without a model;
-- `eval:agent:gemini` tests the real Gemini model, tool selection, ordering, grounding, refusal, prompt injection, stability, token usage, commerce immutability, and cleanup.
+A compatible third-party AI client can also connect directly to the hosted MCP and generate its own accepted identifiers, as demonstrated with Gemini CLI.
 
 ## Acyclic layering
 
@@ -135,7 +146,7 @@ The topological direction is:
 4. `workflow`
 5. `mcp`
 6. `apps/api`
-7. `apps/web` over HTTP and `evaluations` as top-level consumers
+7. `evaluations` as top-level consumers
 
 Permanent rules:
 
@@ -146,9 +157,37 @@ Permanent rules:
 - MCP never imports DB, fixtures, evidence, diagnosis internals, observability internals, agent, evaluations, or applications;
 - agent never imports workflow, MCP server implementation, DB, fixtures, evidence, diagnosis, observability internals, applications, or evaluations;
 - runtime packages never import evaluations;
-- web code never accesses PostgreSQL or Gemini directly;
-- business rules are not duplicated in repositories, MCP adapters, API routes, model provider code, or system instructions.
+- business rules are not duplicated in MCP adapters, API routes, model provider code, or system instructions.
 
-## Hosted staging handoff
+## Hosted runtime boundary
 
-After the local live Gemini suite passes, the same agent can point to a protected HTTPS MCP endpoint through `MCP_SERVER_URL` and optional `MCP_AUTH_BEARER_TOKEN`. The first protected staging deployment occurs before Phase 12. Phase 12 adds the read-only trace API/viewer, and Phase 13 finalizes authentication, deployment hardening, and client submission evidence.
+```text
+Internet
+  -> Caddy :443
+  -> API :3000 (internal only)
+  -> PostgreSQL :5432 (internal only)
+```
+
+The production API container receives:
+
+```text
+NODE_ENV
+PORT
+MCP_ALLOWED_HOSTS
+MCP_API_KEY
+WORKFLOW_DATABASE_URL
+```
+
+It does not receive:
+
+```text
+DATABASE_URL
+DEMO_DATABASE_URL
+MODEL_API_KEY
+```
+
+The deployment and external-client evidence are documented in:
+
+- [Reviewer guide](../reviewer-guide.md)
+- [Final evaluation](../final-evaluation.md)
+- [Phase 12 hosted report](../evaluations/phase-12-hosted-mcp.md)

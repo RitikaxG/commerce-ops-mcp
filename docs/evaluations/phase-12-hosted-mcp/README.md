@@ -1,25 +1,53 @@
-# Phase 12 hosted evidence
+# Phase 12 Hosted Evidence
 
-Store only concise, redacted Markdown evidence in this directory.
+This directory stores concise, redacted Markdown evidence for the hosted deployment.
+
+Start with:
+
+- [Final submission evidence](../../evidence/final-submission/README.md)
+- [Hosted verification PDF](../../evidence/final-submission/00-hosted-mcp-verification-report.pdf)
+- [Final evaluation](../../final-evaluation.md)
+- [Reviewer guide](../../reviewer-guide.md)
 
 ## Completed evidence
 
 - [Hosted provider-independent MCP](hosted-direct.md)
 - [MCP Inspector](mcp-inspector.md)
-- [Hosted model-backed verification](hosted-ai.md)
+- [Hosted model-backed and Gemini CLI verification](hosted-ai.md)
 - [Hosted database verification boundary](database-verification.md)
+
+## Visual proof
+
+### MCP Inspector exact tools
+
+![MCP Inspector showing the exact five tools](../../../images/all-tools-rendered.png)
+
+### Grounded hosted investigation
+
+![MCP Inspector investigation result](../../../images/investigation-result.png)
+
+### Hosted model-backed evaluation
+
+![Hosted model-backed evaluation result](../../../images/model-backed-evaluation.png)
+
+### Independent MCP-compatible AI client
+
+![Gemini CLI using the hosted MCP](../../../images/gemini-client-using-mcp-to-respond.png)
 
 ## Verified deployment summary
 
 1. Provider-independent hosted verifier: PASS.
 2. MCP Inspector: PASS over Streamable HTTP with exactly five tools.
-3. Focused nine-scenario hosted AI verifier: PASS.
-4. Public HTTPS health: PASS.
-5. `commerceStateChanged=false`: verified in direct, Inspector, and model-backed paths.
-6. Runtime API credential isolation: verified.
-7. Initial deployed SHA: `6498a09647e0da90b7197a7becc1163c87c8cf85`.
-8. AWS region: `ap-south-1`.
-9. Intended review availability: through at least 2026-08-09 or until client review completes.
+3. Hosted nine-scenario AI verifier: PASS.
+4. Gemini CLI as an independent MCP-compatible AI client: PASS.
+5. Public HTTPS health: PASS.
+6. `commerceStateChanged=false`: verified in direct, Inspector, and model-backed paths.
+7. Runtime API credential isolation: verified.
+8. Final deployed application SHA: `3ac6c89da3f7d7675256c23cc65e257e4e10892b`.
+9. Final Phase 12 branch head: `daa0a7e89ef0fc509b803c5c2c24b2602f801042`.
+10. Phase 12 merge commit: `c4fb3eed9aa6a9a14d42f33087f86099fe12382b`.
+11. AWS region: `ap-south-1`.
+12. Intended review availability: through at least 9 August 2026 or until client review completes.
 
 ## Redaction rules
 
@@ -30,9 +58,7 @@ Do not commit:
 - PostgreSQL URLs, role passwords, or environment-file contents;
 - SSH private keys;
 - unredacted screenshots;
-- raw terminal logs or model transcripts.
-
-Convert useful output into a small Markdown table or a redacted JSON excerpt. Replace secrets with `<redacted>` and omit request headers entirely when possible.
+- raw terminal logs or hidden model reasoning.
 
 ## Reviewer identifier guidance
 
@@ -44,13 +70,3 @@ For `investigate_order_exception`:
 - reuse both values only when retrying the exact same request.
 
 For `create_human_review_escalation`, use the returned `investigationId`, generate a new idempotency key, and reuse it only for retrying that same escalation.
-
-## Inspector screenshot checklist
-
-Before retaining any screenshot:
-
-- crop out the token/header control;
-- remove browser history, bookmarks, account identifiers, and unrelated tabs;
-- verify no environment file or terminal secret is visible;
-- show only the endpoint domain, selected tool, safe tool arguments, and structured result;
-- prefer the Markdown summaries in this directory when the screenshot adds no unique evidence.

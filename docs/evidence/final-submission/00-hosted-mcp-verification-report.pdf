@@ -1,0 +1,99 @@
+%PDF-1.4
+%
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 1733 >>
+stream
+BT
+/F1 11 Tf
+72 760 Td
+/F1 16 Tf
+(HOSTED MCP VERIFICATION REPORT) Tj
+/F1 11 Tf
+0 -18 Td
+() Tj
+0 -18 Td
+(Status: PASS) Tj
+0 -18 Td
+(Endpoint: https://commerce-mcp.ritikaxg.co.in/mcp) Tj
+0 -18 Td
+(Transport: Streamable HTTP) Tj
+0 -18 Td
+(Authentication: Bearer token supplied privately) Tj
+0 -18 Td
+() Tj
+0 -18 Td
+(MCP Inspector verification) Tj
+0 -18 Td
+(- Authenticated connection succeeded.) Tj
+0 -18 Td
+(- Exactly five approved tools were discovered.) Tj
+0 -18 Td
+(- ORD-1042 investigation, escalation, review-case and trace reads succeeded.) Tj
+0 -18 Td
+(- No commerce mutation tool was exposed.) Tj
+0 -18 Td
+() Tj
+0 -18 Td
+(MCP-compatible AI client verification) Tj
+0 -18 Td
+(- Gemini CLI connected to the same hosted endpoint.) Tj
+0 -18 Td
+(- The client reported commerce-ops-hosted Ready with five tools.) Tj
+0 -18 Td
+(- The model selected list_demo_cases and investigate_order_exception.) Tj
+0 -18 Td
+(- Grounded result: ASSIGNED_WAREHOUSE_OUT_OF_STOCK.) Tj
+0 -18 Td
+(- Assigned warehouse WH-A had zero stock; WH-B was eligible.) Tj
+0 -18 Td
+(- Suggested queue: FULFILMENT_OPERATIONS.) Tj
+0 -18 Td
+(- Recommended action: human review; no automatic operational change.) Tj
+0 -18 Td
+(- commerceStateChanged=false.) Tj
+0 -18 Td
+() Tj
+0 -18 Td
+(Conclusion) Tj
+0 -18 Td
+(The hosted MCP was verified through both MCP Inspector and an independent) Tj
+0 -18 Td
+(MCP-compatible model-backed AI client. The deterministic MCP workflow remained) Tj
+0 -18 Td
+(authoritative and no commerce state was changed.) Tj
+0 -18 Td
+() Tj
+0 -18 Td
+(Deployment application SHA: 3ac6c89da3f7d7675256c23cc65e257e4e10892b) Tj
+0 -18 Td
+(Phase 12 merge commit: c4fb3eed9aa6a9a14d42f33087f86099fe12382b) Tj
+0 -18 Td
+(Verification date: 1 August 2026) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000011 00000 n 
+0000000060 00000 n 
+0000000117 00000 n 
+0000000243 00000 n 
+0000002027 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2097
+%%EOF
