@@ -25,7 +25,7 @@ Start here:
 - [Engineering decisions and bugs](docs/engineering-decisions.md)
 - [AI worklog](docs/ai-worklog.md)
 
-**Demo video:** [To be added before final submission]
+**Demo video:** [Watch the 4–5 minute hosted MCP workflow demo](https://www.loom.com/share/b1ff00c9e53348deb25a231689799b10)
 
 ## Product workflow
 
@@ -159,4 +159,4 @@ The complete sequence, including the authenticated Inspector setup and investiga
 - [x] MCP-compatible AI-client verification
 - [x] AI worklog
 - [x] Reviewer token-sharing process
-- [ ] Four-to-five-minute demo video
+- [x] Four-to-five-minute demo video
