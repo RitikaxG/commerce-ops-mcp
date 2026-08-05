@@ -6,8 +6,7 @@ This worklog summarizes how AI was used to plan, implement, debug, test, review,
 
 | Tool or model | Role in the work | Selection reason |
 | --- | --- | --- |
-| ChatGPT / Codex-compatible coding assistant | Planning, architecture discussion, implementation guidance, debugging, test design, deployment review, and documentation review | Supported long-running repository context, iterative code review, and structured verification plans |
-| Exact coding-assistant model | **[Owner to confirm exact model before submission]** | The repository does not independently prove the exact model used across every coding session |
+| OpenAI GPT-5.6 Thinking through ChatGPT | Planning, architecture discussion, implementation guidance, debugging, test design, deployment review, and documentation review | Supported long-running repository context, iterative code review, and structured verification plans |
 | Gemini `gemini-3.6-flash` through `@google/genai` | Product-side natural-language tool selection and grounded explanation | Fast model suitable for a bounded five-tool workflow; provider implementation remains behind a neutral model interface |
 | Gemini CLI v0.53.1, model selection shown as `Auto` | Independent MCP-compatible AI-client verification | Demonstrated that a third-party compatible client could discover and use the hosted MCP without repository internals |
 | MCP Inspector v2 | Protocol inspection rather than code generation | Independently verified the remote transport, tool catalog, inputs, structured outputs, and persisted trace |
@@ -200,7 +199,7 @@ AI-assisted work was accepted only after one or more of these checks:
 
 A passing model response by itself was never treated as proof that the workflow was correct.
 
-## Remaining risks and unfinished work
+## Known limitations and operational risks
 
 - The deployment is a single EC2 instance with containerized PostgreSQL and no automated failover.
 - The reviewer token is a shared deployment credential and must be rotated after review.
@@ -209,10 +208,9 @@ A passing model response by itself was never treated as proof that the workflow 
 - No production commerce APIs or real customer data are connected.
 - Existing investigation evidence is immutable; updated source evidence requires a new investigation.
 - The product recommends actions but does not execute them.
-- The final four-to-five-minute demo video is still pending.
 
-## Owner confirmation before submission
+## Final handoff status
 
-- [ ] Replace **[Owner to confirm exact model before submission]** with the exact ChatGPT/Codex coding model, if known.
-- [ ] Confirm whether any additional AI coding tool or model should be listed.
-- [ ] Add the final asynchronous demo video link to the README.
+- [x] Exact primary coding-assistant model recorded as OpenAI GPT-5.6 Thinking through ChatGPT.
+- [x] Additional AI tools and model-backed verification clients documented.
+- [x] Final four-to-five-minute asynchronous demo published: [Watch the hosted MCP workflow demo](https://www.loom.com/share/b1ff00c9e53348deb25a231689799b10).
