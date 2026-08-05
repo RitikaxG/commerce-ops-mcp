@@ -1,6 +1,6 @@
 # Final Submission Evidence
 
-This page collects the committed, redacted proof for the hosted MCP workflow, automated evaluation, MCP Inspector, and an independent MCP-compatible AI client.
+This page collects the committed, redacted proof for the hosted MCP workflow, automated evaluation, MCP Inspector, an independent MCP-compatible AI client, and the final asynchronous walkthrough.
 
 No bearer token, model-provider key, database URL, SSH material, or complete Authorization header is included.
 
@@ -9,6 +9,12 @@ No bearer token, model-provider key, database URL, SSH material, or complete Aut
 [Download the Hosted MCP Verification Report](00-hosted-mcp-verification-report.pdf)
 
 The report summarizes the hosted endpoint, exact five-tool surface, Inspector verification, compatible AI-client verification, and `commerceStateChanged=false` result.
+
+## Demo video
+
+[Watch the four-to-five-minute hosted MCP workflow demo](https://www.loom.com/share/b1ff00c9e53348deb25a231689799b10)
+
+The video walks through the product problem, hosted MCP boundary, `ORD-1042` investigation, deterministic diagnosis, human-review path, persistence, and read-only commerce guarantee.
 
 ## 1. Authenticated MCP Inspector configuration
 
