@@ -14,6 +14,7 @@ The implementation was verified through automated protocol and database checks, 
 | Hosted MCP | `https://commerce-mcp.ritikaxg.co.in/mcp` |
 | Transport | Streamable HTTP |
 | Authentication | Shared reviewer bearer token supplied privately |
+| Demo video | [Four-to-five-minute hosted MCP workflow demo](https://www.loom.com/share/b1ff00c9e53348deb25a231689799b10) |
 | AWS region | `ap-south-1` |
 | Deployment date | 1 August 2026 |
 | Final deployed application SHA | `3ac6c89da3f7d7675256c23cc65e257e4e10892b` |
@@ -109,6 +110,10 @@ The workflow did not reassign inventory, release a hold, retry fulfilment, creat
 
 ![Gemini CLI using the hosted MCP to answer ORD-1042](../images/gemini-client-using-mcp-to-respond.png)
 
+### Asynchronous walkthrough
+
+[Watch the four-to-five-minute hosted MCP workflow demo](https://www.loom.com/share/b1ff00c9e53348deb25a231689799b10).
+
 [Download the concise Hosted MCP Verification Report](evidence/final-submission/00-hosted-mcp-verification-report.pdf).
 
 The complete evidence index is available in [Final submission evidence](evidence/final-submission/README.md).
@@ -132,6 +137,6 @@ The complete evidence index is available in [Final submission evidence](evidence
 - [x] Focused tests and runtime verification
 - [x] MCP Inspector verification
 - [x] MCP-compatible AI-client verification
-- [x] AI worklog
+- [x] AI worklog with exact coding-assistant model
 - [x] Redacted evidence and verification report
-- [ ] Four-to-five-minute asynchronous demo video
+- [x] Four-to-five-minute asynchronous demo video
